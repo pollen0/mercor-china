@@ -120,7 +120,7 @@ export interface InterviewResults {
   aiSummary?: string
   recommendation?: string
   overallStrengths: string[]
-  overallImprovements: string[]
+  overallConcerns: string[]
   responses: ResponseDetail[]
 }
 

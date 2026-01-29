@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PermissionCheck } from '@/components/interview/permission-check'
 import { interviewApi, type InterviewSession } from '@/lib/api'
 
@@ -52,10 +51,10 @@ export default function InterviewStartPage() {
 
   if (pageState === 'loading') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading interview...</p>
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading interview...</p>
         </div>
       </main>
     )
@@ -63,113 +62,204 @@ export default function InterviewStartPage() {
 
   if (pageState === 'error') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <CardTitle className="text-red-600">Error</CardTitle>
-            <CardDescription>{error}</CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">Error</h1>
+            <p className="text-gray-500 mb-6">{error}</p>
             <Link href="/">
-              <Button variant="outline">Back to Home</Button>
+              <Button variant="outline" className="w-full">Back to Home</Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     )
   }
 
   if (pageState === 'permission') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-        <PermissionCheck onPermissionGranted={handlePermissionGranted} />
+      <main className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-100">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">智</span>
+              </div>
+              <span className="font-semibold text-gray-900">ZhiMian 智面</span>
+            </Link>
+          </div>
+        </header>
+
+        <div className="flex items-center justify-center p-4 min-h-[calc(100vh-65px)]">
+          <PermissionCheck onPermissionGranted={handlePermissionGranted} />
+        </div>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <Link href="/" className="text-2xl font-bold text-blue-600 mb-2">
-            ZhiPin AI
+    <main className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">智</span>
+            </div>
+            <span className="font-semibold text-gray-900">ZhiMian 智面</span>
           </Link>
-          <CardTitle className="text-2xl">Video Interview</CardTitle>
-          <CardDescription>
-            {session?.jobTitle} at {session?.companyName}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Instructions */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-900 mb-3">Interview Instructions</h3>
-            <ul className="space-y-2 text-blue-800">
-              <li className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>You will be asked {session?.responses.length || 5} questions</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>You have up to 2 minutes to answer each question</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>You can re-record your answer before submitting</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Find a quiet, well-lit space</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Speak clearly and look at the camera</span>
-              </li>
-            </ul>
+        </div>
+      </header>
+
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="grid lg:grid-cols-5 gap-8">
+          {/* Left side - Job info */}
+          <div className="lg:col-span-2">
+            <div className="sticky top-8">
+              <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl p-6 text-white mb-6">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold mb-1">{session?.jobTitle}</h2>
+                <p className="text-emerald-100">{session?.companyName}</p>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="font-semibold text-gray-900 mb-4">Interview Details</h3>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{session?.responses.length || 5} Questions</div>
+                      <div className="text-xs text-gray-500">Tailored to the role</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">2 min per question</div>
+                      <div className="text-xs text-gray-500">Maximum recording time</div>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">Re-record Allowed</div>
+                      <div className="text-xs text-gray-500">Before final submission</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Status indicators */}
-          <div className="flex items-center justify-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className="text-sm text-gray-600">Camera Ready</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-green-500' : 'bg-gray-300'}`} />
-              <span className="text-sm text-gray-600">Microphone Ready</span>
+          {/* Right side - Instructions */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">Ready to Begin</h1>
+              <p className="text-gray-500 mb-8">Review the instructions below, then start your interview</p>
+
+              {/* Instructions */}
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 mb-6">
+                <h3 className="font-semibold text-emerald-900 mb-4">Interview Tips</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-emerald-800">Find a quiet, well-lit environment</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-emerald-800">Position your camera at eye level</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-emerald-800">Speak clearly and at a natural pace</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-emerald-800">Use specific examples from your experience</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <svg className="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-emerald-800">You can re-record before submitting each answer</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Status indicators */}
+              <div className="flex items-center justify-center gap-6 mb-8 py-4 border-y border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                  <span className="text-sm text-gray-600">Camera Ready</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                  <span className="text-sm text-gray-600">Microphone Ready</span>
+                </div>
+              </div>
+
+              {/* Start button */}
+              <Button
+                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-base font-medium"
+                onClick={startInterview}
+                disabled={!permissionGranted}
+              >
+                <span className="flex items-center gap-2">
+                  Start Interview
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </span>
+              </Button>
+
+              <p className="text-xs text-center text-gray-400 mt-4">
+                By starting this interview, you agree to have your video and audio
+                recorded for evaluation purposes.
+              </p>
             </div>
           </div>
-
-          {/* Start button */}
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={startInterview}
-            disabled={!permissionGranted}
-          >
-            Start Interview
-          </Button>
-
-          <p className="text-center text-xs text-gray-500">
-            By starting this interview, you agree to have your video and audio recorded
-            for evaluation purposes.
-          </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </main>
   )
 }

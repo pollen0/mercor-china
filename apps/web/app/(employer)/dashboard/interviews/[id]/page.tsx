@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { VideoPlayer } from '@/components/dashboard/video-player'
 import { ScoreCard } from '@/components/dashboard/score-card'
 import { TranscriptViewer } from '@/components/dashboard/transcript-viewer'
@@ -61,15 +60,16 @@ export default function InterviewDetailPage() {
       const data = JSON.parse(aiAnalysis)
       if (data.scores) {
         return {
-          relevance: data.scores.relevance,
-          clarity: data.scores.clarity,
-          depth: data.scores.depth,
           communication: data.scores.communication,
-          jobFit: data.scores.job_fit,
+          problemSolving: data.scores.problem_solving,
+          domainKnowledge: data.scores.domain_knowledge,
+          motivation: data.scores.motivation,
+          cultureFit: data.scores.culture_fit,
           overall: 0,
           analysis: data.analysis || '',
           strengths: data.strengths || [],
-          improvements: data.improvements || [],
+          concerns: data.concerns || [],
+          highlightQuotes: data.highlight_quotes || [],
         }
       }
     } catch {
@@ -91,8 +91,8 @@ export default function InterviewDetailPage() {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading interview...</p>
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading interview...</p>
         </div>
       </main>
     )
@@ -101,17 +101,20 @@ export default function InterviewDetailPage() {
   if (error || !interview) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-red-600">Error</CardTitle>
-            <CardDescription>{error || 'Interview not found'}</CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">Error</h1>
+            <p className="text-gray-500 mb-6">{error || 'Interview not found'}</p>
             <Link href="/dashboard/interviews">
-              <Button variant="outline">Back to Interviews</Button>
+              <Button variant="outline" className="w-full">Back to Interviews</Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     )
   }
@@ -121,18 +124,21 @@ export default function InterviewDetailPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-xl font-bold text-blue-600">
-              ZhiPin AI
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">智</span>
+              </div>
+              <span className="font-semibold text-gray-900">ZhiMian</span>
             </Link>
-            <span className="text-gray-400">/</span>
-            <Link href="/dashboard/interviews" className="text-gray-600 hover:text-gray-900">
+            <span className="text-gray-300">/</span>
+            <Link href="/dashboard/interviews" className="text-gray-500 hover:text-gray-900">
               Interviews
             </Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-600">{interview.candidateName || 'Interview Detail'}</span>
+            <span className="text-gray-300">/</span>
+            <span className="text-gray-600 font-medium">{interview.candidateName || 'Detail'}</span>
           </div>
           <Link href="/dashboard/interviews">
             <Button variant="outline" size="sm">Back to List</Button>
@@ -142,77 +148,85 @@ export default function InterviewDetailPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Candidate Info & Actions */}
-        <Card className="mb-6">
-          <CardContent className="py-6">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="text-blue-700 font-bold text-2xl">
-                    {(interview.candidateName || 'U').charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {interview.candidateName || 'Unknown Candidate'}
-                  </h1>
-                  <p className="text-gray-500">
-                    {interview.jobTitle} at {interview.companyName}
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Submitted {new Date(interview.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+                <span className="text-emerald-700 font-bold text-3xl">
+                  {(interview.candidateName || 'U').charAt(0).toUpperCase()}
+                </span>
               </div>
-
-              <div className="flex items-center gap-4">
-                {interview.totalScore && (
-                  <ScoreCard score={interview.totalScore} size="lg" label="Overall Score" />
-                )}
-
-                <div className="flex flex-col gap-2">
-                  <Button
-                    onClick={() => handleStatusUpdate('SHORTLISTED')}
-                    disabled={isUpdating}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    Shortlist
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleStatusUpdate('REJECTED')}
-                    disabled={isUpdating}
-                    className="text-red-600 border-red-300 hover:bg-red-50"
-                  >
-                    Reject
-                  </Button>
-                </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {interview.candidateName || 'Unknown Candidate'}
+                </h1>
+                <p className="text-gray-500">
+                  {interview.jobTitle} at {interview.companyName}
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Submitted {new Date(interview.createdAt).toLocaleDateString()}
+                </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="flex items-center gap-6">
+              {interview.totalScore && (
+                <ScoreCard score={interview.totalScore} size="lg" label="Overall Score" />
+              )}
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={() => handleStatusUpdate('SHORTLISTED')}
+                  disabled={isUpdating}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Shortlist
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleStatusUpdate('REJECTED')}
+                  disabled={isUpdating}
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Reject
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* AI Summary */}
         {summaryData && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>AI Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              AI Summary
+            </h2>
+
+            <div className="space-y-4">
               {summaryData.summary && (
-                <p className="text-gray-700">{summaryData.summary}</p>
+                <p className="text-gray-700 leading-relaxed">{summaryData.summary}</p>
               )}
 
               {summaryData.recommendation && (
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Recommendation:</span>
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-gray-700">Recommendation:</span>
                   <span
-                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
                       summaryData.recommendation === 'strong_yes'
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-emerald-100 text-emerald-700'
                         : summaryData.recommendation === 'yes'
-                        ? 'bg-green-50 text-green-600'
+                        ? 'bg-emerald-50 text-emerald-600'
                         : summaryData.recommendation === 'maybe'
-                        ? 'bg-yellow-100 text-yellow-700'
+                        ? 'bg-amber-100 text-amber-700'
                         : 'bg-red-100 text-red-700'
                     }`}
                   >
@@ -223,14 +237,17 @@ export default function InterviewDetailPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 {summaryData.overall_strengths?.length > 0 && (
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-green-900 mb-2">Strengths</h4>
-                    <ul className="space-y-1">
+                  <div className="bg-emerald-50 rounded-xl p-5">
+                    <h4 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Strengths
+                    </h4>
+                    <ul className="space-y-2">
                       {summaryData.overall_strengths.map((s: string, i: number) => (
-                        <li key={i} className="text-green-800 text-sm flex items-start gap-2">
-                          <svg className="w-4 h-4 mt-0.5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
+                        <li key={i} className="text-emerald-800 text-sm flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
                           {s}
                         </li>
                       ))}
@@ -238,15 +255,18 @@ export default function InterviewDetailPage() {
                   </div>
                 )}
 
-                {summaryData.overall_improvements?.length > 0 && (
-                  <div className="bg-amber-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-amber-900 mb-2">Areas for Improvement</h4>
-                    <ul className="space-y-1">
-                      {summaryData.overall_improvements.map((s: string, i: number) => (
+                {(summaryData.overall_concerns?.length > 0 || summaryData.overall_improvements?.length > 0) && (
+                  <div className="bg-amber-50 rounded-xl p-5">
+                    <h4 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Areas for Growth
+                    </h4>
+                    <ul className="space-y-2">
+                      {(summaryData.overall_concerns || summaryData.overall_improvements || []).map((s: string, i: number) => (
                         <li key={i} className="text-amber-800 text-sm flex items-start gap-2">
-                          <svg className="w-4 h-4 mt-0.5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 flex-shrink-0" />
                           {s}
                         </li>
                       ))}
@@ -254,8 +274,8 @@ export default function InterviewDetailPage() {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {/* Responses */}
@@ -266,20 +286,20 @@ export default function InterviewDetailPage() {
             const scoreDetails = parseScoreDetails(response.aiAnalysis)
 
             return (
-              <Card key={response.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">
+              <div key={response.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
+                  <h3 className="text-white font-semibold">
                     Question {index + 1}: {response.questionText}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                  </h3>
+                </div>
+                <div className="p-6 space-y-6">
                   <div className="grid lg:grid-cols-2 gap-6">
                     {/* Video */}
                     <div>
                       {response.videoUrl ? (
                         <VideoPlayer src={response.videoUrl} />
                       ) : (
-                        <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center">
                           <span className="text-gray-400">No video available</span>
                         </div>
                       )}
@@ -288,24 +308,52 @@ export default function InterviewDetailPage() {
                     {/* Score & Analysis */}
                     <div className="space-y-4">
                       {response.aiScore && (
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-start gap-4">
                           <ScoreCard score={response.aiScore} size="md" />
 
                           {scoreDetails && (
-                            <div className="flex-1 grid grid-cols-2 gap-2 text-sm">
-                              <div>Relevance: <span className="font-medium">{scoreDetails.relevance}/10</span></div>
-                              <div>Clarity: <span className="font-medium">{scoreDetails.clarity}/10</span></div>
-                              <div>Depth: <span className="font-medium">{scoreDetails.depth}/10</span></div>
-                              <div>Communication: <span className="font-medium">{scoreDetails.communication}/10</span></div>
-                              <div>Job Fit: <span className="font-medium">{scoreDetails.jobFit}/10</span></div>
+                            <div className="flex-1 grid grid-cols-2 gap-3 text-sm">
+                              <div className="bg-gray-50 rounded-lg p-2">
+                                <span className="text-gray-500">Communication</span>
+                                <div className="font-semibold text-gray-900">{scoreDetails.communication}/10</div>
+                              </div>
+                              <div className="bg-gray-50 rounded-lg p-2">
+                                <span className="text-gray-500">Problem Solving</span>
+                                <div className="font-semibold text-gray-900">{scoreDetails.problemSolving}/10</div>
+                              </div>
+                              <div className="bg-gray-50 rounded-lg p-2">
+                                <span className="text-gray-500">Domain Knowledge</span>
+                                <div className="font-semibold text-gray-900">{scoreDetails.domainKnowledge}/10</div>
+                              </div>
+                              <div className="bg-gray-50 rounded-lg p-2">
+                                <span className="text-gray-500">Motivation</span>
+                                <div className="font-semibold text-gray-900">{scoreDetails.motivation}/10</div>
+                              </div>
+                              <div className="bg-gray-50 rounded-lg p-2 col-span-2">
+                                <span className="text-gray-500">Culture Fit</span>
+                                <div className="font-semibold text-gray-900">{scoreDetails.cultureFit}/10</div>
+                              </div>
                             </div>
                           )}
                         </div>
                       )}
 
                       {scoreDetails?.analysis && (
-                        <div className="bg-blue-50 rounded-lg p-3">
-                          <p className="text-blue-800 text-sm">{scoreDetails.analysis}</p>
+                        <div className="bg-emerald-50 rounded-xl p-4">
+                          <p className="text-emerald-800 text-sm leading-relaxed">{scoreDetails.analysis}</p>
+                        </div>
+                      )}
+
+                      {scoreDetails?.highlightQuotes && scoreDetails.highlightQuotes.length > 0 && (
+                        <div className="bg-gray-50 rounded-xl p-4">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Key Quotes</h5>
+                          <ul className="space-y-2">
+                            {scoreDetails.highlightQuotes.map((quote, i) => (
+                              <li key={i} className="text-sm text-gray-600 italic">
+                                &ldquo;{quote}&rdquo;
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                     </div>
@@ -315,8 +363,8 @@ export default function InterviewDetailPage() {
                   {response.transcription && (
                     <TranscriptViewer transcript={response.transcription} />
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )
           })}
         </div>

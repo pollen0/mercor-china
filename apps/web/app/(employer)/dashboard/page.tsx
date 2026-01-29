@@ -55,7 +55,7 @@ export default function DashboardPage() {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500 text-sm">Loading dashboard...</p>
         </div>
       </main>
@@ -78,7 +78,7 @@ export default function DashboardPage() {
               <nav className="hidden md:flex items-center gap-1">
                 <Link
                   href="/dashboard"
-                  className="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg"
+                  className="px-3 py-2 text-sm font-medium text-emerald-600 bg-emerald-50 rounded-lg"
                 >
                   Overview
                 </Link>
@@ -133,8 +133,8 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-500">Latest candidate submissions</p>
               </div>
               <Link href="/dashboard/interviews">
-                <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
                   View all
                   <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -236,18 +236,18 @@ export default function DashboardPage() {
           {/* Quick Actions Sidebar */}
           <div className="space-y-6">
             {/* Create Interview */}
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
+            <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-xl p-6 text-white">
               <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
               <h3 className="font-semibold text-lg mb-2">Create Interview Link</h3>
-              <p className="text-blue-100 text-sm mb-4">
+              <p className="text-emerald-100 text-sm mb-4">
                 Generate unique links to share with candidates for async video interviews
               </p>
               <Link href="/dashboard/jobs">
-                <Button className="w-full bg-white text-blue-600 hover:bg-blue-50">
+                <Button className="w-full bg-white text-emerald-600 hover:bg-emerald-50">
                   Manage Jobs
                 </Button>
               </Link>
@@ -261,8 +261,8 @@ export default function DashboardPage() {
                   href="/dashboard/interviews"
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
                 >
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                    <svg className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+                    <svg className="w-5 h-5 text-gray-600 group-hover:text-emerald-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   </div>

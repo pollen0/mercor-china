@@ -11,8 +11,8 @@ export function ScoreCard({ score, maxScore = 10, label, size = 'md' }: ScoreCar
   const percentage = (score / maxScore) * 100
 
   const getColor = () => {
-    if (percentage >= 70) return { bg: 'bg-green-100', text: 'text-green-700', ring: 'stroke-green-500' }
-    if (percentage >= 50) return { bg: 'bg-yellow-100', text: 'text-yellow-700', ring: 'stroke-yellow-500' }
+    if (percentage >= 70) return { bg: 'bg-emerald-100', text: 'text-emerald-700', ring: 'stroke-emerald-500' }
+    if (percentage >= 50) return { bg: 'bg-amber-100', text: 'text-amber-700', ring: 'stroke-amber-500' }
     return { bg: 'bg-red-100', text: 'text-red-700', ring: 'stroke-red-500' }
   }
 
