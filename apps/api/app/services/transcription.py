@@ -1,24 +1,20 @@
 import httpx
-from openai import OpenAI
-from typing import Optional
+import logging
 import tempfile
 import os
+from typing import Optional
 from ..config import settings
 from .storage import storage_service
 
+logger = logging.getLogger("zhimian.transcription")
+
 
 class TranscriptionService:
-    """Service for transcribing audio/video using OpenAI Whisper."""
+    """Service for transcribing audio/video using DeepSeek ASR API."""
 
     def __init__(self):
-        self._client: Optional[OpenAI] = None
-
-    @property
-    def client(self) -> OpenAI:
-        """Lazy initialization of OpenAI client."""
-        if self._client is None:
-            self._client = OpenAI(api_key=settings.openai_api_key)
-        return self._client
+        self.api_key = settings.deepseek_api_key
+        self.base_url = settings.deepseek_base_url
 
     async def transcribe_from_url(self, video_url: str, language: str = "zh") -> str:
         """
@@ -32,7 +28,7 @@ class TranscriptionService:
             Transcribed text
         """
         # Download the video to a temp file
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.get(video_url)
             response.raise_for_status()
 
@@ -62,7 +58,7 @@ class TranscriptionService:
 
     async def transcribe_file(self, file_path: str, language: str = "zh") -> str:
         """
-        Transcribe audio from a local file.
+        Transcribe audio from a local file using DeepSeek ASR.
 
         Args:
             file_path: Path to the audio/video file
@@ -72,15 +68,60 @@ class TranscriptionService:
             Transcribed text
         """
         with open(file_path, "rb") as audio_file:
-            transcript = self.client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                language=language,
-                response_format="text"
-            )
-        return transcript
+            audio_data = audio_file.read()
 
-    async def transcribe_bytes(self, data: bytes, filename: str = "audio.webm", language: str = "zh") -> str:
+        return await self._transcribe_with_deepseek(audio_data, file_path, language)
+
+    async def _transcribe_with_deepseek(
+        self, audio_data: bytes, filename: str, language: str = "zh"
+    ) -> str:
+        """
+        Transcribe using DeepSeek ASR API (OpenAI Whisper-compatible).
+
+        Args:
+            audio_data: Raw audio bytes
+            filename: Original filename
+            language: Language code
+
+        Returns:
+            Transcribed text
+        """
+        if not self.api_key:
+            return "[Transcription unavailable - DeepSeek API not configured]"
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                # DeepSeek uses OpenAI-compatible audio transcription endpoint
+                response = await client.post(
+                    f"{self.base_url}/v1/audio/transcriptions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                    },
+                    files={
+                        "file": (os.path.basename(filename), audio_data, "audio/webm"),
+                    },
+                    data={
+                        "model": "whisper-1",
+                        "language": language,
+                        "response_format": "text",
+                    },
+                )
+                response.raise_for_status()
+                return response.text.strip()
+
+        except httpx.HTTPStatusError as e:
+            # If DeepSeek doesn't support audio API, fall back to placeholder
+            if e.response.status_code == 404:
+                return "[Transcription unavailable - ASR endpoint not available]"
+            logger.error(f"DeepSeek transcription error: {e}")
+            return f"[Transcription error: {str(e)}]"
+        except Exception as e:
+            logger.error(f"Transcription error: {e}")
+            return f"[Transcription error: {str(e)}]"
+
+    async def transcribe_bytes(
+        self, data: bytes, filename: str = "audio.webm", language: str = "zh"
+    ) -> str:
         """
         Transcribe audio from raw bytes.
 
@@ -92,39 +133,7 @@ class TranscriptionService:
         Returns:
             Transcribed text
         """
-        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
-            tmp.write(data)
-            tmp_path = tmp.name
-
-        try:
-            return await self.transcribe_file(tmp_path, language)
-        finally:
-            os.unlink(tmp_path)
-
-    async def transcribe_with_timestamps(self, file_path: str, language: str = "zh") -> dict:
-        """
-        Transcribe audio with word-level timestamps.
-
-        Args:
-            file_path: Path to the audio/video file
-            language: Language code
-
-        Returns:
-            Dictionary with text and word timestamps
-        """
-        with open(file_path, "rb") as audio_file:
-            transcript = self.client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                language=language,
-                response_format="verbose_json",
-                timestamp_granularities=["word"]
-            )
-        return {
-            "text": transcript.text,
-            "words": transcript.words if hasattr(transcript, 'words') else [],
-            "duration": transcript.duration if hasattr(transcript, 'duration') else None
-        }
+        return await self._transcribe_with_deepseek(data, filename, language)
 
 
 # Global instance

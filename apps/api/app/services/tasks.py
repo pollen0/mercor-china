@@ -4,6 +4,7 @@ Uses synchronous functions compatible with FastAPI's BackgroundTasks.
 """
 import asyncio
 import json
+import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from typing import Optional
@@ -11,6 +12,9 @@ from typing import Optional
 from .transcription import transcription_service
 from .scoring import scoring_service
 from .email import email_service
+from .matching import matching_service
+
+logger = logging.getLogger("zhimian.tasks")
 
 
 def _run_async(coro):
@@ -36,12 +40,14 @@ def process_interview_response(
     job_requirements: list[str],
     db_url: str,
     question_text: str,
+    generate_followups: bool = True,
 ):
     """
-    Process a single interview response: transcribe and score.
+    Process a single interview response: transcribe, score, and optionally generate follow-ups.
     This is a synchronous function for use with FastAPI BackgroundTasks.
     """
-    from ..models import InterviewResponse
+    from ..models import InterviewResponse, InterviewSession, FollowupQueue
+    import uuid
 
     engine = create_engine(db_url)
     SessionLocal = sessionmaker(bind=engine)
@@ -53,8 +59,13 @@ def process_interview_response(
         ).first()
 
         if not response:
-            print(f"Response {response_id} not found")
+            logger.warning(f"Response {response_id} not found")
             return
+
+        # Get session to check if practice mode
+        session = response.session
+        is_practice = session.is_practice if session else False
+        is_followup = response.is_followup
 
         # Transcribe
         try:
@@ -64,21 +75,52 @@ def process_interview_response(
             response.transcription = transcript
             db.commit()
         except Exception as e:
-            print(f"Transcription failed for {response_id}: {e}")
+            logger.error(f"Transcription failed for {response_id}: {e}")
             response.transcription = f"[Transcription failed: {str(e)}]"
             db.commit()
             return
 
-        # Score
+        # Score (with or without follow-up generation)
         try:
-            score_result = _run_async(
-                scoring_service.analyze_response(
-                    question=question_text,
-                    transcript=transcript,
-                    job_title=job_title,
-                    job_requirements=job_requirements,
-                )
+            # Only generate follow-ups for non-practice, non-followup responses
+            should_generate_followups = (
+                generate_followups and
+                not is_practice and
+                not is_followup
             )
+
+            if should_generate_followups:
+                # Score AND generate follow-up questions
+                score_result, followup_questions = _run_async(
+                    scoring_service.analyze_and_generate_followups(
+                        question=question_text,
+                        transcript=transcript,
+                        job_title=job_title,
+                        job_requirements=job_requirements,
+                    )
+                )
+
+                # Store follow-up questions in queue if any were generated
+                if followup_questions:
+                    followup_queue = FollowupQueue(
+                        id=f"fq{uuid.uuid4().hex[:22]}",
+                        session_id=session.id,
+                        question_index=response.question_index,
+                        generated_questions=followup_questions,
+                    )
+                    db.add(followup_queue)
+                    logger.info(f"Generated {len(followup_questions)} follow-up questions for response {response_id}")
+            else:
+                # Just score without follow-ups
+                score_result = _run_async(
+                    scoring_service.analyze_response(
+                        question=question_text,
+                        transcript=transcript,
+                        job_title=job_title,
+                        job_requirements=job_requirements,
+                    )
+                )
+
             response.ai_score = score_result.overall
             response.ai_analysis = json.dumps({
                 "analysis": score_result.analysis,
@@ -94,14 +136,14 @@ def process_interview_response(
                 }
             }, ensure_ascii=False)
             db.commit()
-            print(f"Successfully processed response {response_id}, score: {score_result.overall}")
+            logger.info(f"Successfully processed response {response_id}, score: {score_result.overall}")
         except Exception as e:
-            print(f"Scoring failed for {response_id}: {e}")
+            logger.error(f"Scoring failed for {response_id}: {e}")
             response.ai_analysis = json.dumps({"error": str(e)}, ensure_ascii=False)
             db.commit()
 
     except Exception as e:
-        print(f"Error processing response {response_id}: {e}")
+        logger.error(f"Error processing response {response_id}: {e}")
     finally:
         db.close()
 
@@ -125,7 +167,7 @@ def generate_interview_summary(
         ).first()
 
         if not session:
-            print(f"Session {session_id} not found")
+            logger.warning(f"Session {session_id} not found")
             return
 
         responses = db.query(InterviewResponse).filter(
@@ -135,7 +177,7 @@ def generate_interview_summary(
         scored_responses = [r for r in responses if r.ai_score is not None]
 
         if not scored_responses:
-            print(f"No scored responses for session {session_id}")
+            logger.warning(f"No scored responses for session {session_id}")
             return
 
         # Build response data for summary
@@ -164,9 +206,9 @@ def generate_interview_summary(
             }, ensure_ascii=False)
             session.total_score = summary.total_score
             db.commit()
-            print(f"Generated summary for session {session_id}")
+            logger.info(f"Generated summary for session {session_id}")
         except Exception as e:
-            print(f"Failed to generate summary for {session_id}: {e}")
+            logger.error(f"Failed to generate summary for {session_id}: {e}")
 
     finally:
         db.close()
@@ -214,6 +256,99 @@ def send_completion_emails(
                 job_title=session.job.title,
                 company_name=employer.company_name,
             )
+
+    finally:
+        db.close()
+
+
+def process_match_after_interview(
+    session_id: str,
+    db_url: str,
+):
+    """
+    Calculate and store match score after an interview is completed.
+    This creates/updates the Match record with detailed scoring.
+    """
+    from ..models import InterviewSession, Match, Candidate
+    import uuid
+
+    engine = create_engine(db_url)
+    SessionLocal = sessionmaker(bind=engine)
+    db = SessionLocal()
+
+    try:
+        session = db.query(InterviewSession).filter(
+            InterviewSession.id == session_id
+        ).first()
+
+        if not session:
+            logger.warning(f"Session {session_id} not found")
+            return
+
+        # Skip practice interviews
+        if session.is_practice:
+            logger.debug(f"Skipping match for practice session {session_id}")
+            return
+
+        if not session.job:
+            logger.warning(f"No job associated with session {session_id}")
+            return
+
+        # Get candidate resume data
+        candidate = session.candidate
+        candidate_data = candidate.resume_parsed_data if candidate else None
+
+        # Calculate match
+        try:
+            match_result = _run_async(
+                matching_service.calculate_match(
+                    interview_score=session.total_score or 5.0,  # Default to 5 if not scored
+                    candidate_data=candidate_data,
+                    job_title=session.job.title,
+                    job_requirements=session.job.requirements or [],
+                    job_location=session.job.location,
+                    job_vertical=session.job.vertical.value if session.job.vertical else None,
+                )
+            )
+
+            # Create or update match record
+            match = db.query(Match).filter(
+                Match.candidate_id == session.candidate_id,
+                Match.job_id == session.job_id
+            ).first()
+
+            if match:
+                # Update existing match
+                match.score = session.total_score or 0
+                match.interview_score = match_result.interview_score
+                match.skills_match_score = match_result.skills_match_score
+                match.experience_match_score = match_result.experience_match_score
+                match.location_match = match_result.location_match
+                match.overall_match_score = match_result.overall_match_score
+                match.factors = json.dumps(match_result.factors, ensure_ascii=False)
+                match.ai_reasoning = match_result.ai_reasoning
+            else:
+                # Create new match
+                match = Match(
+                    id=f"m{uuid.uuid4().hex[:24]}",
+                    candidate_id=session.candidate_id,
+                    job_id=session.job_id,
+                    score=session.total_score or 0,
+                    interview_score=match_result.interview_score,
+                    skills_match_score=match_result.skills_match_score,
+                    experience_match_score=match_result.experience_match_score,
+                    location_match=match_result.location_match,
+                    overall_match_score=match_result.overall_match_score,
+                    factors=json.dumps(match_result.factors, ensure_ascii=False),
+                    ai_reasoning=match_result.ai_reasoning,
+                )
+                db.add(match)
+
+            db.commit()
+            logger.info(f"Processed match for session {session_id}, score: {match_result.overall_match_score}")
+
+        except Exception as e:
+            logger.error(f"Failed to calculate match for {session_id}: {e}")
 
     finally:
         db.close()

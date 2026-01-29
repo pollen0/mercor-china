@@ -4,29 +4,29 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql://zhipin:zhipin_password@localhost:5432/zhipin_ai"
-    api_secret_key: str = "your-api-secret-key-change-in-production"
-    cors_origins: str = "http://localhost:3000"
-    debug: bool = True
+    # Database - REQUIRED
+    database_url: str = ""
 
-    # R2 Storage
+    # Security - REQUIRED in production
+    api_secret_key: str = ""
+    jwt_secret: str = ""
+    jwt_algorithm: str = "HS256"
+    jwt_expiry_hours: int = 168  # 7 days
+
+    # CORS
+    cors_origins: str = "http://localhost:3000"
+    debug: bool = False
+
+    # R2 Storage (Cloudflare)
     r2_account_id: str = ""
     r2_access_key_id: str = ""
     r2_secret_access_key: str = ""
     r2_bucket_name: str = "zhipin-videos"
     r2_endpoint_url: Optional[str] = None  # Will be constructed from account_id
 
-    # DeepSeek API
+    # DeepSeek API (for LLM scoring)
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
-
-    # OpenAI (for Whisper)
-    openai_api_key: str = ""
-
-    # JWT
-    jwt_secret: str = "your-jwt-secret-change-in-production"
-    jwt_algorithm: str = "HS256"
-    jwt_expiry_hours: int = 168  # 7 days
 
     # WeChat OAuth
     wechat_app_id: str = ""
@@ -34,10 +34,14 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     resend_api_key: str = ""
-    email_from: str = "ZhiPin AI <noreply@zhipin.ai>"
+    email_from: str = "ZhiMian <noreply@zhimian.ai>"
 
     # Frontend URL (for email links)
     frontend_url: str = "http://localhost:3000"
+
+    # Redis (for caching)
+    redis_url: str = "redis://localhost:6379/0"
+    cache_ttl_seconds: int = 300  # 5 minutes default TTL
 
     @property
     def r2_endpoint(self) -> str:

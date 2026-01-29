@@ -1,9 +1,12 @@
 """
 Email service using Resend for transactional emails.
 """
+import logging
 import resend
 from typing import Optional
 from ..config import settings
+
+logger = logging.getLogger("zhimian.email")
 
 
 class EmailService:
@@ -39,7 +42,7 @@ class EmailService:
         self._ensure_initialized()
 
         if not settings.resend_api_key:
-            print(f"[EMAIL MOCK] To: {to}, Subject: {subject}")
+            logger.info(f"[EMAIL MOCK] To: {to}, Subject: {subject}")
             return "mock-email-id"
 
         try:
@@ -53,7 +56,7 @@ class EmailService:
             response = resend.Emails.send(params)
             return response.get("id")
         except Exception as e:
-            print(f"Failed to send email: {e}")
+            logger.error(f"Failed to send email: {e}")
             return None
 
     def send_interview_complete_to_employer(
@@ -252,6 +255,96 @@ class EmailService:
         return self.send_email(
             to=candidate_email,
             subject=f"Interview Invitation: {job_title} at {company_name}",
+            html=html,
+        )
+
+
+    def send_employer_message(
+        self,
+        candidate_email: str,
+        candidate_name: str,
+        employer_name: str,
+        subject: str,
+        body: str,
+        job_title: Optional[str] = None,
+        message_type: str = "custom",
+    ) -> Optional[str]:
+        """
+        Send a message from employer to candidate.
+
+        Args:
+            candidate_email: Recipient email
+            candidate_name: Candidate's name
+            employer_name: Company/employer name
+            subject: Message subject
+            body: Message body (plain text or HTML)
+            job_title: Related job title (optional)
+            message_type: Type of message (interview_request, rejection, shortlist_notice, custom)
+        """
+        # Determine header color based on message type
+        header_colors = {
+            "interview_request": "#2563eb",  # Blue
+            "shortlist_notice": "#10b981",   # Green
+            "rejection": "#6b7280",          # Gray
+            "custom": "#2563eb",             # Blue
+        }
+        header_color = header_colors.get(message_type, "#2563eb")
+
+        # Determine header title based on message type
+        header_titles = {
+            "interview_request": "Interview Request",
+            "shortlist_notice": "Good News!",
+            "rejection": "Application Update",
+            "custom": "Message from Employer",
+        }
+        header_title = header_titles.get(message_type, "Message from Employer")
+
+        job_info = f" regarding <strong>{job_title}</strong>" if job_title else ""
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: {header_color}; color: white; padding: 30px; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .message-box {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">{header_title}</h1>
+                </div>
+                <div class="content">
+                    <p>Hi {candidate_name},</p>
+
+                    <p><strong>{employer_name}</strong> has sent you a message{job_info}:</p>
+
+                    <div class="message-box">
+                        <h3 style="margin-top: 0; color: #374151;">{subject}</h3>
+                        <div style="white-space: pre-wrap;">{body}</div>
+                    </div>
+
+                    <p>If you have any questions, please reply directly to the employer.</p>
+
+                    <p>Best regards,<br>ZhiMian Team</p>
+                </div>
+                <div class="footer">
+                    <p>This message was sent via ZhiMian (智面) interview platform.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=candidate_email,
+            subject=f"[{employer_name}] {subject}",
             html=html,
         )
 

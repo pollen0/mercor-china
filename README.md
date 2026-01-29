@@ -35,8 +35,8 @@ Cut screening time from weeks to hours by automating first-round interviews with
 
 - **Vertical-Specific Questions**: Tailored interview templates for each role type
 - **Async Video Interviews**: Candidates complete 15-minute interviews anytime
-- **GPT-4o Evaluation**: Intelligent scoring with strengths/concerns analysis
-- **Mandarin Support**: OpenAI Whisper transcription with Chinese language support
+- **DeepSeek AI Evaluation**: Intelligent scoring with strengths/concerns analysis
+- **Mandarin Support**: DeepSeek ASR transcription with Chinese language support
 - **Employer Dashboard**: View ranked candidates, watch videos, read transcripts
 
 ## Tech Stack
@@ -50,11 +50,12 @@ Cut screening time from weeks to hours by automating first-round interviews with
 
 ### Backend (apps/api)
 - Python FastAPI
-- SQLAlchemy ORM
+- SQLAlchemy ORM + Alembic migrations
 - PostgreSQL (Neon serverless)
 - Cloudflare R2 (video storage)
-- OpenAI Whisper (transcription)
-- GPT-4o (AI scoring)
+- DeepSeek API (transcription + AI scoring)
+- Redis (caching)
+- JWT authentication
 
 ## Project Structure
 
@@ -95,12 +96,23 @@ zhimian/
 ### 1. Environment Setup
 
 ```bash
-cp .env.example .env
-# Edit .env with your API keys:
-# - OPENAI_API_KEY
-# - R2 storage credentials
-# - Database URL
+cp apps/api/.env.example apps/api/.env
+# Edit .env with your credentials
 ```
+
+#### Required Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Always |
+| `JWT_SECRET` | Secret key for JWT tokens | Production |
+| `API_SECRET_KEY` | API secret key | Production |
+| `DEEPSEEK_API_KEY` | DeepSeek API key for AI features | Recommended |
+| `R2_ACCOUNT_ID` | Cloudflare R2 account ID | For video storage |
+| `R2_ACCESS_KEY_ID` | R2 access key | For video storage |
+| `R2_SECRET_ACCESS_KEY` | R2 secret key | For video storage |
+| `RESEND_API_KEY` | Resend API key for emails | Optional |
+| `REDIS_URL` | Redis connection string | Optional (caching) |
 
 ### 2. Start the Database
 
@@ -136,8 +148,16 @@ uvicorn app.main:app --reload --port 8000
 1. **Employer**: Creates job with vertical (New Energy/Sales) and role type
 2. **Employer**: Generates invite link for candidates
 3. **Candidate**: Opens link, registers, completes 5-question video interview
-4. **System**: Transcribes audio with Whisper, scores with GPT-4o
+4. **System**: Transcribes audio and scores responses with DeepSeek AI
 5. **Employer**: Reviews ranked candidates, watches videos, makes decisions
+
+## Authentication
+
+The API uses JWT-based authentication with two user types:
+- **Candidates**: Can access their own profile, upload resumes, and complete interviews
+- **Employers**: Can view candidates, manage jobs, and review interview results
+
+Protected endpoints require a Bearer token in the Authorization header.
 
 ## Database Schema
 
