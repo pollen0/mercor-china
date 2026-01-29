@@ -457,16 +457,18 @@ async def get_interview_detail(
             try:
                 analysis_data = json.loads(resp.ai_analysis)
                 if "scores" in analysis_data:
+                    scores = analysis_data["scores"]
                     score_details = ScoreDetails(
-                        relevance=analysis_data["scores"]["relevance"],
-                        clarity=analysis_data["scores"]["clarity"],
-                        depth=analysis_data["scores"]["depth"],
-                        communication=analysis_data["scores"]["communication"],
-                        job_fit=analysis_data["scores"]["job_fit"],
+                        communication=scores.get("communication", 0),
+                        problem_solving=scores.get("problem_solving", 0),
+                        domain_knowledge=scores.get("domain_knowledge", 0),
+                        motivation=scores.get("motivation", 0),
+                        culture_fit=scores.get("culture_fit", 0),
                         overall=resp.ai_score or 0,
                         analysis=analysis_data.get("analysis", ""),
                         strengths=analysis_data.get("strengths", []),
-                        improvements=analysis_data.get("improvements", []),
+                        concerns=analysis_data.get("concerns", []),
+                        highlight_quotes=analysis_data.get("highlight_quotes", []),
                     )
             except json.JSONDecodeError:
                 pass

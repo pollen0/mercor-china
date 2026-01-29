@@ -61,15 +61,16 @@ class ResponseSubmitResult(BaseModel):
 
 
 class ScoreDetails(BaseModel):
-    relevance: float
-    clarity: float
-    depth: float
-    communication: float
-    job_fit: float
+    communication: float  # 沟通能力
+    problem_solving: float  # 解决问题能力
+    domain_knowledge: float  # 专业知识
+    motivation: float  # 动机
+    culture_fit: float  # 文化契合度
     overall: float
     analysis: str
     strengths: list[str]
-    improvements: list[str]
+    concerns: list[str]
+    highlight_quotes: list[str] = []
 
 
 class ResponseDetail(BaseModel):
@@ -114,7 +115,7 @@ class InterviewResults(BaseModel):
     ai_summary: Optional[str] = None
     recommendation: Optional[str] = None
     overall_strengths: list[str] = []
-    overall_improvements: list[str] = []
+    overall_concerns: list[str] = []
     responses: list[ResponseDetail] = []
 
 

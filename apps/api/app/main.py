@@ -1,12 +1,23 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
+from .database import init_db
 from .routers import health, candidates, questions, interviews, employers
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database on startup."""
+    init_db()
+    yield
+
+
 app = FastAPI(
-    title="智聘AI API",
-    description="AI-powered recruiting platform API with async video interviews",
-    version="0.2.0",
+    title="ZhiMian 智面 API",
+    description="AI-powered video interview platform for China's job market",
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 origins = [origin.strip() for origin in settings.cors_origins.split(",")]
@@ -38,8 +49,8 @@ app.include_router(employers.router, prefix="/api/employers", tags=["employers"]
 @app.get("/")
 async def root():
     return {
-        "name": "智聘AI API",
-        "version": "0.2.0",
+        "name": "ZhiMian 智面 API",
+        "version": "1.0.0",
         "docs": "/docs",
         "endpoints": {
             "candidates": "/api/candidates",

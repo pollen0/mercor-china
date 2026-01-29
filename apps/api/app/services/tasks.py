@@ -83,13 +83,14 @@ def process_interview_response(
             response.ai_analysis = json.dumps({
                 "analysis": score_result.analysis,
                 "strengths": score_result.strengths,
-                "improvements": score_result.improvements,
+                "concerns": score_result.concerns,
+                "highlight_quotes": score_result.highlight_quotes,
                 "scores": {
-                    "relevance": score_result.relevance,
-                    "clarity": score_result.clarity,
-                    "depth": score_result.depth,
                     "communication": score_result.communication,
-                    "job_fit": score_result.job_fit,
+                    "problem_solving": score_result.problem_solving,
+                    "domain_knowledge": score_result.domain_knowledge,
+                    "motivation": score_result.motivation,
+                    "culture_fit": score_result.culture_fit,
                 }
             }, ensure_ascii=False)
             db.commit()
@@ -159,7 +160,7 @@ def generate_interview_summary(
                 "summary": summary.summary,
                 "recommendation": summary.recommendation,
                 "overall_strengths": summary.overall_strengths,
-                "overall_improvements": summary.overall_improvements,
+                "overall_concerns": summary.overall_concerns,
             }, ensure_ascii=False)
             session.total_score = summary.total_score
             db.commit()

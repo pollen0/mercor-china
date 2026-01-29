@@ -15,3 +15,11 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def init_db():
+    """Initialize database tables. Call this on app startup."""
+    # Import all models to ensure they are registered with Base
+    from . import models  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+    print("Database tables created successfully")
