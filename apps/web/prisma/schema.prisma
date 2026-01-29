@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Candidate {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  phone         String
+  targetRoles   String[] @default([])
+  resumeUrl     String?
+  wechatOpenId  String?  @unique
+  wechatUnionId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  interviewSessions InterviewSession[]
+  matches           Match[]
+
+  @@map("candidates")
+}
+
+model Employer {
+  id          String   @id @default(cuid())
+  companyName String
+  email       String   @unique
+  password    String
+  logo        String?
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobs Job[]
+
+  @@map("employers")
+}
+
+model Job {
+  id           String   @id @default(cuid())
+  title        String
+  description  String
+  requirements String[]
+  location     String?
+  salaryMin    Int?
+  salaryMax    Int?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employerId String
+  employer   Employer @relation(fields: [employerId], references: [id], onDelete: Cascade)
+
+  interviewSessions  InterviewSession[]
+  matches            Match[]
+  interviewQuestions InterviewQuestion[]
+  inviteTokens       InviteToken[]
+
+  @@map("jobs")
+}
+
+model InterviewSession {
+  id          String           @id @default(cuid())
+  status      InterviewStatus  @default(PENDING)
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  totalScore  Float?
+  aiSummary   String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  responses InterviewResponse[]
+
+  @@map("interview_sessions")
+}
+
+model InterviewResponse {
+  id               String   @id @default(cuid())
+  questionIndex    Int
+  questionText     String
+  videoUrl         String?
+  audioUrl         String?
+  transcription    String?
+  aiScore          Float?
+  aiAnalysis       String?
+  durationSeconds  Int?
+  createdAt        DateTime @default(now())
+
+  sessionId String
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("interview_responses")
+}
+
+model Match {
+  id          String      @id @default(cuid())
+  score       Float
+  status      MatchStatus @default(PENDING)
+  aiReasoning String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, jobId])
+  @@map("matches")
+}
+
+enum InterviewStatus {
+  PENDING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchStatus {
+  PENDING
+  SHORTLISTED
+  REJECTED
+  HIRED
+}
+
+model InterviewQuestion {
+  id        String   @id @default(cuid())
+  text      String
+  textZh    String?  // Chinese translation
+  category  String?  // "behavioral", "technical", "culture"
+  order     Int      @default(0)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  jobId String?
+  job   Job?    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("interview_questions")
+}
+
+model InviteToken {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  jobId       String
+  job         Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  maxUses     Int       @default(0)  // 0 = unlimited
+  usedCount   Int       @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  @@map("invite_tokens")
+}
