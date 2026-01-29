@@ -85,15 +85,15 @@ export default function RegisterPage() {
 
   if (submitStatus === 'success') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-0 shadow-soft-lg">
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mx-auto w-16 h-16 bg-success-light rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <CardTitle className="text-green-600">Registration Successful!</CardTitle>
+            <CardTitle className="text-success">Registration Successful!</CardTitle>
             <CardDescription>
               Thank you for registering. We will contact you soon.
             </CardDescription>
@@ -109,11 +109,14 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white flex items-center justify-center p-4">
+      <Card className="w-full max-w-md border-0 shadow-soft-lg">
         <CardHeader className="text-center">
-          <Link href="/" className="text-2xl font-bold text-blue-600 mb-2">
-            ZhiPin AI
+          <Link href="/" className="inline-flex items-center gap-2 justify-center mb-4 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-brand group-hover:shadow-brand-lg transition-shadow">
+              <span className="text-white font-bold">智</span>
+            </div>
+            <span className="text-xl font-semibold text-warm-900">ZhiMian 智面</span>
           </Link>
           <CardTitle>Candidate Registration</CardTitle>
           <CardDescription>
@@ -121,10 +124,10 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="name">
-                Full Name <span className="text-red-500">*</span>
+                Full Name <span className="text-error">*</span>
               </Label>
               <Input
                 id="name"
@@ -132,16 +135,16 @@ export default function RegisterPage() {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Enter your full name"
-                className={errors.name ? 'border-red-500' : ''}
+                className={errors.name ? 'border-error focus-visible:ring-error' : ''}
               />
               {errors.name && (
-                <p className="text-sm text-red-500">{errors.name}</p>
+                <p className="text-sm text-error">{errors.name}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">
-                Email <span className="text-red-500">*</span>
+                Email <span className="text-error">*</span>
               </Label>
               <Input
                 id="email"
@@ -150,16 +153,16 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="example@email.com"
-                className={errors.email ? 'border-red-500' : ''}
+                className={errors.email ? 'border-error focus-visible:ring-error' : ''}
               />
               {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
+                <p className="text-sm text-error">{errors.email}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="phone">
-                Phone Number <span className="text-red-500">*</span>
+                Phone Number <span className="text-error">*</span>
               </Label>
               <Input
                 id="phone"
@@ -167,14 +170,14 @@ export default function RegisterPage() {
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="Enter your phone number"
-                className={errors.phone ? 'border-red-500' : ''}
+                className={errors.phone ? 'border-error focus-visible:ring-error' : ''}
               />
               {errors.phone && (
-                <p className="text-sm text-red-500">{errors.phone}</p>
+                <p className="text-sm text-error">{errors.phone}</p>
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Target Roles (select multiple)</Label>
               <div className="flex flex-wrap gap-2">
                 {targetRoleOptions.map(option => (
@@ -182,10 +185,10 @@ export default function RegisterPage() {
                     key={option.value}
                     type="button"
                     onClick={() => handleRoleToggle(option.value)}
-                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
+                    className={`px-4 py-2 text-sm rounded-full border-2 transition-all duration-200 font-medium ${
                       formData.targetRoles.includes(option.value)
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
+                        ? 'bg-brand-500 text-white border-brand-500 shadow-brand'
+                        : 'bg-white text-warm-700 border-warm-200 hover:border-brand-300 hover:text-brand-700'
                     }`}
                   >
                     {option.label}
@@ -195,23 +198,46 @@ export default function RegisterPage() {
             </div>
 
             {submitStatus === 'error' && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">{errorMessage}</p>
+              <div className="p-4 bg-error-light border border-error/20 rounded-xl">
+                <p className="text-sm text-error-dark">{errorMessage}</p>
               </div>
             )}
 
             <Button
               type="submit"
+              variant="brand"
               className="w-full"
               disabled={isSubmitting}
+              loading={isSubmitting}
             >
               {isSubmitting ? 'Submitting...' : 'Register Now'}
             </Button>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-warm-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-warm-500">或使用以下方式注册</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-green-500 text-green-600 hover:bg-green-50"
+              onClick={() => window.location.href = '/api/auth/wechat'}
+            >
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.328.328 0 00.186-.059l2.114-1.225a.866.866 0 01.627-.097c.853.186 1.753.282 2.697.282 4.801 0 8.692-3.288 8.692-7.342 0-4.054-3.89-7.343-8.692-7.343zm-3.16 5.06c.579 0 1.05.47 1.05 1.05 0 .58-.471 1.05-1.05 1.05-.58 0-1.05-.47-1.05-1.05 0-.58.47-1.05 1.05-1.05zm6.32 0c.58 0 1.05.47 1.05 1.05 0 .58-.47 1.05-1.05 1.05-.58 0-1.05-.47-1.05-1.05 0-.58.47-1.05 1.05-1.05z"/>
+              </svg>
+              微信快速注册 (WeChat Quick Register)
+            </Button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-gray-500">
+          <p className="mt-6 text-center text-sm text-warm-500">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline">
+            <Link href="/candidate/login" className="text-brand-600 hover:text-brand-700 font-medium">
               Sign in
             </Link>
           </p>

@@ -180,13 +180,12 @@ async def start_interview(
 
 
 @router.get("/{session_id}", response_model=InterviewSessionResponse)
-async def get_interview(session_id: str, db: Session = Depends(get_db)):
-    """Get interview session details."""
-    # Try cache first for completed interviews
-    cached = cache_service.get_interview_session(session_id)
-    if cached and cached.get("status") == InterviewStatus.COMPLETED.value:
-        return InterviewSessionResponse(**cached)
-
+async def get_interview(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """Get interview session details (candidate only - their own sessions)."""
     session = db.query(InterviewSession).filter(
         InterviewSession.id == session_id
     ).first()
@@ -196,6 +195,18 @@ async def get_interview(session_id: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail="面试会话不存在"
         )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
+        )
+
+    # Try cache first for completed interviews
+    cached = cache_service.get_interview_session(session_id)
+    if cached and cached.get("status") == InterviewStatus.COMPLETED.value:
+        return InterviewSessionResponse(**cached)
 
     # Build response details
     responses = []
@@ -527,8 +538,12 @@ async def complete_interview(
 
 
 @router.get("/{session_id}/results", response_model=InterviewResults)
-async def get_interview_results(session_id: str, db: Session = Depends(get_db)):
-    """Get the final results of a completed interview."""
+async def get_interview_results(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """Get the final results of a completed interview (candidate only)."""
     session = db.query(InterviewSession).filter(
         InterviewSession.id == session_id
     ).first()
@@ -537,6 +552,13 @@ async def get_interview_results(session_id: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
         )
 
     responses = db.query(InterviewResponse).filter(
@@ -606,7 +628,8 @@ async def get_interview_results(session_id: str, db: Session = Depends(get_db)):
 async def get_practice_feedback(
     session_id: str,
     response_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
 ):
     """
     Get immediate feedback for a practice mode response.
@@ -621,6 +644,13 @@ async def get_practice_feedback(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
         )
 
     if not session.is_practice:
@@ -754,7 +784,8 @@ async def get_practice_feedback(
 async def get_followup_questions(
     session_id: str,
     question_index: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
 ):
     """
     Check if follow-up questions are available for a given question.
@@ -768,6 +799,13 @@ async def get_followup_questions(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
         )
 
     # Don't show follow-ups for practice mode
@@ -805,7 +843,8 @@ async def ask_followup(
     session_id: str,
     data: AskFollowupRequest,
     question_index: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
 ):
     """
     Ask a specific follow-up question. This marks the follow-up as asked
@@ -819,6 +858,13 @@ async def ask_followup(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
         )
 
     if session.is_practice:
@@ -864,7 +910,8 @@ async def ask_followup(
 async def skip_followup(
     session_id: str,
     question_index: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
 ):
     """
     Skip the follow-up questions and proceed to the next main question.
@@ -877,6 +924,13 @@ async def skip_followup(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
         )
 
     # Mark any pending follow-up as skipped
@@ -900,7 +954,8 @@ async def submit_followup_response(
     background_tasks: BackgroundTasks,
     video: Optional[UploadFile] = File(None),
     video_key: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
 ):
     """
     Submit a video response for a follow-up question.
@@ -913,6 +968,13 @@ async def submit_followup_response(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
         )
 
     if session.status not in [InterviewStatus.PENDING, InterviewStatus.IN_PROGRESS]:
@@ -1008,7 +1070,8 @@ def generate_invite_token() -> str:
 
 
 @router.get("/invite/validate/{token}", response_model=InviteValidation)
-async def validate_invite_token(token: str, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def validate_invite_token(request: Request, token: str, db: Session = Depends(get_db)):
     """Validate an invite token and return job details."""
     invite = db.query(InviteToken).filter(
         InviteToken.token == token,

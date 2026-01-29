@@ -22,6 +22,10 @@ class EmployerRegister(BaseModel):
     def validate_password(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError("密码至少需要8个字符")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("密码必须包含至少一个数字")
+        if not any(c.isalpha() for c in v):
+            raise ValueError("密码必须包含至少一个字母")
         return v
 
 
@@ -100,3 +104,73 @@ class DashboardStats(BaseModel):
     shortlisted: int
     rejected: int
     average_score: Optional[float] = None
+
+
+# Contact Candidate schemas
+class ContactRequest(BaseModel):
+    subject: str
+    body: str
+    message_type: str = "custom"  # 'interview_request', 'rejection', 'shortlist_notice', 'custom'
+    job_id: Optional[str] = None
+
+    @field_validator("subject")
+    @classmethod
+    def validate_subject(cls, v: str) -> str:
+        if len(v) < 2:
+            raise ValueError("主题至少需要2个字符")
+        if len(v) > 200:
+            raise ValueError("主题不能超过200个字符")
+        return v
+
+    @field_validator("body")
+    @classmethod
+    def validate_body(cls, v: str) -> str:
+        if len(v) < 10:
+            raise ValueError("内容至少需要10个字符")
+        if len(v) > 5000:
+            raise ValueError("内容不能超过5000个字符")
+        return v
+
+
+class MessageResponse(BaseModel):
+    id: str
+    subject: str
+    body: str
+    message_type: str
+    employer_id: str
+    candidate_id: str
+    job_id: Optional[str] = None
+    sent_at: datetime
+    read_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+# Bulk Actions schemas
+class BulkActionRequest(BaseModel):
+    interview_ids: list[str]
+    action: str  # 'shortlist' or 'reject'
+
+    @field_validator("interview_ids")
+    @classmethod
+    def validate_interview_ids(cls, v: list[str]) -> list[str]:
+        if len(v) == 0:
+            raise ValueError("请至少选择一个面试")
+        if len(v) > 100:
+            raise ValueError("一次最多处理100个面试")
+        return v
+
+    @field_validator("action")
+    @classmethod
+    def validate_action(cls, v: str) -> str:
+        if v not in ['shortlist', 'reject']:
+            raise ValueError("操作必须是 'shortlist' 或 'reject'")
+        return v
+
+
+class BulkActionResult(BaseModel):
+    success: bool
+    processed: int
+    failed: int
+    errors: list[str] = []
