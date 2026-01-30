@@ -59,7 +59,7 @@ async def get_current_employer(
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="未提供认证信息",
+            detail="No authentication provided",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -67,7 +67,7 @@ async def get_current_employer(
     if scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的认证方案",
+            detail="Invalid authentication scheme",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -75,7 +75,7 @@ async def get_current_employer(
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效或过期的令牌",
+            detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -83,7 +83,7 @@ async def get_current_employer(
     if not employer_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的令牌内容",
+            detail="Invalid token content",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -91,7 +91,7 @@ async def get_current_employer(
     if not employer:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="雇主不存在",
+            detail="Employer not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -112,7 +112,7 @@ async def register_employer(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="该邮箱已被注册"
+            detail="An account with this email already exists"
         )
 
     employer = Employer(
@@ -131,7 +131,7 @@ async def register_employer(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="该邮箱已被注册"
+            detail="An account with this email already exists"
         )
 
     # Send verification email
@@ -159,7 +159,7 @@ async def login_employer(
     if not employer or not verify_password(data.password, employer.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="邮箱或密码错误"
+            detail="Invalid email or password"
         )
 
     token = create_access_token({"sub": employer.id, "type": "employer"})
@@ -448,7 +448,7 @@ async def get_job(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="职位不存在"
+            detail="Job not found"
         )
 
     return job
@@ -470,7 +470,7 @@ async def update_job(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="职位不存在"
+            detail="Job not found"
         )
 
     update_data = data.model_dump(exclude_unset=True)
@@ -498,7 +498,7 @@ async def delete_job(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="职位不存在"
+            detail="Job not found"
         )
 
     db.delete(job)
@@ -584,7 +584,7 @@ async def get_interview_detail(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试不存在"
+            detail="Interview not found"
         )
 
     # Build response details
@@ -663,7 +663,7 @@ async def update_interview_status(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试不存在"
+            detail="Interview not found"
         )
 
     # Create or update match record
@@ -713,7 +713,7 @@ async def create_invite_token(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="职位不存在"
+            detail="Job not found"
         )
 
     # Generate token
@@ -769,7 +769,7 @@ async def list_invite_tokens(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="职位不存在"
+            detail="Job not found"
         )
 
     invites = db.query(InviteToken).filter(
@@ -810,7 +810,7 @@ async def delete_invite_token(
     if not invite:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="邀请链接不存在"
+            detail="Invite link not found"
         )
 
     # Verify it belongs to employer's job
@@ -822,7 +822,7 @@ async def delete_invite_token(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权操作此邀请链接"
+            detail="You do not have permission to modify this invite link"
         )
 
     invite.is_active = False
@@ -844,7 +844,7 @@ async def contact_candidate(
     if not candidate:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="候选人不存在"
+            detail="Candidate not found"
         )
 
     # If job_id provided, verify it belongs to employer
@@ -856,7 +856,7 @@ async def contact_candidate(
         if not job:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="职位不存在或无权访问"
+                detail="Job not found or access denied"
             )
 
     # Map message type
@@ -922,7 +922,7 @@ async def bulk_interview_action(
     if not job_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="您还没有创建任何职位"
+            detail="You have not created any jobs yet"
         )
 
     processed = 0
@@ -942,7 +942,7 @@ async def bulk_interview_action(
             ).first()
 
             if not session:
-                errors.append(f"面试 {interview_id} 不存在或无权访问")
+                errors.append(f"Interview {interview_id} not found or access denied")
                 failed += 1
                 continue
 
@@ -967,7 +967,7 @@ async def bulk_interview_action(
             processed += 1
 
         except Exception as e:
-            errors.append(f"处理面试 {interview_id} 时出错: {str(e)}")
+            errors.append(f"Error processing interview {interview_id}: {str(e)}")
             failed += 1
 
     db.commit()
@@ -1005,7 +1005,7 @@ async def export_interviews_csv(
     if not job_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="您还没有创建任何职位"
+            detail="You have not created any jobs yet"
         )
 
     # Build query
@@ -1112,7 +1112,7 @@ async def get_top_candidates(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="职位不存在"
+            detail="Job not found"
         )
 
     # Try cache first
@@ -1265,7 +1265,7 @@ async def browse_talent_pool(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"无效的行业垂直: {vertical}"
+                detail=f"Invalid vertical: {vertical}"
             )
 
     if role_type:
@@ -1275,7 +1275,7 @@ async def browse_talent_pool(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"无效的职位类型: {role_type}"
+                detail=f"Invalid role type: {role_type}"
             )
 
     # Filter by minimum score (use best_score)
@@ -1361,7 +1361,7 @@ async def get_talent_profile_detail(
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="候选人档案不存在"
+            detail="Candidate profile not found"
         )
 
     candidate = profile.candidate
@@ -1490,7 +1490,7 @@ async def update_talent_pool_status(
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="候选人档案不存在"
+            detail="Candidate profile not found"
         )
 
     # Validate status
@@ -1499,7 +1499,7 @@ async def update_talent_pool_status(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"无效的状态: {data.status}"
+            detail=f"Invalid status: {data.status}"
         )
 
     # If job_id provided, verify it belongs to employer
@@ -1512,7 +1512,7 @@ async def update_talent_pool_status(
         if not job:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="职位不存在或无权访问"
+                detail="Job not found or access denied"
             )
     else:
         # Use the first active job from this employer as default
@@ -1524,7 +1524,7 @@ async def update_talent_pool_status(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请先创建职位再更新候选人状态"
+            detail="Please create a job first before updating candidate status"
         )
 
     # Find or create match record
@@ -1578,7 +1578,7 @@ async def contact_talent_pool_candidate(
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="候选人档案不存在"
+            detail="Candidate profile not found"
         )
 
     candidate = profile.candidate

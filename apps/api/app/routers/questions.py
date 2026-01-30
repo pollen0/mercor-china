@@ -118,7 +118,7 @@ async def get_job_questions(job_id: str, db: Session = Depends(get_db)):
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="职位不存在"
+            detail="Job not found"
         )
 
     # Get job-specific questions
@@ -178,7 +178,7 @@ async def create_question(
         if not job:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="职位不存在"
+                detail="Job not found"
             )
 
     question = InterviewQuestion(
@@ -216,13 +216,13 @@ async def update_question(
     if not question:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="问题不存在"
+            detail="Question not found"
         )
 
     if question.is_default:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无法修改默认问题"
+            detail="Cannot modify default questions"
         )
 
     job_id = question.job_id  # Store before potential update
@@ -254,13 +254,13 @@ async def delete_question(question_id: str, db: Session = Depends(get_db)):
     if not question:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="问题不存在"
+            detail="Question not found"
         )
 
     if question.is_default:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无法删除默认问题"
+            detail="Cannot delete default questions"
         )
 
     job_id = question.job_id  # Store before delete
@@ -337,7 +337,7 @@ async def get_coding_challenge(challenge_id: str, db: Session = Depends(get_db))
     if not challenge:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="编程挑战不存在"
+            detail="Coding challenge not found"
         )
 
     return challenge
@@ -401,7 +401,7 @@ async def create_coding_question(
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="职位不存在"
+            detail="Job not found"
         )
 
     # Verify challenge exists
@@ -411,13 +411,13 @@ async def create_coding_question(
     if not challenge:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="编程挑战不存在"
+            detail="Coding challenge not found"
         )
 
     question = InterviewQuestion(
         id=generate_cuid(),
         text=f"Coding Challenge: {challenge.title}",
-        text_zh=f"编程题: {challenge.title_zh or challenge.title}",
+        text_zh=f"Coding Challenge: {challenge.title_zh or challenge.title}",
         category="technical",
         order=order,
         is_default=False,

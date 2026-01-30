@@ -1,41 +1,56 @@
-# Claude Code Rules for ZhiMian (智面)
+# Claude Code Rules for Pathway
 
 ## Project Overview
-ZhiMian is an AI-powered video interview platform for the Chinese market, targeting New Energy/EV and Sales verticals.
+Pathway is an AI-powered career platform for US college students. Students interview monthly to show their growth over time, connect their GitHub, and track their coursework. Employers can see candidates' progress trajectories, not just a single snapshot.
+
+## Core Value Proposition
+- **For Students**: Stop grinding Leetcode. Interview monthly, show real growth, connect your GitHub.
+- **For Employers**: See candidates' growth over 2-4 years. Hire based on trajectory, not just current state.
 
 ## Critical Rules
 
-### 1. NO OpenAI API
-**DO NOT use OpenAI APIs** (GPT-4, Whisper, etc.) in this project. We must use Chinese-based AI services only.
-
+### 1. AI Services
 **Approved AI Services:**
-- **DeepSeek API** (https://platform.deepseek.com/)
+- **OpenAI API** for US market
+  - LLM/Scoring: `gpt-4` or `gpt-4-turbo`
+  - Speech-to-Text: `whisper-1`
+  - Env vars: `OPENAI_API_KEY`
+
+- **DeepSeek API** as fallback/cost optimization
   - LLM/Scoring: `deepseek-chat` model
-  - Speech-to-Text: `whisper-1` model (OpenAI-compatible)
   - Env vars: `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`
 
-**Why**: OpenAI services are unreliable in China due to network restrictions and compliance requirements.
+### 2. Target Verticals (Student-Focused)
+- **Engineering/Tech**: Software Engineering, Data Science, ML/AI, DevOps
+- **Business**: Product Management, Marketing, Finance, Consulting
+- **Design**: UX/UI Design, Product Design, Graphic Design
+- **Research**: Research Assistant, Lab Positions, Academic
 
-### 2. Target Verticals
-This platform focuses on two verticals:
-- **New Energy/EV** (新能源): Battery Engineers, Embedded Software, Autonomous Driving, Supply Chain, EV Sales
-- **Sales/BD** (销售): Sales Representatives, BD Managers, Account Managers
+### 3. Target Roles (Entry-Level)
+- Software Engineer Intern/New Grad
+- Data Analyst / Data Scientist
+- Product Manager
+- UX Designer
+- Business Analyst
+- Marketing Associate
+- Research Assistant
 
-### 3. Tech Stack
+### 4. Tech Stack
 - **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
 - **Backend**: FastAPI, SQLAlchemy, PostgreSQL
 - **Storage**: Cloudflare R2 (S3-compatible)
-- **AI**: DeepSeek (LLM + ASR)
+- **AI**: OpenAI (primary), DeepSeek (fallback)
+- **Auth**: GitHub OAuth, Email/Password
 
-### 4. Branding
-- Name: **ZhiMian 智面** (not "ZhiPin AI")
-- Colors: Emerald/Teal gradient (`from-emerald-600 to-teal-600`)
-- Logo: Chinese character 智 in emerald gradient square
+### 5. Branding
+- Name: **Pathway**
+- Tagline: "Show your growth, land your first job"
+- Colors: Indigo/Purple gradient (`from-indigo-600 to-purple-600`)
+- Target: US college students (primarily CS/Engineering initially)
 
-### 5. Language Support
-- Primary: Chinese (Simplified)
-- Secondary: English
-- UI should support bilingual display where appropriate
+### 6. Language
+- **English only** - US market focus
+- No internationalization needed initially
 
 ## Environment Variables Required
 
@@ -47,15 +62,22 @@ DATABASE_URL=postgresql://...
 API_SECRET_KEY=...
 JWT_SECRET=...
 
-# DeepSeek (LLM + ASR)
+# OpenAI (Primary)
+OPENAI_API_KEY=sk-...
+
+# DeepSeek (Fallback)
 DEEPSEEK_API_KEY=sk-...
 DEEPSEEK_BASE_URL=https://api.deepseek.com
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
 
 # Cloudflare R2 (Storage)
 R2_ACCOUNT_ID=...
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
-R2_BUCKET_NAME=zhimian-videos
+R2_BUCKET_NAME=pathway-videos
 
 # Email
 RESEND_API_KEY=re_...
@@ -65,93 +87,60 @@ FRONTEND_URL=http://localhost:3000
 CORS_ORIGINS=http://localhost:3000
 ```
 
-## Scoring Dimensions
+## Scoring Dimensions (Student-Focused)
 The AI evaluates candidates on 5 dimensions:
-1. **沟通能力 Communication** (20%)
-2. **解决问题 Problem Solving** (20%)
-3. **专业知识 Domain Knowledge** (25%)
-4. **动机 Motivation** (15%)
-5. **文化契合 Culture Fit** (20%)
+1. **Communication** (20%) - Clarity, articulation, confidence
+2. **Problem Solving** (25%) - Analytical thinking, approach to challenges
+3. **Technical Knowledge** (25%) - Relevant skills, depth of understanding
+4. **Growth Mindset** (15%) - Learning from failures, curiosity, adaptability
+5. **Culture Fit** (15%) - Teamwork, values alignment, enthusiasm
 
-## Testing Requirements (MANDATORY)
+## Key Features
 
-**Every new feature MUST include tests before being considered complete.**
+### Student Profile
+- **Education**: University, Major, Graduation Year, GPA (optional)
+- **GitHub**: Connected account, repos, contribution stats
+- **Courses**: Current and past relevant coursework
+- **Interview History**: Monthly interviews with progress tracking
 
-### Backend Tests (pytest)
-Location: `apps/api/tests/`
+### Progress Tracking
+- Students can interview once per month per vertical
+- Best score shown to employers, but full history available
+- Visual progress chart showing improvement over time
+- Comparison to cohort averages (anonymized)
 
-For every new endpoint or service:
-1. **Unit tests** for business logic and services
-2. **Integration tests** for API endpoints
-3. **Edge cases** for validation and error handling
+### GitHub Integration
+- OAuth connection
+- Display top repositories
+- Show contribution graph
+- Highlight languages/technologies used
 
-```bash
-# Run backend tests
-cd apps/api && pytest -v
-```
+## User Flows
 
-Example test structure:
-```python
-# tests/test_candidates.py
-async def test_create_candidate_success(client, db_session):
-    """Test successful candidate registration."""
-
-async def test_create_candidate_duplicate_email(client, db_session):
-    """Test duplicate email returns 409."""
-
-async def test_create_candidate_invalid_phone(client, db_session):
-    """Test invalid phone returns 400."""
-```
-
-### Frontend Tests (Jest + Playwright)
-Location: `apps/web/__tests__/` and `apps/web/e2e/`
-
-For every new component or page:
-1. **Unit tests** for components (Jest + React Testing Library)
-2. **E2E tests** for user flows (Playwright)
-
-```bash
-# Run frontend tests
-cd apps/web && npm test        # Unit tests
-cd apps/web && npm run test:e2e # E2E tests
-```
-
-### Test Coverage Requirements
-- **New features**: Must have >80% test coverage
-- **Bug fixes**: Must include regression test
-- **API endpoints**: Must test success + all error cases
-
-### When Writing Tests
-- Test the happy path first
-- Test validation errors (400)
-- Test authentication errors (401/403)
-- Test not found errors (404)
-- Test duplicate/conflict errors (409)
-- Test with realistic data (Chinese names, phone numbers)
-
-## User Flows (Mercor-style)
-
-### Candidate Flow
-1. **Register** (`/candidate/register`) → Enter profile info → Select target roles
-2. **Start Interview** → Redirected to interview room automatically
-3. **Complete Interview** → 5 video questions, AI-scored
-4. **Dashboard** (`/candidate/dashboard`) → View available jobs, start more interviews
-5. **Get Matched** → Employers contact qualified candidates
+### Student Flow
+1. **Register** (`/register`) → Basic info + education details
+2. **Connect GitHub** → OAuth flow to link GitHub account
+3. **Add Courses** → List current/relevant coursework
+4. **Start Interview** → Select vertical, complete 5 video questions
+5. **View Progress** → Dashboard shows scores over time
+6. **Get Matched** → Employers reach out based on trajectory
 
 ### Employer Flow
-1. **Register/Login** (`/login`) → Create company account
-2. **Post Jobs** (`/dashboard/jobs`) → Define role, vertical, requirements
-3. **Generate Invite Links** → Share with candidates or post publicly
-4. **Review Results** (`/dashboard/interviews`) → Watch videos, see AI scores, shortlist/reject
+1. **Register/Login** (`/employer/login`)
+2. **Browse Talent Pool** → Filter by vertical, school, graduation year
+3. **View Candidate Profiles** → See progress charts, GitHub, coursework
+4. **Watch Interviews** → View video responses, AI analysis
+5. **Reach Out** → Contact promising candidates
 
 ### Key URLs
-- `/` - Landing page with Candidate/Employer split CTAs
-- `/candidate/register` - Candidate signup → immediate interview
-- `/candidate/login` - Returning candidate login
-- `/candidate/dashboard` - Candidate home (job listings)
-- `/login` - Employer login/register
-- `/dashboard` - Employer dashboard
-- `/interview/[sessionId]` - Interview room
+- `/` - Landing page
+- `/register` - Student signup
+- `/login` - Student login
+- `/dashboard` - Student dashboard with progress
+- `/interview/select` - Start new monthly interview
+- `/employer/login` - Employer login/register
+- `/employer/dashboard` - Employer dashboard
+- `/employer/talent` - Browse talent pool
 
 ## File Structure
 ```
@@ -164,8 +153,28 @@ apps/
 │   │   └── schemas/     # Pydantic schemas
 └── web/          # Next.js frontend
     ├── app/             # App Router pages
-    │   ├── (candidate)/ # Candidate interview flow
+    │   ├── (student)/   # Student flow
     │   └── (employer)/  # Employer dashboard
     ├── components/      # React components
     └── lib/             # API client, utilities
 ```
+
+## Interview Questions (Examples)
+
+### Engineering/Tech
+1. "Tell me about a project you've built. What was the most challenging part?"
+2. "Describe a bug that took you a long time to fix. How did you approach it?"
+3. "What technology are you most excited to learn and why?"
+4. "How do you stay updated with new technologies?"
+5. "Tell me about a time you worked on a team project. What was your role?"
+
+### Business
+1. "Tell me about a time you had to analyze data to make a decision."
+2. "Describe a project where you had to influence others without authority."
+3. "How do you prioritize when you have multiple deadlines?"
+4. "Tell me about a failure and what you learned from it."
+5. "Why are you interested in [this field]?"
+
+## Testing Requirements
+
+Same as before - all features need tests. See testing section for details.

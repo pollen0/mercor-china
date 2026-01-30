@@ -16,7 +16,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
-logger = logging.getLogger("zhimian")
+logger = logging.getLogger("pathway")
 
 
 def validate_required_env_vars():
@@ -52,16 +52,16 @@ def validate_required_env_vars():
 async def lifespan(app: FastAPI):
     """Initialize database and validate config on startup."""
     validate_required_env_vars()
-    logger.info("Starting ZhiMian API...")
+    logger.info("Starting Pathway API...")
     init_db()
-    logger.info("ZhiMian API started successfully")
+    logger.info("Pathway API started successfully")
     yield
-    logger.info("Shutting down ZhiMian API...")
+    logger.info("Shutting down Pathway API...")
 
 
 app = FastAPI(
-    title="ZhiMian 智面 API",
-    description="AI-powered video interview platform for China's job market",
+    title="Pathway API",
+    description="AI-powered interview platform helping college students land their first job",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -105,7 +105,7 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 @app.get("/")
 async def root():
     return {
-        "name": "ZhiMian 智面 API",
+        "name": "Pathway API",
         "version": "1.0.0",
         "docs": "/docs",
         "endpoints": {

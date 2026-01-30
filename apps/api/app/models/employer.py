@@ -6,23 +6,36 @@ from ..database import Base
 
 
 class Vertical(str, enum.Enum):
-    """Industry verticals for job postings."""
-    NEW_ENERGY = "new_energy"  # New Energy/EV industry
-    SALES = "sales"  # General Sales/BD
+    """Career verticals for student job seekers."""
+    ENGINEERING = "engineering"  # Software Engineering, DevOps, etc.
+    DATA = "data"  # Data Science, Analytics, ML
+    BUSINESS = "business"  # Product, Marketing, Finance
+    DESIGN = "design"  # UX/UI, Product Design
 
 
 class RoleType(str, enum.Enum):
-    """Specific role types within each vertical."""
-    # New Energy/EV Vertical
-    BATTERY_ENGINEER = "battery_engineer"
-    EMBEDDED_SOFTWARE = "embedded_software"
-    AUTONOMOUS_DRIVING = "autonomous_driving"
-    SUPPLY_CHAIN = "supply_chain"
-    EV_SALES = "ev_sales"
-    # Sales/BD Vertical
-    SALES_REP = "sales_rep"
-    BD_MANAGER = "bd_manager"
-    ACCOUNT_MANAGER = "account_manager"
+    """Specific entry-level role types within each vertical."""
+    # Engineering Vertical
+    SOFTWARE_ENGINEER = "software_engineer"
+    BACKEND_ENGINEER = "backend_engineer"
+    FRONTEND_ENGINEER = "frontend_engineer"
+    FULLSTACK_ENGINEER = "fullstack_engineer"
+    DEVOPS_ENGINEER = "devops_engineer"
+    # Data Vertical
+    DATA_ANALYST = "data_analyst"
+    DATA_SCIENTIST = "data_scientist"
+    ML_ENGINEER = "ml_engineer"
+    DATA_ENGINEER = "data_engineer"
+    # Business Vertical
+    PRODUCT_MANAGER = "product_manager"
+    BUSINESS_ANALYST = "business_analyst"
+    MARKETING_ASSOCIATE = "marketing_associate"
+    FINANCE_ANALYST = "finance_analyst"
+    CONSULTANT = "consultant"
+    # Design Vertical
+    UX_DESIGNER = "ux_designer"
+    UI_DESIGNER = "ui_designer"
+    PRODUCT_DESIGNER = "product_designer"
 
 
 class Employer(Base):

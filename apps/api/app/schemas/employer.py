@@ -12,20 +12,20 @@ class EmployerRegister(BaseModel):
     @classmethod
     def validate_company_name(cls, v: str) -> str:
         if len(v) < 2:
-            raise ValueError("公司名称至少需要2个字符")
+            raise ValueError("Company name must be at least 2 characters")
         if len(v) > 100:
-            raise ValueError("公司名称不能超过100个字符")
+            raise ValueError("Company name cannot exceed 100 characters")
         return v
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
         if len(v) < 8:
-            raise ValueError("密码至少需要8个字符")
+            raise ValueError("Password must be at least 8 characters")
         if not any(c.isdigit() for c in v):
-            raise ValueError("密码必须包含至少一个数字")
+            raise ValueError("Password must contain at least one number")
         if not any(c.isalpha() for c in v):
-            raise ValueError("密码必须包含至少一个字母")
+            raise ValueError("Password must contain at least one letter")
         return v
 
 
@@ -117,18 +117,18 @@ class ContactRequest(BaseModel):
     @classmethod
     def validate_subject(cls, v: str) -> str:
         if len(v) < 2:
-            raise ValueError("主题至少需要2个字符")
+            raise ValueError("Subject must be at least 2 characters")
         if len(v) > 200:
-            raise ValueError("主题不能超过200个字符")
+            raise ValueError("Subject cannot exceed 200 characters")
         return v
 
     @field_validator("body")
     @classmethod
     def validate_body(cls, v: str) -> str:
         if len(v) < 10:
-            raise ValueError("内容至少需要10个字符")
+            raise ValueError("Content must be at least 10 characters")
         if len(v) > 5000:
-            raise ValueError("内容不能超过5000个字符")
+            raise ValueError("Content cannot exceed 5000 characters")
         return v
 
 
@@ -156,16 +156,16 @@ class BulkActionRequest(BaseModel):
     @classmethod
     def validate_interview_ids(cls, v: list[str]) -> list[str]:
         if len(v) == 0:
-            raise ValueError("请至少选择一个面试")
+            raise ValueError("Please select at least one interview")
         if len(v) > 100:
-            raise ValueError("一次最多处理100个面试")
+            raise ValueError("Cannot process more than 100 interviews at once")
         return v
 
     @field_validator("action")
     @classmethod
     def validate_action(cls, v: str) -> str:
         if v not in ['shortlist', 'reject']:
-            raise ValueError("操作必须是 'shortlist' 或 'reject'")
+            raise ValueError("Action must be 'shortlist' or 'reject'")
         return v
 
 

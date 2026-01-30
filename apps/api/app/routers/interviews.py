@@ -62,7 +62,7 @@ from ..services.transcription import transcription_service
 from ..services.cache import cache_service
 from ..services.code_execution import code_execution_service
 
-logger = logging.getLogger("zhimian.interviews")
+logger = logging.getLogger("pathway.interviews")
 router = APIRouter()
 
 
@@ -83,7 +83,7 @@ async def start_interview(
     if not candidate:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="候选人不存在"
+            detail="Candidate not found"
         )
 
     # If job_id provided, verify job exists
@@ -96,7 +96,7 @@ async def start_interview(
         if not job:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="职位不存在"
+                detail="Job not found"
             )
         job_title = job.title if not data.is_practice else f"Practice: {job.title}"
         company_name = job.employer.company_name
@@ -299,7 +299,7 @@ async def start_vertical_interview(
     if not candidate:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="候选人不存在"
+            detail="Candidate not found"
         )
 
     # Parse and validate vertical and role_type
@@ -308,7 +308,7 @@ async def start_vertical_interview(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"无效的行业垂直: {data.vertical}. 有效值: new_energy, sales"
+            detail=f"Invalid vertical: {data.vertical}. Valid options: engineering, data, business, design"
         )
 
     try:
@@ -316,7 +316,7 @@ async def start_vertical_interview(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"无效的职位类型: {data.role_type}"
+            detail=f"Invalid role type: {data.role_type}"
         )
 
     # Check for existing vertical profile
@@ -353,7 +353,7 @@ async def start_vertical_interview(
                     if coding_challenge:
                         question_list.append(QuestionInfo(
                             index=len(question_list),
-                            text=f"编程题: {coding_challenge.title_zh or coding_challenge.title}",
+                            text=f"Coding Challenge: {coding_challenge.title_zh or coding_challenge.title}",
                             text_zh=coding_challenge.title_zh,
                             category="coding",
                             question_type="coding",
@@ -373,7 +373,7 @@ async def start_vertical_interview(
             if profile.attempt_count >= MAX_RETAKE_ATTEMPTS:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"已达到最大重试次数 ({MAX_RETAKE_ATTEMPTS}次)"
+                    detail=f"Maximum retry attempts reached ({MAX_RETAKE_ATTEMPTS} attempts)"
                 )
 
             if profile.last_attempt_at:
@@ -381,7 +381,7 @@ async def start_vertical_interview(
                 if datetime.utcnow() < cooldown_end:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"请等待 {RETAKE_COOLDOWN_HOURS} 小时后再次尝试。下次可用时间: {cooldown_end.isoformat()}"
+                        detail=f"Please wait {RETAKE_COOLDOWN_HOURS} hours before retrying. Next available: {cooldown_end.isoformat()}"
                     )
 
     # Get questions for this vertical/role
@@ -441,7 +441,7 @@ async def start_vertical_interview(
         if coding_challenge:
             question_list.append(QuestionInfo(
                 index=len(question_list),
-                text=f"编程题: {coding_challenge.title_zh or coding_challenge.title}",
+                text=f"Coding Challenge: {coding_challenge.title_zh or coding_challenge.title}",
                 text_zh=coding_challenge.title_zh,
                 category="coding",
                 question_type="coding",
@@ -471,14 +471,14 @@ async def get_interview(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     # Try cache first for completed interviews
@@ -566,20 +566,20 @@ async def get_upload_url(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     if session.status not in [InterviewStatus.PENDING, InterviewStatus.IN_PROGRESS]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="面试已完成或已取消"
+            detail="Interview is already completed or cancelled"
         )
 
     upload_url, storage_key = storage_service.get_upload_url(session_id, question_index)
@@ -614,20 +614,20 @@ async def submit_response(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     if session.status not in [InterviewStatus.PENDING, InterviewStatus.IN_PROGRESS]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="面试已完成或已取消"
+            detail="Interview is already completed or cancelled"
         )
 
     # Get question text
@@ -639,7 +639,7 @@ async def submit_response(
     if question_index >= len(questions):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="问题索引无效"
+            detail="Invalid question index"
         )
 
     question = questions[question_index]
@@ -657,7 +657,7 @@ async def submit_response(
     if not storage_key:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="必须提供视频文件或视频key"
+            detail="Must provide video file or video key"
         )
 
     # Check for existing response
@@ -722,20 +722,20 @@ async def complete_interview(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     if session.status == InterviewStatus.COMPLETED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="面试已完成"
+            detail="Interview is already completed"
         )
 
     # Invalidate any existing cache for this session
@@ -829,14 +829,14 @@ async def get_interview_results(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     responses = db.query(InterviewResponse).filter(
@@ -921,20 +921,20 @@ async def get_practice_feedback(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     if not session.is_practice:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="此端点仅适用于练习模式"
+            detail="This endpoint is only for practice mode"
         )
 
     # Get the response
@@ -946,7 +946,7 @@ async def get_practice_feedback(
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="回答不存在"
+            detail="Response not found"
         )
 
     # Check if already scored
@@ -979,7 +979,7 @@ async def get_practice_feedback(
         if not response.video_url:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="视频尚未上传"
+                detail="Video not yet uploaded"
             )
         # Download video and transcribe
         try:
@@ -989,7 +989,7 @@ async def get_practice_feedback(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"转录失败: {str(e)}"
+                detail=f"Transcription failed: {str(e)}"
             )
 
     # Get job info for context
@@ -1011,7 +1011,7 @@ async def get_practice_feedback(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"评分失败: {str(e)}"
+            detail=f"Scoring failed: {str(e)}"
         )
 
     score_result = feedback["score_result"]
@@ -1076,14 +1076,14 @@ async def get_followup_questions(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     # Don't show follow-ups for practice mode
@@ -1135,20 +1135,20 @@ async def ask_followup(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     if session.is_practice:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="练习模式不支持追问"
+            detail="Follow-up questions not supported in practice mode"
         )
 
     # Get the follow-up queue
@@ -1161,13 +1161,13 @@ async def ask_followup(
     if not queue:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="没有可用的追问问题"
+            detail="No follow-up questions available"
         )
 
     if data.followup_index >= len(queue.generated_questions):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="追问索引无效"
+            detail="Invalid follow-up question index"
         )
 
     # Mark as asked
@@ -1201,14 +1201,14 @@ async def skip_followup(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     # Mark any pending follow-up as skipped
@@ -1245,20 +1245,20 @@ async def submit_followup_response(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     if session.status not in [InterviewStatus.PENDING, InterviewStatus.IN_PROGRESS]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="面试已完成或已取消"
+            detail="Interview is already completed or cancelled"
         )
 
     # Get the follow-up queue
@@ -1271,7 +1271,7 @@ async def submit_followup_response(
     if not queue:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="追问问题不存在或未被选中"
+            detail="Follow-up question not found or not selected"
         )
 
     # Get the parent response (the original answer to the base question)
@@ -1284,7 +1284,7 @@ async def submit_followup_response(
     if not parent_response:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="原始回答不存在"
+            detail="Original response not found"
         )
 
     # Handle video upload
@@ -1302,7 +1302,7 @@ async def submit_followup_response(
     if not storage_key:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="必须提供视频文件或视频key"
+            detail="Must provide video file or video key"
         )
 
     # Create the follow-up response
@@ -1549,20 +1549,20 @@ async def submit_code_response(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     if session.status not in [InterviewStatus.PENDING, InterviewStatus.IN_PROGRESS]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="面试已完成或已取消"
+            detail="Interview is already completed or cancelled"
         )
 
     # Get the question at this index
@@ -1574,7 +1574,7 @@ async def submit_code_response(
     if question_index >= len(questions):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="问题索引无效"
+            detail="Invalid question index"
         )
 
     question = questions[question_index]
@@ -1583,14 +1583,14 @@ async def submit_code_response(
     if question.question_type != "coding":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="此问题不是编程题"
+            detail="This question is not a coding challenge"
         )
 
     # Get the coding challenge
     if not question.coding_challenge_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="编程题配置错误：未关联编程挑战"
+            detail="Coding question configuration error: no challenge linked"
         )
 
     challenge = db.query(CodingChallenge).filter(
@@ -1600,7 +1600,7 @@ async def submit_code_response(
     if not challenge:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="编程挑战不存在"
+            detail="Coding challenge not found"
         )
 
     # Check for existing response
@@ -1671,14 +1671,14 @@ async def get_code_response_status(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     # Get the response
@@ -1690,13 +1690,13 @@ async def get_code_response_status(
     if not response:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="回答不存在"
+            detail="Response not found"
         )
 
     if response.question_type != "coding":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="此回答不是编程题回答"
+            detail="This response is not a coding question response"
         )
 
     # Parse test results
@@ -1759,14 +1759,14 @@ async def get_coding_challenge(
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="面试会话不存在"
+            detail="Interview session not found"
         )
 
     # Verify candidate owns this session
     if session.candidate_id != current_candidate.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权访问此面试会话"
+            detail="You do not have access to this interview session"
         )
 
     # Get questions
@@ -1778,7 +1778,7 @@ async def get_coding_challenge(
     if question_index >= len(questions):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="问题索引无效"
+            detail="Invalid question index"
         )
 
     question = questions[question_index]
@@ -1786,7 +1786,7 @@ async def get_coding_challenge(
     if question.question_type != "coding":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="此问题不是编程题"
+            detail="This question is not a coding challenge"
         )
 
     # Get the challenge
@@ -1799,7 +1799,7 @@ async def get_coding_challenge(
     if not challenge:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="编程挑战不存在"
+            detail="Coding challenge not found"
         )
 
     # Build response with challenge info (hide test case expected values for hidden tests)

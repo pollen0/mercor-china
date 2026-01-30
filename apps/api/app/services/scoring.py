@@ -8,11 +8,11 @@ from ..config import settings
 @dataclass
 class ScoreResult:
     """Result of AI scoring for a single response."""
-    communication: float  # 沟通能力
-    problem_solving: float  # 解决问题能力
-    domain_knowledge: float  # 专业知识
-    motivation: float  # 动机
-    culture_fit: float  # 文化契合度
+    communication: float  # Clarity and articulation
+    problem_solving: float  # Analytical thinking
+    domain_knowledge: float  # Technical knowledge
+    motivation: float  # Growth mindset
+    culture_fit: float  # Teamwork and values
     overall: float
     analysis: str
     strengths: list[str]
@@ -43,42 +43,43 @@ class ScoringService:
         'culture_fit': 0.20
     }
 
-    SYSTEM_PROMPT = """You are an expert HR interviewer evaluating candidate responses.
+    SYSTEM_PROMPT = """You are an expert interviewer evaluating college student responses.
 Analyze the transcript and provide scores and feedback.
 
 SCORING RUBRIC (0-100 for each dimension):
 
-1. Communication (沟通能力)
+1. Communication (20%)
    - Clarity of expression
    - Structure of response
-   - Language fluency (Mandarin/English)
+   - Confidence and articulation
    - Conciseness
 
-2. Problem Solving (解决问题能力)
+2. Problem Solving (25%)
    - Logical reasoning
    - Analytical thinking
    - Creativity
    - Structured approach
 
-3. Domain Knowledge (专业知识)
+3. Technical Knowledge (25%)
    - Technical accuracy
    - Depth of understanding
    - Practical application
    - Industry awareness
 
-4. Motivation (动机)
-   - Genuine interest
-   - Career alignment
-   - Company research
+4. Growth Mindset (15%)
+   - Learning from failures
+   - Curiosity and adaptability
+   - Self-awareness
    - Long-term vision
 
-5. Culture Fit (文化契合度)
+5. Culture Fit (15%)
    - Values alignment
    - Team orientation
    - Adaptability
    - Professionalism
 
 Be objective, fair, and focus only on job-relevant factors.
+Evaluate potential and trajectory, not just current skills.
 Do NOT penalize for accent, appearance, or background.
 Always respond in valid JSON format."""
 
@@ -499,23 +500,23 @@ Analyze the code quality and provide scores and feedback.
 
 SCORING RUBRIC (0-100 for each dimension):
 
-1. Correctness (正确性)
+1. Correctness
    - Does the code pass all test cases?
    - Handle edge cases properly?
    - Produce correct output?
 
-2. Code Quality (代码质量)
+2. Code Quality
    - Readable and well-structured
    - Good variable/function naming
    - Appropriate comments (not excessive)
    - Follows Python conventions (PEP 8)
 
-3. Efficiency (效率)
+3. Efficiency
    - Time complexity (Big O)
    - Space complexity
    - Avoids unnecessary operations
 
-4. Problem Understanding (问题理解)
+4. Problem Understanding
    - Correct interpretation of the problem
    - Appropriate approach selection
    - Handles requirements correctly
@@ -648,9 +649,9 @@ Respond in JSON format:
                 motivation=5.0,
                 culture_fit=7.0,
                 overall=base_score,
-                analysis=f"代码通过了 {passed}/{total} 个测试用例 ({correctness_pct:.0f}%)。" if language == "zh" else f"Code passed {passed}/{total} test cases ({correctness_pct:.0f}%).",
+                analysis=f"Code passed {passed}/{total} test cases ({correctness_pct:.0f}%).",
                 strengths=[],
-                concerns=[f"评分解析失败: {e}"],
+                concerns=[f"Scoring parse error: {e}"],
                 highlight_quotes=[],
                 raw_response=None
             )

@@ -1,47 +1,46 @@
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
+from typing import Optional, Any
 from datetime import datetime
 import re
 
 
 class CandidateCreate(BaseModel):
+    """Request to create a new student account."""
     name: str
     email: EmailStr
-    phone: str
     password: str
-    target_roles: list[str] = []
+    # Optional education info (can be added later)
+    university: Optional[str] = None
+    major: Optional[str] = None
+    graduation_year: Optional[int] = None
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
         if len(v) < 2:
-            raise ValueError("姓名至少需要2个字符")
-        if len(v) > 50:
-            raise ValueError("姓名不能超过50个字符")
-        return v
-
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v: str) -> str:
-        # Accept Chinese mobile (1xxxxxxxxxx) or international format (+xx xxx...)
-        # Strip spaces and dashes for validation
-        cleaned = re.sub(r"[\s\-\(\)]", "", v)
-        # Chinese mobile: 11 digits starting with 1
-        # International: starts with + followed by 7-15 digits
-        # General: 7-15 digits
-        if not re.match(r"^(\+?\d{7,15}|1[3-9]\d{9})$", cleaned):
-            raise ValueError("Please enter a valid phone number")
+            raise ValueError("Name must be at least 2 characters")
+        if len(v) > 100:
+            raise ValueError("Name cannot exceed 100 characters")
         return v
 
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
         if len(v) < 8:
-            raise ValueError("密码至少需要8个字符")
+            raise ValueError("Password must be at least 8 characters")
         if not any(c.isdigit() for c in v):
-            raise ValueError("密码必须包含至少一个数字")
+            raise ValueError("Password must contain at least one number")
         if not any(c.isalpha() for c in v):
-            raise ValueError("密码必须包含至少一个字母")
+            raise ValueError("Password must contain at least one letter")
+        return v
+
+    @field_validator("graduation_year")
+    @classmethod
+    def validate_graduation_year(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None:
+            current_year = datetime.now().year
+            if v < current_year or v > current_year + 6:
+                raise ValueError(f"Graduation year must be between {current_year} and {current_year + 6}")
         return v
 
 
@@ -51,14 +50,99 @@ class CandidateLogin(BaseModel):
     password: str
 
 
+class CandidateUpdate(BaseModel):
+    """Request to update student profile."""
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    university: Optional[str] = None
+    major: Optional[str] = None
+    graduation_year: Optional[int] = None
+    gpa: Optional[float] = None
+    courses: Optional[list[dict[str, Any]]] = None  # [{name, grade, semester}]
+    bio: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    target_roles: Optional[list[str]] = None
+
+    @field_validator("gpa")
+    @classmethod
+    def validate_gpa(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None:
+            if v < 0.0 or v > 4.0:
+                raise ValueError("GPA must be between 0.0 and 4.0")
+        return v
+
+
+class EducationInfo(BaseModel):
+    """Student's education information."""
+    university: Optional[str] = None
+    major: Optional[str] = None
+    graduation_year: Optional[int] = None
+    gpa: Optional[float] = None
+    courses: Optional[list[dict[str, Any]]] = None
+
+
+class GitHubInfo(BaseModel):
+    """Student's GitHub profile information."""
+    username: Optional[str] = None
+    connected_at: Optional[datetime] = None
+    top_repos: Optional[list[dict[str, Any]]] = None  # [{name, description, stars, language, url}]
+    total_repos: Optional[int] = None
+    total_contributions: Optional[int] = None
+    languages: Optional[dict[str, int]] = None  # {language: bytes}
+
+
 class CandidateResponse(BaseModel):
+    """Public candidate/student response."""
     id: str
     name: str
     email: str
-    phone: str
-    target_roles: list[str]
+    phone: Optional[str] = None
+    target_roles: list[str] = []
+    # Education
+    university: Optional[str] = None
+    major: Optional[str] = None
+    graduation_year: Optional[int] = None
+    gpa: Optional[float] = None
+    # Profile
+    bio: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    # GitHub
+    github_username: Optional[str] = None
+    # Resume
     resume_url: Optional[str] = None
+    # Timestamps
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CandidateDetailResponse(BaseModel):
+    """Detailed candidate response with all profile data."""
+    id: str
+    name: str
+    email: str
+    phone: Optional[str] = None
+    target_roles: list[str] = []
+    # Education
+    education: Optional[EducationInfo] = None
+    # GitHub
+    github: Optional[GitHubInfo] = None
+    # Profile
+    bio: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    # Resume
+    resume_url: Optional[str] = None
+    resume_parsed_data: Optional[dict[str, Any]] = None
+    # Interview progress
+    interview_count: Optional[int] = None
+    best_scores: Optional[dict[str, float]] = None  # {vertical: score}
+    # Timestamps
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -131,31 +215,29 @@ class ResumeResponse(BaseModel):
 class PersonalizedQuestion(BaseModel):
     """A personalized interview question based on resume."""
     text: str
-    text_zh: str
     category: str  # behavioral, technical, experience
     based_on: str  # What resume element this is based on
 
 
-# WeChat OAuth schemas
-class WeChatAuthUrlResponse(BaseModel):
-    """Response containing WeChat authorization URL."""
+# GitHub OAuth schemas
+class GitHubAuthUrlResponse(BaseModel):
+    """Response containing GitHub authorization URL."""
     auth_url: str
     state: str  # CSRF token
 
 
-class WeChatLoginRequest(BaseModel):
-    """Request to complete WeChat login with authorization code."""
+class GitHubCallbackRequest(BaseModel):
+    """Request to complete GitHub OAuth with authorization code."""
     code: str
     state: Optional[str] = None  # For CSRF validation
-    is_mini_program: bool = False
 
 
-class WeChatLoginResponse(BaseModel):
-    """Response after successful WeChat login."""
-    candidate: CandidateResponse
-    token: str
-    token_type: str = "bearer"
-    is_new_user: bool  # True if this is a new registration
+class GitHubConnectResponse(BaseModel):
+    """Response after successfully connecting GitHub."""
+    success: bool
+    message: str
+    github_username: Optional[str] = None
+    github_data: Optional[GitHubInfo] = None
 
 
 class CandidateWithToken(BaseModel):
@@ -163,3 +245,28 @@ class CandidateWithToken(BaseModel):
     candidate: CandidateResponse
     token: str
     token_type: str = "bearer"
+
+
+# Interview progress schemas
+class InterviewProgressEntry(BaseModel):
+    """A single interview attempt in history."""
+    month: int
+    year: int
+    vertical: str
+    role_type: str
+    overall_score: float
+    communication_score: Optional[float] = None
+    problem_solving_score: Optional[float] = None
+    technical_score: Optional[float] = None
+    growth_mindset_score: Optional[float] = None
+    culture_fit_score: Optional[float] = None
+    completed_at: datetime
+
+
+class InterviewProgressResponse(BaseModel):
+    """Student's interview progress over time."""
+    candidate_id: str
+    total_interviews: int
+    best_scores: dict[str, float]  # {vertical: best_score}
+    history: list[InterviewProgressEntry]
+    next_eligible: Optional[dict[str, datetime]] = None  # {vertical: next_eligible_date}

@@ -14,7 +14,7 @@ from ..database import get_db
 from ..models import Candidate, Employer
 from ..services.email import email_service
 
-logger = logging.getLogger("zhimian.auth")
+logger = logging.getLogger("pathway.auth")
 router = APIRouter()
 
 
@@ -131,13 +131,13 @@ async def verify_email(
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired verification link / 无效或过期的验证链接"
+                detail="Invalid or expired verification link"
             )
 
         if user.email_verification_expires_at and user.email_verification_expires_at < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Verification link has expired. Please request a new one. / 验证链接已过期，请重新获取"
+                detail="Verification link has expired. Please request a new one."
             )
 
         user.email_verified = True
@@ -147,7 +147,7 @@ async def verify_email(
 
         return VerifyEmailResponse(
             success=True,
-            message="Email verified successfully / 邮箱验证成功",
+            message="Email verified successfully",
             user_type="candidate",
             email=user.email,
         )
@@ -160,13 +160,13 @@ async def verify_email(
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired verification link / 无效或过期的验证链接"
+                detail="Invalid or expired verification link"
             )
 
         if user.email_verification_expires_at and user.email_verification_expires_at < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Verification link has expired. Please request a new one. / 验证链接已过期，请重新获取"
+                detail="Verification link has expired. Please request a new one."
             )
 
         user.is_verified = True
@@ -176,7 +176,7 @@ async def verify_email(
 
         return VerifyEmailResponse(
             success=True,
-            message="Email verified successfully / 邮箱验证成功",
+            message="Email verified successfully",
             user_type="employer",
             email=user.email,
         )
@@ -210,14 +210,14 @@ async def resend_verification(
         if user.email_verified:
             return ResendVerificationResponse(
                 success=True,
-                message="Email is already verified / 邮箱已验证"
+                message="Email is already verified"
             )
 
         create_verification_for_candidate(user, db, background_tasks)
 
         return ResendVerificationResponse(
             success=True,
-            message="Verification email sent / 验证邮件已发送"
+            message="Verification email sent"
         )
 
     elif data.user_type == "employer":
@@ -232,14 +232,14 @@ async def resend_verification(
         if user.is_verified:
             return ResendVerificationResponse(
                 success=True,
-                message="Email is already verified / 邮箱已验证"
+                message="Email is already verified"
             )
 
         create_verification_for_employer(user, db, background_tasks)
 
         return ResendVerificationResponse(
             success=True,
-            message="Verification email sent / 验证邮件已发送"
+            message="Verification email sent"
         )
 
     else:

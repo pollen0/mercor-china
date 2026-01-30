@@ -16,28 +16,30 @@ class VerticalProfileStatus(str, enum.Enum):
 
 class CandidateVerticalProfile(Base):
     """
-    Represents a candidate's interview profile for a specific vertical.
-    One interview per vertical - candidates complete ONE interview and get matched to ALL relevant jobs.
+    Represents a student's current profile for a specific career vertical.
+    Students can interview once per month per vertical to show progress.
+    Best score is shown to employers, but full history is available.
     """
     __tablename__ = "candidate_vertical_profiles"
 
     id = Column(String, primary_key=True)
     candidate_id = Column(String, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
-    vertical = Column(Enum(Vertical), nullable=False)  # 'new_energy' or 'sales'
-    role_type = Column(Enum(RoleType), nullable=False)  # e.g., 'battery_engineer'
+    vertical = Column(Enum(Vertical), nullable=False)  # 'engineering', 'data', 'business', 'design'
+    role_type = Column(Enum(RoleType), nullable=False)  # e.g., 'software_engineer', 'data_analyst'
 
-    # Interview tracking
+    # Current interview tracking (latest interview)
     interview_session_id = Column(String, ForeignKey("interview_sessions.id", ondelete="SET NULL"), nullable=True)
     interview_score = Column(Float, nullable=True)  # 0-10, latest score
-    best_score = Column(Float, nullable=True)  # Highest score achieved across attempts
+    best_score = Column(Float, nullable=True)  # Highest score achieved (shown to employers)
     status = Column(
         Enum(VerticalProfileStatus, values_callable=lambda x: [e.value for e in x]),
         default=VerticalProfileStatus.PENDING
     )
 
-    # Retake tracking (Mercor-style: max 3 attempts)
-    attempt_count = Column(Integer, default=0)  # Number of completed attempts
-    last_attempt_at = Column(DateTime(timezone=True), nullable=True)
+    # Monthly interview tracking
+    total_interviews = Column(Integer, default=0)  # Total interviews completed in this vertical
+    last_interview_at = Column(DateTime(timezone=True), nullable=True)  # Last completed interview
+    next_eligible_at = Column(DateTime(timezone=True), nullable=True)  # When can interview again (1 month cooldown)
 
     # Timestamps
     completed_at = Column(DateTime(timezone=True), nullable=True)  # When first completed
@@ -54,20 +56,42 @@ class CandidateVerticalProfile(Base):
 
 
 class Candidate(Base):
+    """
+    Student user on the Pathway platform.
+    Students interview monthly to show progress over time.
+    """
     __tablename__ = "candidates"
 
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
-    phone = Column(String, nullable=False)
-    password_hash = Column(String, nullable=True)  # Nullable for WeChat-only users
+    phone = Column(String, nullable=True)  # Optional for students
+    password_hash = Column(String, nullable=True)  # Nullable for GitHub OAuth users
+
+    # Education Information
+    university = Column(String, nullable=True)  # e.g., "Stanford University"
+    major = Column(String, nullable=True)  # e.g., "Computer Science"
+    graduation_year = Column(Integer, nullable=True)  # e.g., 2026
+    gpa = Column(Float, nullable=True)  # Optional, 0.0-4.0 scale
+    courses = Column(JSONB, nullable=True)  # Array of current/past relevant courses
+
+    # GitHub Integration
+    github_username = Column(String, unique=True, nullable=True)
+    github_access_token = Column(String, nullable=True)  # Encrypted OAuth token
+    github_data = Column(JSONB, nullable=True)  # Cached GitHub profile data (repos, contributions, etc.)
+    github_connected_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Profile
     target_roles = Column(ARRAY(String), default=[])
+    bio = Column(Text, nullable=True)  # Short bio/about me
+    linkedin_url = Column(String, nullable=True)
+    portfolio_url = Column(String, nullable=True)
+
+    # Resume
     resume_url = Column(String, nullable=True)
     resume_raw_text = Column(Text, nullable=True)  # Raw extracted text from resume
     resume_parsed_data = Column(JSONB, nullable=True)  # Parsed structured data
     resume_uploaded_at = Column(DateTime(timezone=True), nullable=True)
-    wechat_open_id = Column(String, unique=True, nullable=True)
-    wechat_union_id = Column(String, nullable=True)
 
     # Email verification
     email_verified = Column(Boolean, default=False)
@@ -81,3 +105,48 @@ class Candidate(Base):
     matches = relationship("Match", back_populates="candidate")
     messages = relationship("Message", back_populates="candidate")
     vertical_profiles = relationship("CandidateVerticalProfile", back_populates="candidate")
+    interview_history = relationship("InterviewHistoryEntry", back_populates="candidate")
+
+
+class InterviewHistoryEntry(Base):
+    """
+    Tracks each monthly interview attempt for progress visualization.
+    Employers can see how students improve over time (2-4 years of college).
+    """
+    __tablename__ = "interview_history"
+
+    id = Column(String, primary_key=True)
+    candidate_id = Column(String, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
+    vertical = Column(Enum(Vertical), nullable=False)
+    role_type = Column(Enum(RoleType), nullable=False)
+
+    # Interview reference
+    interview_session_id = Column(String, ForeignKey("interview_sessions.id", ondelete="SET NULL"), nullable=True)
+
+    # Scores at time of interview
+    overall_score = Column(Float, nullable=True)  # 0-10
+    communication_score = Column(Float, nullable=True)  # 0-10
+    problem_solving_score = Column(Float, nullable=True)  # 0-10
+    technical_score = Column(Float, nullable=True)  # 0-10
+    growth_mindset_score = Column(Float, nullable=True)  # 0-10
+    culture_fit_score = Column(Float, nullable=True)  # 0-10
+
+    # Context at time of interview (snapshot)
+    education_snapshot = Column(JSONB, nullable=True)  # {university, major, year, gpa}
+    github_snapshot = Column(JSONB, nullable=True)  # {repos, contributions, languages}
+
+    # Month/Year for easy querying and display
+    interview_month = Column(Integer, nullable=False)  # 1-12
+    interview_year = Column(Integer, nullable=False)  # e.g., 2024
+
+    completed_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    candidate = relationship("Candidate", back_populates="interview_history")
+    interview_session = relationship("InterviewSession", foreign_keys=[interview_session_id])
+
+    # Unique: one interview per vertical per month
+    __table_args__ = (
+        UniqueConstraint('candidate_id', 'vertical', 'interview_month', 'interview_year',
+                         name='uq_candidate_vertical_month'),
+    )
