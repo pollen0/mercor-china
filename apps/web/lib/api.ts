@@ -111,6 +111,8 @@ export interface QuestionInfo {
   text: string
   textZh?: string
   category?: string
+  questionType?: string
+  codingChallengeId?: string | null
 }
 
 export interface InterviewStartResponse {
@@ -955,19 +957,49 @@ export interface MatchingJob {
 
 export const verticalApi = {
   // Start a vertical interview for talent pool
-  startVerticalInterview: (
+  startVerticalInterview: async (
     candidateId: string,
     vertical: Vertical,
     roleType: RoleType
-  ): Promise<InterviewStartResponse> =>
-    apiRequest('/api/interviews/start-vertical', {
+  ): Promise<InterviewStartResponse> => {
+    const response = await apiRequest<{
+      session_id: string
+      questions: Array<{
+        index: number
+        text: string
+        text_zh?: string
+        category?: string
+        question_type?: string
+        coding_challenge_id?: string | null
+      }>
+      job_title: string
+      company_name: string
+      is_practice: boolean
+    }>('/api/interviews/start-vertical', {
       method: 'POST',
       body: JSON.stringify({
         candidate_id: candidateId,
         vertical,
         role_type: roleType,
       }),
-    }),
+    })
+
+    // Transform snake_case to camelCase
+    return {
+      sessionId: response.session_id,
+      questions: response.questions.map(q => ({
+        index: q.index,
+        text: q.text,
+        textZh: q.text_zh,
+        category: q.category,
+        questionType: q.question_type,
+        codingChallengeId: q.coding_challenge_id,
+      })),
+      jobTitle: response.job_title,
+      companyName: response.company_name,
+      isPractice: response.is_practice,
+    }
+  },
 }
 
 // Add candidate API methods for vertical profiles

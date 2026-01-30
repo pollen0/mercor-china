@@ -158,6 +158,22 @@ export function PermissionCheck({ onPermissionGranted }: PermissionCheckProps) {
         </div>
       )}
 
+      {/* Skip option for testing when no device is found */}
+      {error && error.includes('not found') && (
+        <Button
+          variant="outline"
+          className="w-full h-12 mb-3 text-amber-600 border-amber-300 hover:bg-amber-50"
+          onClick={onPermissionGranted}
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Skip for Testing (No Camera Mode)
+          </span>
+        </Button>
+      )}
+
       {!allGranted && (
         <Button
           className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-base font-medium"

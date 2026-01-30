@@ -30,7 +30,10 @@ class CandidateVerticalProfile(Base):
     interview_session_id = Column(String, ForeignKey("interview_sessions.id", ondelete="SET NULL"), nullable=True)
     interview_score = Column(Float, nullable=True)  # 0-10, latest score
     best_score = Column(Float, nullable=True)  # Highest score achieved across attempts
-    status = Column(Enum(VerticalProfileStatus), default=VerticalProfileStatus.PENDING)
+    status = Column(
+        Enum(VerticalProfileStatus, values_callable=lambda x: [e.value for e in x]),
+        default=VerticalProfileStatus.PENDING
+    )
 
     # Retake tracking (Mercor-style: max 3 attempts)
     attempt_count = Column(Integer, default=0)  # Number of completed attempts
