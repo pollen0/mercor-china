@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
@@ -21,7 +21,7 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     if (!token) {
       setStatus('error')
-      setMessage('Missing verification token / 缺少验证令牌')
+      setMessage('Missing verification token')
       return
     }
 
@@ -65,79 +65,97 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-warm-50 to-warm-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          {status === 'loading' && (
-            <>
-              <div className="w-16 h-16 mx-auto mb-4">
-                <div className="w-16 h-16 border-4 border-warm-200 border-t-brand-500 rounded-full animate-spin" />
-              </div>
-              <CardTitle className="text-xl">Verifying your email...</CardTitle>
-              <CardDescription>正在验证您的邮箱...</CardDescription>
-            </>
-          )}
-
-          {status === 'success' && (
-            <>
-              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <CardTitle className="text-xl text-green-600">Email Verified!</CardTitle>
-              <CardDescription>邮箱验证成功!</CardDescription>
-            </>
-          )}
-
-          {status === 'error' && (
-            <>
-              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-              <CardTitle className="text-xl text-red-600">Verification Failed</CardTitle>
-              <CardDescription>验证失败</CardDescription>
-            </>
-          )}
-        </CardHeader>
-
-        <CardContent className="text-center space-y-4">
-          <p className="text-warm-600">{message}</p>
-
-          {status === 'success' && email && (
-            <p className="text-sm text-warm-500">
-              Verified email: <span className="font-medium">{email}</span>
-            </p>
-          )}
-
-          {status === 'success' && (
-            <div className="pt-4">
-              <Link href={getRedirectPath()}>
-                <Button variant="brand" className="w-full">
-                  {userType === 'employer' ? 'Go to Login' : 'Continue to Login'}
-                </Button>
-              </Link>
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        {status === 'loading' && (
+          <>
+            <div className="w-14 h-14 mx-auto mb-4">
+              <div className="w-14 h-14 border-2 border-warm-200 border-t-brand-500 rounded-full animate-spin" />
             </div>
-          )}
+            <CardTitle className="text-lg">Verifying...</CardTitle>
+            <CardDescription>Please wait</CardDescription>
+          </>
+        )}
 
-          {status === 'error' && (
-            <div className="pt-4 space-y-3">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => router.push(getRedirectPath())}
-              >
-                Go to Login
+        {status === 'success' && (
+          <>
+            <div className="w-14 h-14 mx-auto mb-4 bg-brand-50 rounded-full flex items-center justify-center">
+              <svg className="w-7 h-7 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <CardTitle className="text-lg">Email Verified</CardTitle>
+            <CardDescription>You can now sign in</CardDescription>
+          </>
+        )}
+
+        {status === 'error' && (
+          <>
+            <div className="w-14 h-14 mx-auto mb-4 bg-warm-100 rounded-full flex items-center justify-center">
+              <svg className="w-7 h-7 text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <CardTitle className="text-lg">Verification Failed</CardTitle>
+            <CardDescription>Please try again</CardDescription>
+          </>
+        )}
+      </CardHeader>
+
+      <CardContent className="text-center space-y-4">
+        <p className="text-warm-600 text-sm">{message}</p>
+
+        {status === 'success' && email && (
+          <p className="text-sm text-warm-500">
+            Verified: <span className="font-medium">{email}</span>
+          </p>
+        )}
+
+        {status === 'success' && (
+          <div className="pt-2">
+            <Link href={getRedirectPath()}>
+              <Button variant="brand" className="w-full">
+                Continue to Login
               </Button>
-              <p className="text-xs text-warm-500">
-                Need a new verification link? Login and request a new one from your dashboard.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </Link>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => router.push(getRedirectPath())}
+            >
+              Go to Login
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function LoadingState() {
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <div className="w-14 h-14 mx-auto mb-4">
+          <div className="w-14 h-14 border-2 border-warm-200 border-t-brand-500 rounded-full animate-spin" />
+        </div>
+        <CardTitle className="text-lg">Loading...</CardTitle>
+      </CardHeader>
+    </Card>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <div className="min-h-screen bg-warm-50 flex items-center justify-center p-4">
+      <Suspense fallback={<LoadingState />}>
+        <VerifyEmailContent />
+      </Suspense>
     </div>
   )
 }

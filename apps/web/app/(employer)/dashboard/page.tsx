@@ -79,54 +79,26 @@ export default function DashboardPage() {
           <p className="text-warm-500">Here&apos;s an overview of your hiring activity</p>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Clean, minimal design */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          <div className="bg-white rounded-2xl shadow-soft p-5 hover:shadow-soft-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-warm-500">Total Interviews</span>
-            </div>
-            <div className="text-3xl font-bold text-warm-900">{stats?.totalInterviews || 0}</div>
+          <div className="bg-white rounded-2xl shadow-soft p-5">
+            <p className="text-sm text-warm-500 mb-1">Total Interviews</p>
+            <div className="text-3xl font-semibold text-warm-900">{stats?.totalInterviews || 0}</div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-soft p-5 hover:shadow-soft-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-warning-light rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-warm-500">Pending Review</span>
-            </div>
-            <div className="text-3xl font-bold text-warm-900">{stats?.pendingReview || 0}</div>
+          <div className="bg-white rounded-2xl shadow-soft p-5">
+            <p className="text-sm text-warm-500 mb-1">Pending Review</p>
+            <div className="text-3xl font-semibold text-warm-900">{stats?.pendingReview || 0}</div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-soft p-5 hover:shadow-soft-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-success-light rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-warm-500">Shortlisted</span>
-            </div>
-            <div className="text-3xl font-bold text-warm-900">{stats?.shortlisted || 0}</div>
+          <div className="bg-white rounded-2xl shadow-soft p-5">
+            <p className="text-sm text-warm-500 mb-1">Shortlisted</p>
+            <div className="text-3xl font-semibold text-warm-900">{stats?.shortlisted || 0}</div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-soft p-5 hover:shadow-soft-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-info-light rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-info" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-warm-500">Avg. Score</span>
-            </div>
-            <div className="text-3xl font-bold text-warm-900">
+          <div className="bg-white rounded-2xl shadow-soft p-5">
+            <p className="text-sm text-warm-500 mb-1">Avg. Score</p>
+            <div className="text-3xl font-semibold text-warm-900">
               {stats?.averageScore ? stats.averageScore.toFixed(1) : '-'}
               {stats?.averageScore && <span className="text-lg font-normal text-warm-400">/10</span>}
             </div>
@@ -263,21 +235,11 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Pro Tips */}
-            <div className="bg-warning-light border border-warning/20 rounded-2xl p-6">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-warning/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-warning-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-medium text-warning-dark text-sm mb-1">Pro Tip</h4>
-                  <p className="text-warning-dark/80 text-xs leading-relaxed">
-                    Review interviews within 48 hours to keep candidates engaged. Fast response times improve your hiring success rate.
-                  </p>
-                </div>
-              </div>
+            {/* Tip */}
+            <div className="bg-warm-50 border border-warm-100 rounded-2xl p-5">
+              <p className="text-sm text-warm-600 leading-relaxed">
+                Review interviews within 48 hours to keep candidates engaged.
+              </p>
             </div>
           </div>
         </div>

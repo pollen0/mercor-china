@@ -352,11 +352,7 @@ ${companyName}`)
                     <div className="space-y-3">
                       {/* Vertical & Role */}
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          candidate.vertical === 'new_energy'
-                            ? 'bg-brand-100 text-brand-700'
-                            : 'bg-blue-100 text-blue-700'
-                        }`}>
+                        <span className="px-2 py-1 text-xs font-medium rounded-md bg-warm-100 text-warm-700">
                           {VERTICALS.find(v => v.value === candidate.vertical)?.labelZh || candidate.vertical}
                         </span>
                         <span className="text-xs text-warm-500">
@@ -366,16 +362,12 @@ ${companyName}`)
 
                       {/* Location */}
                       {candidate.location && (
-                        <p className="text-sm text-warm-600 flex items-center gap-1">
-                          <span>📍</span> {candidate.location}
-                        </p>
+                        <p className="text-sm text-warm-500">{candidate.location}</p>
                       )}
 
                       {/* Experience */}
                       {candidate.experienceSummary && (
-                        <p className="text-sm text-warm-600 truncate">
-                          💼 {candidate.experienceSummary}
-                        </p>
+                        <p className="text-sm text-warm-500 truncate">{candidate.experienceSummary}</p>
                       )}
 
                       {/* Skills */}
