@@ -29,6 +29,8 @@ class QuestionResponse(BaseModel):
     is_default: bool
     job_id: Optional[str] = None
     duration_seconds: int = 180
+    question_type: str = "video"  # "video" or "coding"
+    coding_challenge_id: Optional[str] = None
     created_at: datetime
 
     class Config:

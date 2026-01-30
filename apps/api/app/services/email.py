@@ -349,5 +349,86 @@ class EmailService:
         )
 
 
+    def send_verification_email(
+        self,
+        email: str,
+        name: str,
+        verification_token: str,
+        user_type: str = "candidate",  # "candidate" or "employer"
+    ) -> Optional[str]:
+        """
+        Send email verification link.
+
+        Args:
+            email: Recipient email address
+            name: User's name
+            verification_token: Unique verification token
+            user_type: Type of user (candidate or employer)
+        """
+        verify_url = f"{settings.frontend_url}/verify-email?token={verification_token}&type={user_type}"
+
+        header_color = "#10b981" if user_type == "candidate" else "#2563eb"
+        user_type_zh = "求职者" if user_type == "candidate" else "企业"
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, {header_color} 0%, {header_color}dd 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: {header_color}; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .code {{ background: #e5e7eb; padding: 12px 20px; border-radius: 6px; font-family: monospace; font-size: 18px; letter-spacing: 2px; display: inline-block; margin: 10px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">验证您的邮箱</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Verify Your Email</p>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+
+                    <p>感谢您注册 ZhiMian 智面平台！请点击下方按钮验证您的邮箱地址。</p>
+                    <p>Thank you for registering with ZhiMian! Please click the button below to verify your email address.</p>
+
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="{verify_url}" class="button">验证邮箱 Verify Email</a>
+                    </p>
+
+                    <p style="color: #6b7280; font-size: 14px;">
+                        如果按钮无法点击，请复制以下链接到浏览器：<br>
+                        If the button doesn't work, copy this link to your browser:<br>
+                        <a href="{verify_url}" style="color: {header_color}; word-break: break-all;">{verify_url}</a>
+                    </p>
+
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+                        此链接将在24小时后过期。<br>
+                        This link will expire in 24 hours.
+                    </p>
+
+                    <p>Best regards,<br>ZhiMian 智面团队</p>
+                </div>
+                <div class="footer">
+                    <p>如果您没有注册 ZhiMian，请忽略此邮件。</p>
+                    <p>If you didn't sign up for ZhiMian, please ignore this email.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=email,
+            subject="[ZhiMian 智面] 验证您的邮箱 Verify Your Email",
+            html=html,
+        )
+
+
 # Global instance
 email_service = EmailService()

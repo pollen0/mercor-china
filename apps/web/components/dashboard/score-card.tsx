@@ -11,9 +11,9 @@ export function ScoreCard({ score, maxScore = 10, label, size = 'md' }: ScoreCar
   const percentage = (score / maxScore) * 100
 
   const getColor = () => {
-    if (percentage >= 70) return { bg: 'bg-emerald-100', text: 'text-emerald-700', ring: 'stroke-emerald-500' }
-    if (percentage >= 50) return { bg: 'bg-amber-100', text: 'text-amber-700', ring: 'stroke-amber-500' }
-    return { bg: 'bg-red-100', text: 'text-red-700', ring: 'stroke-red-500' }
+    if (percentage >= 70) return { bg: 'bg-success-light', text: 'text-success-dark', ring: 'stroke-success' }
+    if (percentage >= 50) return { bg: 'bg-warning-light', text: 'text-warning-dark', ring: 'stroke-warning' }
+    return { bg: 'bg-error-light', text: 'text-error-dark', ring: 'stroke-error' }
   }
 
   const colors = getColor()
@@ -40,7 +40,7 @@ export function ScoreCard({ score, maxScore = 10, label, size = 'md' }: ScoreCar
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-gray-200"
+            className="text-warm-200"
           />
           {/* Progress circle */}
           <circle
@@ -66,7 +66,7 @@ export function ScoreCard({ score, maxScore = 10, label, size = 'md' }: ScoreCar
       </div>
 
       {label && (
-        <span className={`mt-2 text-gray-600 ${sizeConfig.label}`}>{label}</span>
+        <span className={`mt-2 text-warm-600 ${sizeConfig.label}`}>{label}</span>
       )}
     </div>
   )

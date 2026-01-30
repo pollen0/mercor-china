@@ -13,6 +13,7 @@ from .transcription import transcription_service
 from .scoring import scoring_service
 from .email import email_service
 from .matching import matching_service
+from .code_execution import code_execution_service
 
 logger = logging.getLogger("zhimian.tasks")
 
@@ -268,8 +269,13 @@ def process_match_after_interview(
     """
     Calculate and store match score after an interview is completed.
     This creates/updates the Match record with detailed scoring.
+
+    For vertical (talent pool) interviews:
+    - Updates the CandidateVerticalProfile
+    - Auto-matches to all active jobs in that vertical
     """
-    from ..models import InterviewSession, Match, Candidate
+    from ..models import InterviewSession, Match, Candidate, CandidateVerticalProfile, VerticalProfileStatus, Job
+    from datetime import datetime
     import uuid
 
     engine = create_engine(db_url)
@@ -290,6 +296,12 @@ def process_match_after_interview(
             logger.debug(f"Skipping match for practice session {session_id}")
             return
 
+        # Handle vertical (talent pool) interviews
+        if session.is_vertical_interview:
+            _process_vertical_interview_completion(session, db)
+            return
+
+        # Handle job-specific interviews (existing logic)
         if not session.job:
             logger.warning(f"No job associated with session {session_id}")
             return
@@ -350,5 +362,272 @@ def process_match_after_interview(
         except Exception as e:
             logger.error(f"Failed to calculate match for {session_id}: {e}")
 
+    finally:
+        db.close()
+
+
+def _process_vertical_interview_completion(session, db):
+    """
+    Process completion of a vertical (talent pool) interview.
+
+    1. Update the CandidateVerticalProfile with score and status
+    2. Find all active jobs matching this vertical
+    3. Create Match records for auto-surfacing
+    """
+    from ..models import CandidateVerticalProfile, VerticalProfileStatus, Job, Match
+    from datetime import datetime
+    import uuid
+
+    # Find the vertical profile for this session
+    profile = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.interview_session_id == session.id
+    ).first()
+
+    if not profile:
+        # Try to find by candidate and vertical
+        profile = db.query(CandidateVerticalProfile).filter(
+            CandidateVerticalProfile.candidate_id == session.candidate_id,
+            CandidateVerticalProfile.vertical == session.vertical
+        ).first()
+
+    if not profile:
+        logger.warning(f"No vertical profile found for session {session.id}")
+        return
+
+    # Update profile with score
+    interview_score = session.total_score or 5.0
+    profile.interview_score = interview_score
+    profile.status = VerticalProfileStatus.COMPLETED
+    profile.completed_at = datetime.utcnow()
+    profile.last_attempt_at = datetime.utcnow()
+    profile.attempt_count = (profile.attempt_count or 0) + 1
+
+    # Update best score if this is better
+    if profile.best_score is None or interview_score > profile.best_score:
+        profile.best_score = interview_score
+
+    db.commit()
+    logger.info(f"Updated vertical profile {profile.id} with score {interview_score}")
+
+    # Find all active jobs matching this vertical
+    matching_jobs = db.query(Job).filter(
+        Job.is_active == True,
+        Job.vertical == session.vertical
+    ).all()
+
+    logger.info(f"Found {len(matching_jobs)} active jobs for vertical {session.vertical.value}")
+
+    # Get candidate resume data for matching
+    candidate = session.candidate
+    candidate_data = candidate.resume_parsed_data if candidate else None
+
+    # Create/update matches for all matching jobs
+    for job in matching_jobs:
+        try:
+            # Calculate match score
+            match_result = _run_async(
+                matching_service.calculate_match(
+                    interview_score=profile.best_score or interview_score,
+                    candidate_data=candidate_data,
+                    job_title=job.title,
+                    job_requirements=job.requirements or [],
+                    job_location=job.location,
+                    job_vertical=job.vertical.value if job.vertical else None,
+                )
+            )
+
+            # Check for existing match
+            existing_match = db.query(Match).filter(
+                Match.candidate_id == session.candidate_id,
+                Match.job_id == job.id
+            ).first()
+
+            if existing_match:
+                # Update existing match
+                existing_match.score = profile.best_score or interview_score
+                existing_match.interview_score = match_result.interview_score
+                existing_match.skills_match_score = match_result.skills_match_score
+                existing_match.experience_match_score = match_result.experience_match_score
+                existing_match.location_match = match_result.location_match
+                existing_match.overall_match_score = match_result.overall_match_score
+                existing_match.factors = json.dumps(match_result.factors, ensure_ascii=False)
+                existing_match.ai_reasoning = match_result.ai_reasoning
+                existing_match.vertical_profile_id = profile.id
+            else:
+                # Create new match
+                new_match = Match(
+                    id=f"m{uuid.uuid4().hex[:24]}",
+                    candidate_id=session.candidate_id,
+                    job_id=job.id,
+                    vertical_profile_id=profile.id,
+                    score=profile.best_score or interview_score,
+                    interview_score=match_result.interview_score,
+                    skills_match_score=match_result.skills_match_score,
+                    experience_match_score=match_result.experience_match_score,
+                    location_match=match_result.location_match,
+                    overall_match_score=match_result.overall_match_score,
+                    factors=json.dumps(match_result.factors, ensure_ascii=False),
+                    ai_reasoning=match_result.ai_reasoning,
+                )
+                db.add(new_match)
+
+            logger.info(f"Created/updated match for job {job.id}, score: {match_result.overall_match_score}")
+
+        except Exception as e:
+            logger.error(f"Failed to create match for job {job.id}: {e}")
+
+    db.commit()
+    logger.info(f"Completed vertical interview processing for session {session.id}")
+
+
+def process_coding_response(
+    response_id: str,
+    code: str,
+    challenge_id: str,
+    db_url: str,
+    is_practice: bool = False,
+):
+    """
+    Process a coding challenge response: execute code, run tests, and score.
+    This is a synchronous function for use with FastAPI BackgroundTasks.
+
+    Args:
+        response_id: ID of the InterviewResponse record
+        code: The submitted Python code
+        challenge_id: ID of the CodingChallenge
+        db_url: Database URL for creating a new session
+        is_practice: Whether this is a practice mode submission
+    """
+    from ..models import InterviewResponse, CodingChallenge
+
+    engine = create_engine(db_url)
+    SessionLocal = sessionmaker(bind=engine)
+    db = SessionLocal()
+
+    try:
+        # Get the response record
+        response = db.query(InterviewResponse).filter(
+            InterviewResponse.id == response_id
+        ).first()
+
+        if not response:
+            logger.warning(f"Response {response_id} not found")
+            return
+
+        # Get the coding challenge
+        challenge = db.query(CodingChallenge).filter(
+            CodingChallenge.id == challenge_id
+        ).first()
+
+        if not challenge:
+            logger.error(f"Coding challenge {challenge_id} not found")
+            response.execution_status = "error"
+            response.ai_analysis = json.dumps({"error": "Challenge not found"}, ensure_ascii=False)
+            db.commit()
+            return
+
+        # Execute the code against test cases
+        try:
+            exec_result = _run_async(
+                code_execution_service.execute_python(
+                    code=code,
+                    test_cases=challenge.test_cases,
+                    time_limit_seconds=challenge.time_limit_seconds
+                )
+            )
+
+            # Update response with execution results
+            response.execution_status = "success" if exec_result.success else "error"
+            response.test_results = exec_result.test_results
+            response.execution_time_ms = exec_result.execution_time_ms
+            db.commit()
+
+            logger.info(
+                f"Executed code for response {response_id}: "
+                f"{sum(1 for t in exec_result.test_results if t['passed'])}/{len(exec_result.test_results)} tests passed"
+            )
+
+        except Exception as e:
+            logger.error(f"Code execution failed for {response_id}: {e}")
+            response.execution_status = "error"
+            response.test_results = []
+            response.ai_analysis = json.dumps({"error": f"Execution failed: {str(e)}"}, ensure_ascii=False)
+            db.commit()
+            return
+
+        # Score the response with AI
+        try:
+            # Get problem description for scoring context
+            problem_desc = challenge.problem_description_zh or challenge.problem_description
+
+            if is_practice:
+                # Get detailed feedback for practice mode
+                feedback = _run_async(
+                    scoring_service.get_coding_immediate_feedback(
+                        problem_description=problem_desc,
+                        code=code,
+                        test_results=exec_result.test_results,
+                        language="zh"
+                    )
+                )
+                score_result = feedback["score_result"]
+
+                # Store analysis with extra practice feedback
+                analysis_data = {
+                    "analysis": score_result.analysis,
+                    "strengths": score_result.strengths,
+                    "concerns": score_result.concerns,
+                    "highlight_quotes": score_result.highlight_quotes,
+                    "scores": {
+                        "problem_solving": score_result.problem_solving,
+                        "communication": score_result.communication,
+                        "domain_knowledge": score_result.domain_knowledge,
+                        "motivation": score_result.motivation,
+                        "culture_fit": score_result.culture_fit,
+                    },
+                    "tips": feedback.get("tips", []),
+                    "suggested_approach": feedback.get("suggested_approach"),
+                    "time_complexity": feedback.get("time_complexity"),
+                    "optimal_complexity": feedback.get("optimal_complexity"),
+                }
+            else:
+                # Standard scoring for real interviews
+                score_result = _run_async(
+                    scoring_service.score_coding_response(
+                        problem_description=problem_desc,
+                        code=code,
+                        test_results=exec_result.test_results,
+                        language="zh"
+                    )
+                )
+
+                analysis_data = {
+                    "analysis": score_result.analysis,
+                    "strengths": score_result.strengths,
+                    "concerns": score_result.concerns,
+                    "highlight_quotes": score_result.highlight_quotes,
+                    "scores": {
+                        "problem_solving": score_result.problem_solving,
+                        "communication": score_result.communication,
+                        "domain_knowledge": score_result.domain_knowledge,
+                        "motivation": score_result.motivation,
+                        "culture_fit": score_result.culture_fit,
+                    },
+                }
+
+            response.ai_score = score_result.overall
+            response.ai_analysis = json.dumps(analysis_data, ensure_ascii=False)
+            db.commit()
+
+            logger.info(f"Scored coding response {response_id}: {score_result.overall}")
+
+        except Exception as e:
+            logger.error(f"Scoring failed for coding response {response_id}: {e}")
+            # Still keep the execution results even if scoring fails
+            response.ai_analysis = json.dumps({"error": f"Scoring failed: {str(e)}"}, ensure_ascii=False)
+            db.commit()
+
+    except Exception as e:
+        logger.error(f"Error processing coding response {response_id}: {e}")
     finally:
         db.close()

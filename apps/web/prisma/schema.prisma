@@ -97,6 +97,15 @@ model InterviewResponse {
   durationSeconds  Int?
   createdAt        DateTime @default(now())
 
+  // Question type: "video" (default) or "coding"
+  questionType     String   @default("video")
+
+  // Coding-specific fields
+  codeSolution     String?  // Submitted code
+  executionStatus  String?  // "processing", "success", "error", "timeout"
+  testResults      Json?    // [{name, passed, actual, expected, hidden}]
+  executionTimeMs  Int?     // Total execution time
+
   sessionId String
   session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
@@ -145,8 +154,15 @@ model InterviewQuestion {
   isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
 
+  // Question type: "video" (default) or "coding"
+  questionType       String  @default("video")
+
   jobId String?
   job   Job?    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  // Coding challenge reference
+  codingChallengeId String?
+  codingChallenge   CodingChallenge? @relation(fields: [codingChallengeId], references: [id], onDelete: SetNull)
 
   @@map("interview_questions")
 }
@@ -163,4 +179,26 @@ model InviteToken {
   createdAt   DateTime  @default(now())
 
   @@map("invite_tokens")
+}
+
+model CodingChallenge {
+  id               String    @id @default(cuid())
+  title            String
+  titleZh          String?   @map("title_zh")
+  description      String
+  descriptionZh    String?   @map("description_zh")
+  starterCode      String?   @map("starter_code")
+  testCases        Json      @map("test_cases") // [{input, expected, hidden, name}]
+  solution         String?
+  timeLimitSeconds Int       @default(5) @map("time_limit_seconds")
+  difficulty       String    @default("easy")  // easy, medium, hard
+  language         String    @default("python")
+  category         String?
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime? @updatedAt @map("updated_at")
+
+  questions InterviewQuestion[]
+
+  @@map("coding_challenges")
 }

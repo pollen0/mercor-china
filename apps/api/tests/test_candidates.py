@@ -56,6 +56,43 @@ class TestCandidateRegistration:
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
+    def test_register_candidate_international_phone(self, client):
+        """Test registration with international phone number."""
+        response = client.post("/api/candidates/", json={
+            "name": "International User",
+            "email": "intl@test.com",
+            "phone": "+14155551234",
+            "target_roles": ["Software Engineer"],
+        })
+
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["phone"] == "+14155551234"
+
+    def test_register_candidate_short_phone(self, client):
+        """Test registration with too short phone number fails."""
+        response = client.post("/api/candidates/", json={
+            "name": "Test User",
+            "email": "short@test.com",
+            "phone": "12345",
+            "target_roles": [],
+        })
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def test_register_candidate_chinese_name(self, client):
+        """Test registration with Chinese name."""
+        response = client.post("/api/candidates/", json={
+            "name": "张伟",
+            "email": "zhangwei@test.com",
+            "phone": "13812345678",
+            "target_roles": ["软件工程师"],
+        })
+
+        assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert data["name"] == "张伟"
+
 
 class TestGetCandidate:
     """Tests for getting candidate details."""

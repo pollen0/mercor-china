@@ -8,7 +8,6 @@ python-multipart==0.0.6
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 alembic==1.13.1
-openai>=1.0.0
 httpx>=0.25.0
 boto3>=1.34.0
 aiofiles>=23.2.1
@@ -16,4 +15,11 @@ resend>=0.7.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
 pytest-cov>=4.1.0
-httpx>=0.25.0
+# Resume parsing
+pdfplumber>=0.10.0
+python-docx>=1.1.0
+# Rate limiting
+slowapi>=0.1.9
+# Redis caching
+redis>=5.0.0
+aioredis>=2.0.0

@@ -19,6 +19,11 @@ from ..models import (
     InviteToken,
     FollowupQueue,
     FollowupQueueStatus,
+    CodingChallenge,
+    CandidateVerticalProfile,
+    VerticalProfileStatus,
+    Vertical,
+    RoleType,
 )
 from ..schemas.interview import (
     InterviewStart,
@@ -41,12 +46,21 @@ from ..schemas.interview import (
     FollowupResponse,
     AskFollowupRequest,
     FollowupQuestionInfo,
+    VerticalInterviewStart,
+    VerticalProfileResponse,
+)
+from ..schemas.coding_challenge import (
+    CodeSubmitRequest,
+    CodeExecutionResponse,
+    CodingFeedback,
+    CodingQuestionInfo,
 )
 from ..services.storage import storage_service
-from ..services.tasks import process_interview_response, generate_interview_summary, send_completion_emails, process_match_after_interview
+from ..services.tasks import process_interview_response, generate_interview_summary, send_completion_emails, process_match_after_interview, process_coding_response
 from ..services.scoring import scoring_service
 from ..services.transcription import transcription_service
 from ..services.cache import cache_service
+from ..services.code_execution import code_execution_service
 
 logger = logging.getLogger("zhimian.interviews")
 router = APIRouter()
@@ -118,6 +132,8 @@ async def start_interview(
                     text=q.text,
                     text_zh=q.text_zh,
                     category=q.category,
+                    question_type=q.question_type or "video",
+                    coding_challenge_id=q.coding_challenge_id,
                 )
                 for i, q in enumerate(questions)
             ],
@@ -139,14 +155,28 @@ async def start_interview(
     db.commit()
     db.refresh(session)
 
-    # Get questions (default questions for general interview)
-    questions = db.query(InterviewQuestion).filter(
-        (InterviewQuestion.job_id == data.job_id) |
-        (InterviewQuestion.is_default == True)
-    ).order_by(InterviewQuestion.order).all()
+    # Get questions - prefer job-specific, fall back to defaults
+    if data.job_id:
+        # For job-specific interviews, use job questions first
+        job_questions = db.query(InterviewQuestion).filter(
+            InterviewQuestion.job_id == data.job_id
+        ).order_by(InterviewQuestion.order).all()
+
+        if job_questions:
+            base_questions = job_questions
+        else:
+            # No job-specific questions, use defaults
+            base_questions = db.query(InterviewQuestion).filter(
+                InterviewQuestion.is_default == True
+            ).order_by(InterviewQuestion.order).all()
+    else:
+        # General interview - use defaults
+        base_questions = db.query(InterviewQuestion).filter(
+            InterviewQuestion.is_default == True
+        ).order_by(InterviewQuestion.order).all()
 
     # If no questions exist, seed defaults
-    if not questions:
+    if not base_questions:
         from ..schemas.question import DEFAULT_QUESTIONS
         for q_data in DEFAULT_QUESTIONS:
             question = InterviewQuestion(
@@ -159,23 +189,271 @@ async def start_interview(
                 job_id=None,
             )
             db.add(question)
-            questions.append(question)
+            base_questions.append(question)
         db.commit()
 
-    return InterviewStartResponse(
-        session_id=session.id,
-        questions=[
-            QuestionInfo(
+    # Build question list - start with base questions
+    question_list = []
+    for i, q in enumerate(base_questions[:2]):  # Take first 2 base questions
+        question_list.append(QuestionInfo(
+            index=i,
+            text=q.text,
+            text_zh=q.text_zh,
+            category=q.category,
+            question_type=q.question_type or "video",
+            coding_challenge_id=q.coding_challenge_id,
+        ))
+
+    # Generate personalized questions if candidate has a resume
+    personalized_questions = []
+    if candidate.resume_parsed_data and not data.is_practice:
+        try:
+            from ..services.resume import resume_service
+            from ..schemas.candidate import ParsedResume
+
+            parsed_resume = ParsedResume(**candidate.resume_parsed_data)
+            job_title_for_questions = job.title if job else None
+            job_requirements = job.requirements if job else None
+
+            personalized_questions = await resume_service.generate_personalized_questions(
+                parsed_resume=parsed_resume,
+                job_title=job_title_for_questions,
+                job_requirements=job_requirements,
+                num_questions=3,  # Generate 3 personalized questions
+            )
+
+            # Add personalized questions to the list
+            for pq in personalized_questions:
+                question_list.append(QuestionInfo(
+                    index=len(question_list),
+                    text=pq.text,
+                    text_zh=pq.text_zh,
+                    category=pq.category,
+                    question_type="video",
+                    coding_challenge_id=None,
+                ))
+
+            logger.info(f"Generated {len(personalized_questions)} personalized questions for candidate {candidate.id}")
+        except Exception as e:
+            logger.error(f"Failed to generate personalized questions: {e}")
+            # Fall back to remaining base questions
+            for i, q in enumerate(base_questions[2:], start=len(question_list)):
+                question_list.append(QuestionInfo(
+                    index=i,
+                    text=q.text,
+                    text_zh=q.text_zh,
+                    category=q.category,
+                    question_type=q.question_type or "video",
+                    coding_challenge_id=q.coding_challenge_id,
+                ))
+
+    # If no personalized questions were generated, use remaining base questions
+    if not personalized_questions:
+        for i, q in enumerate(base_questions[2:], start=len(question_list)):
+            question_list.append(QuestionInfo(
                 index=i,
                 text=q.text,
                 text_zh=q.text_zh,
                 category=q.category,
-            )
-            for i, q in enumerate(questions)
-        ],
+                question_type=q.question_type or "video",
+                coding_challenge_id=q.coding_challenge_id,
+            ))
+
+    return InterviewStartResponse(
+        session_id=session.id,
+        questions=question_list,
         job_title=job_title,
         company_name=company_name,
         is_practice=session.is_practice,
+    )
+
+
+# ==================== VERTICAL INTERVIEW (TALENT POOL) ENDPOINTS ====================
+
+# Technical roles that require coding challenges
+TECHNICAL_ROLES = {'battery_engineer', 'embedded_software', 'autonomous_driving', 'supply_chain'}
+
+# Max retakes and cooldown
+MAX_RETAKE_ATTEMPTS = 3
+RETAKE_COOLDOWN_HOURS = 24
+
+
+@router.post("/start-vertical", response_model=InterviewStartResponse)
+@limiter.limit(RateLimits.INTERVIEW_START)
+async def start_vertical_interview(
+    request: Request,
+    data: VerticalInterviewStart,
+    db: Session = Depends(get_db)
+):
+    """
+    Start a vertical interview for the talent pool.
+
+    This creates a ONE-TIME interview per vertical that enters the candidate
+    into the talent pool. Candidates can retake up to 3 times with 24h cooldown.
+    """
+    from ..schemas.question import get_questions_for_role
+    from datetime import timedelta
+
+    # Verify candidate exists
+    candidate = db.query(Candidate).filter(Candidate.id == data.candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="候选人不存在"
+        )
+
+    # Parse and validate vertical and role_type
+    try:
+        vertical = Vertical(data.vertical)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"无效的行业垂直: {data.vertical}. 有效值: new_energy, sales"
+        )
+
+    try:
+        role_type = RoleType(data.role_type)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"无效的职位类型: {data.role_type}"
+        )
+
+    # Check for existing vertical profile
+    profile = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.candidate_id == data.candidate_id,
+        CandidateVerticalProfile.vertical == vertical
+    ).first()
+
+    if profile:
+        # Check if there's an in-progress interview
+        if profile.status == VerticalProfileStatus.IN_PROGRESS:
+            # Return existing session
+            existing_session = db.query(InterviewSession).filter(
+                InterviewSession.id == profile.interview_session_id
+            ).first()
+
+            if existing_session and existing_session.status == InterviewStatus.IN_PROGRESS:
+                # Get questions for this session
+                questions = get_questions_for_role(vertical.value, role_type.value)
+                question_list = []
+                for i, q in enumerate(questions):
+                    question_list.append(QuestionInfo(
+                        index=i,
+                        text=q["text"],
+                        text_zh=q.get("text_zh"),
+                        category=q.get("category"),
+                        question_type="video",
+                        coding_challenge_id=None,
+                    ))
+
+                # Add coding challenge for technical roles
+                if role_type.value in TECHNICAL_ROLES:
+                    coding_challenge = db.query(CodingChallenge).first()  # Get any challenge for now
+                    if coding_challenge:
+                        question_list.append(QuestionInfo(
+                            index=len(question_list),
+                            text=f"编程题: {coding_challenge.title_zh or coding_challenge.title}",
+                            text_zh=coding_challenge.title_zh,
+                            category="coding",
+                            question_type="coding",
+                            coding_challenge_id=coding_challenge.id,
+                        ))
+
+                return InterviewStartResponse(
+                    session_id=existing_session.id,
+                    questions=question_list,
+                    job_title=f"{vertical.value.replace('_', ' ').title()} - {role_type.value.replace('_', ' ').title()}",
+                    company_name="ZhiMian Talent Pool",
+                    is_practice=False,
+                )
+
+        # Check retake eligibility
+        if profile.status == VerticalProfileStatus.COMPLETED:
+            if profile.attempt_count >= MAX_RETAKE_ATTEMPTS:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"已达到最大重试次数 ({MAX_RETAKE_ATTEMPTS}次)"
+                )
+
+            if profile.last_attempt_at:
+                cooldown_end = profile.last_attempt_at + timedelta(hours=RETAKE_COOLDOWN_HOURS)
+                if datetime.utcnow() < cooldown_end:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"请等待 {RETAKE_COOLDOWN_HOURS} 小时后再次尝试。下次可用时间: {cooldown_end.isoformat()}"
+                    )
+
+    # Get questions for this vertical/role
+    questions = get_questions_for_role(vertical.value, role_type.value)
+
+    # Create new interview session
+    session = InterviewSession(
+        id=generate_cuid("i"),
+        status=InterviewStatus.IN_PROGRESS,
+        is_practice=False,
+        is_vertical_interview=True,
+        vertical=vertical,
+        role_type=role_type,
+        started_at=datetime.utcnow(),
+        candidate_id=data.candidate_id,
+        job_id=None,  # No specific job for talent pool interviews
+    )
+    db.add(session)
+    db.flush()  # Get session ID
+
+    # Create or update vertical profile
+    if not profile:
+        profile = CandidateVerticalProfile(
+            id=generate_cuid("vp"),
+            candidate_id=data.candidate_id,
+            vertical=vertical,
+            role_type=role_type,
+            interview_session_id=session.id,
+            status=VerticalProfileStatus.IN_PROGRESS,
+            attempt_count=0,
+        )
+        db.add(profile)
+    else:
+        # Update for retake
+        profile.interview_session_id = session.id
+        profile.role_type = role_type  # Allow changing role within vertical on retake
+        profile.status = VerticalProfileStatus.IN_PROGRESS
+
+    db.commit()
+    db.refresh(session)
+
+    # Build question list
+    question_list = []
+    for i, q in enumerate(questions):
+        question_list.append(QuestionInfo(
+            index=i,
+            text=q["text"],
+            text_zh=q.get("text_zh"),
+            category=q.get("category"),
+            question_type="video",
+            coding_challenge_id=None,
+        ))
+
+    # Add coding challenge for technical roles
+    if role_type.value in TECHNICAL_ROLES:
+        coding_challenge = db.query(CodingChallenge).first()  # Get any challenge
+        if coding_challenge:
+            question_list.append(QuestionInfo(
+                index=len(question_list),
+                text=f"编程题: {coding_challenge.title_zh or coding_challenge.title}",
+                text_zh=coding_challenge.title_zh,
+                category="coding",
+                question_type="coding",
+                coding_challenge_id=coding_challenge.id,
+            ))
+
+    return InterviewStartResponse(
+        session_id=session.id,
+        questions=question_list,
+        job_title=f"{vertical.value.replace('_', ' ').title()} - {role_type.value.replace('_', ' ').title()}",
+        company_name="ZhiMian Talent Pool",
+        is_practice=False,
     )
 
 
@@ -1175,6 +1453,8 @@ async def register_and_start_interview(
                     text=q.text,
                     text_zh=q.text_zh,
                     category=q.category,
+                    question_type=q.question_type or "video",
+                    coding_challenge_id=q.coding_challenge_id,
                 )
                 for i, q in enumerate(questions)
             ],
@@ -1229,9 +1509,331 @@ async def register_and_start_interview(
                 text=q.text,
                 text_zh=q.text_zh,
                 category=q.category,
+                question_type=q.question_type or "video",
+                coding_challenge_id=q.coding_challenge_id,
             )
             for i, q in enumerate(questions)
         ],
         job_title=invite.job.title,
         company_name=invite.job.employer.company_name,
+    )
+
+
+# ==================== CODING CHALLENGE ENDPOINTS ====================
+
+@router.post("/{session_id}/code-response", response_model=CodeExecutionResponse)
+@limiter.limit(RateLimits.INTERVIEW_SUBMIT)
+async def submit_code_response(
+    request: Request,
+    session_id: str,
+    question_index: int,
+    data: CodeSubmitRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """
+    Submit a coding challenge response.
+
+    This endpoint:
+    1. Validates the session and question
+    2. Creates/updates an InterviewResponse record
+    3. Queues background execution and scoring
+    4. Returns immediately with processing status
+    """
+    # Validate session
+    session = db.query(InterviewSession).filter(
+        InterviewSession.id == session_id
+    ).first()
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
+        )
+
+    if session.status not in [InterviewStatus.PENDING, InterviewStatus.IN_PROGRESS]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="面试已完成或已取消"
+        )
+
+    # Get the question at this index
+    questions = db.query(InterviewQuestion).filter(
+        (InterviewQuestion.job_id == session.job_id) |
+        (InterviewQuestion.is_default == True)
+    ).order_by(InterviewQuestion.order).all()
+
+    if question_index >= len(questions):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="问题索引无效"
+        )
+
+    question = questions[question_index]
+
+    # Verify this is a coding question
+    if question.question_type != "coding":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="此问题不是编程题"
+        )
+
+    # Get the coding challenge
+    if not question.coding_challenge_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="编程题配置错误：未关联编程挑战"
+        )
+
+    challenge = db.query(CodingChallenge).filter(
+        CodingChallenge.id == question.coding_challenge_id
+    ).first()
+
+    if not challenge:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="编程挑战不存在"
+        )
+
+    # Check for existing response
+    existing_response = db.query(InterviewResponse).filter(
+        InterviewResponse.session_id == session_id,
+        InterviewResponse.question_index == question_index
+    ).first()
+
+    if existing_response:
+        # Update existing response
+        existing_response.code_solution = data.code
+        existing_response.execution_status = "processing"
+        existing_response.test_results = None
+        existing_response.ai_score = None
+        existing_response.ai_analysis = None
+        response = existing_response
+    else:
+        # Create new response
+        response = InterviewResponse(
+            id=generate_cuid("r"),
+            question_index=question_index,
+            question_text=challenge.title_zh or challenge.title,
+            question_type="coding",
+            code_solution=data.code,
+            execution_status="processing",
+            session_id=session_id,
+        )
+        db.add(response)
+
+    db.commit()
+    db.refresh(response)
+
+    # Queue background processing
+    from ..config import settings
+    background_tasks.add_task(
+        process_coding_response,
+        response_id=response.id,
+        code=data.code,
+        challenge_id=challenge.id,
+        db_url=settings.database_url,
+        is_practice=session.is_practice,
+    )
+
+    return CodeExecutionResponse(
+        response_id=response.id,
+        question_index=question_index,
+        status="processing",
+    )
+
+
+@router.get("/{session_id}/code-response/{response_id}", response_model=CodingFeedback)
+async def get_code_response_status(
+    session_id: str,
+    response_id: str,
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """
+    Get the status/results of a coding challenge submission.
+
+    Poll this endpoint to check if code execution and scoring is complete.
+    """
+    # Validate session
+    session = db.query(InterviewSession).filter(
+        InterviewSession.id == session_id
+    ).first()
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
+        )
+
+    # Get the response
+    response = db.query(InterviewResponse).filter(
+        InterviewResponse.id == response_id,
+        InterviewResponse.session_id == session_id
+    ).first()
+
+    if not response:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="回答不存在"
+        )
+
+    if response.question_type != "coding":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="此回答不是编程题回答"
+        )
+
+    # Parse test results
+    test_results = response.test_results or []
+    passed_count = sum(1 for t in test_results if t.get("passed", False))
+    total_count = len(test_results)
+
+    # Parse analysis data for feedback
+    analysis_data = {}
+    if response.ai_analysis:
+        try:
+            analysis_data = json.loads(response.ai_analysis)
+        except json.JSONDecodeError:
+            pass
+
+    return CodingFeedback(
+        response_id=response.id,
+        question_index=response.question_index,
+        execution_status=response.execution_status or "processing",
+        test_results=[
+            {
+                "name": t.get("name", f"Test {i+1}"),
+                "passed": t.get("passed", False),
+                "actual": t.get("actual", ""),
+                "expected": t.get("expected", ""),
+                "hidden": t.get("hidden", False),
+                "error": t.get("error"),
+            }
+            for i, t in enumerate(test_results)
+        ],
+        passed_count=passed_count,
+        total_count=total_count,
+        execution_time_ms=response.execution_time_ms or 0,
+        ai_score=response.ai_score,
+        analysis=analysis_data.get("analysis"),
+        strengths=analysis_data.get("strengths", []),
+        concerns=analysis_data.get("concerns", []),
+        tips=analysis_data.get("tips", []),
+        suggested_approach=analysis_data.get("suggested_approach"),
+        time_complexity=analysis_data.get("time_complexity"),
+        optimal_complexity=analysis_data.get("optimal_complexity"),
+    )
+
+
+@router.get("/{session_id}/coding-challenge/{question_index}", response_model=CodingQuestionInfo)
+async def get_coding_challenge(
+    session_id: str,
+    question_index: int,
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """
+    Get the coding challenge details for a specific question.
+    """
+    # Validate session
+    session = db.query(InterviewSession).filter(
+        InterviewSession.id == session_id
+    ).first()
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="面试会话不存在"
+        )
+
+    # Verify candidate owns this session
+    if session.candidate_id != current_candidate.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="无权访问此面试会话"
+        )
+
+    # Get questions
+    questions = db.query(InterviewQuestion).filter(
+        (InterviewQuestion.job_id == session.job_id) |
+        (InterviewQuestion.is_default == True)
+    ).order_by(InterviewQuestion.order).all()
+
+    if question_index >= len(questions):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="问题索引无效"
+        )
+
+    question = questions[question_index]
+
+    if question.question_type != "coding":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="此问题不是编程题"
+        )
+
+    # Get the challenge
+    challenge = None
+    if question.coding_challenge_id:
+        challenge = db.query(CodingChallenge).filter(
+            CodingChallenge.id == question.coding_challenge_id
+        ).first()
+
+    if not challenge:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="编程挑战不存在"
+        )
+
+    # Build response with challenge info (hide test case expected values for hidden tests)
+    visible_test_cases = []
+    for tc in challenge.test_cases:
+        if not tc.get("hidden", False):
+            visible_test_cases.append(tc)
+        else:
+            # Include hidden test with masked expected value
+            visible_test_cases.append({
+                "input": tc.get("input"),
+                "expected": "[hidden]",
+                "hidden": True,
+                "name": tc.get("name", "Hidden test"),
+            })
+
+    from ..schemas.coding_challenge import CodingChallengeResponse
+
+    return CodingQuestionInfo(
+        index=question_index,
+        text=question.text,
+        text_zh=question.text_zh,
+        category=question.category,
+        question_type="coding",
+        coding_challenge=CodingChallengeResponse(
+            id=challenge.id,
+            title=challenge.title,
+            title_zh=challenge.title_zh,
+            description=challenge.description,
+            description_zh=challenge.description_zh,
+            starter_code=challenge.starter_code,
+            test_cases=visible_test_cases,
+            time_limit_seconds=challenge.time_limit_seconds,
+            difficulty=challenge.difficulty,
+            created_at=challenge.created_at,
+        ),
     )

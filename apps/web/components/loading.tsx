@@ -13,7 +13,7 @@ export function Spinner({ className, size = 'md' }: { className?: string; size?:
   return (
     <div
       className={cn(
-        'animate-spin rounded-full border-blue-600 border-t-transparent',
+        'animate-spin rounded-full border-brand-500 border-t-transparent',
         sizeClasses[size],
         className
       )}
@@ -24,10 +24,10 @@ export function Spinner({ className, size = 'md' }: { className?: string; size?:
 // Full page loading
 export function PageLoading({ message = 'Loading...' }: { message?: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-warm-50">
       <div className="text-center">
         <Spinner size="lg" className="mx-auto mb-4" />
-        <p className="text-gray-600">{message}</p>
+        <p className="text-warm-600">{message}</p>
       </div>
     </div>
   )
@@ -36,7 +36,7 @@ export function PageLoading({ message = 'Loading...' }: { message?: string }) {
 // Skeleton components
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div className={cn('animate-pulse bg-gray-200 rounded', className)} />
+    <div className={cn('animate-pulse bg-warm-200 rounded-lg', className)} />
   )
 }
 
@@ -55,7 +55,7 @@ export function SkeletonText({ lines = 1, className }: { lines?: number; classNa
 
 export function SkeletonCard() {
   return (
-    <div className="bg-white rounded-lg border p-4 space-y-4">
+    <div className="bg-white rounded-2xl shadow-soft p-5 space-y-4">
       <div className="flex items-center gap-4">
         <Skeleton className="h-12 w-12 rounded-full" />
         <div className="flex-1 space-y-2">
@@ -72,14 +72,14 @@ export function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="flex gap-4 p-3 bg-gray-50 rounded">
+      <div className="flex gap-4 p-3 bg-warm-50 rounded-xl">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} className="h-4 flex-1" />
         ))}
       </div>
       {/* Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={rowIndex} className="flex gap-4 p-3 border rounded">
+        <div key={rowIndex} className="flex gap-4 p-3 bg-white rounded-xl shadow-soft-sm">
           {Array.from({ length: cols }).map((_, colIndex) => (
             <Skeleton key={colIndex} className="h-4 flex-1" />
           ))}
@@ -95,14 +95,14 @@ export function SkeletonDashboard() {
       {/* Stats cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-lg border p-6">
+          <div key={i} className="bg-white rounded-2xl shadow-soft p-6">
             <Skeleton className="h-8 w-16 mx-auto mb-2" />
             <Skeleton className="h-4 w-24 mx-auto" />
           </div>
         ))}
       </div>
       {/* Content area */}
-      <div className="bg-white rounded-lg border p-6 space-y-4">
+      <div className="bg-white rounded-2xl shadow-soft p-6 space-y-4">
         <Skeleton className="h-6 w-48" />
         <SkeletonTable rows={5} cols={4} />
       </div>
@@ -114,7 +114,7 @@ export function SkeletonInterview() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Progress */}
-      <div className="bg-white rounded-lg p-4">
+      <div className="bg-white rounded-2xl shadow-soft p-4">
         <Skeleton className="h-2 w-full rounded-full mb-4" />
         <div className="flex justify-between">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -123,17 +123,17 @@ export function SkeletonInterview() {
         </div>
       </div>
       {/* Question */}
-      <div className="bg-white rounded-lg p-6">
+      <div className="bg-white rounded-2xl shadow-soft p-6">
         <Skeleton className="h-5 w-32 mb-4" />
         <Skeleton className="h-6 w-full mb-2" />
         <Skeleton className="h-6 w-3/4" />
       </div>
       {/* Video area */}
-      <div className="bg-white rounded-lg p-4">
-        <Skeleton className="aspect-video w-full rounded-lg" />
+      <div className="bg-white rounded-2xl shadow-soft p-4">
+        <Skeleton className="aspect-video w-full rounded-xl" />
         <div className="flex justify-center gap-4 mt-4">
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-32 rounded-xl" />
+          <Skeleton className="h-10 w-32 rounded-xl" />
         </div>
       </div>
     </div>

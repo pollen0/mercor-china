@@ -10,8 +10,13 @@ export const candidateRegistrationSchema = z.object({
     .email('Please enter a valid email address'),
   phone: z
     .string()
-    .min(10, 'Please enter a valid phone number')
+    .min(7, 'Please enter a valid phone number')
     .max(20, 'Phone number is too long'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[a-zA-Z]/, 'Password must contain at least one letter'),
   targetRoles: z
     .array(z.string())
     .optional()
@@ -19,6 +24,17 @@ export const candidateRegistrationSchema = z.object({
 })
 
 export type CandidateRegistrationInput = z.infer<typeof candidateRegistrationSchema>
+
+export const candidateLoginSchema = z.object({
+  email: z
+    .string()
+    .email('Please enter a valid email address'),
+  password: z
+    .string()
+    .min(1, 'Password is required'),
+})
+
+export type CandidateLoginInput = z.infer<typeof candidateLoginSchema>
 
 export const targetRoleOptions = [
   { value: 'frontend', label: 'Frontend Developer' },

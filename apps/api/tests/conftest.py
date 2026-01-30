@@ -3,16 +3,34 @@ Pytest configuration and fixtures for ZhiPin AI API tests.
 """
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Text, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.sqlite.base import SQLiteTypeCompiler
 from unittest.mock import MagicMock, patch
 import uuid
+import json
+
+
+# Register custom visit methods for PostgreSQL types in SQLite DDL
+def visit_ARRAY(self, type_, **kw):
+    """Convert PostgreSQL ARRAY to SQLite TEXT."""
+    return "TEXT"
+
+def visit_JSONB(self, type_, **kw):
+    """Convert PostgreSQL JSONB to SQLite TEXT."""
+    return "TEXT"
+
+SQLiteTypeCompiler.visit_ARRAY = visit_ARRAY
+SQLiteTypeCompiler.visit_JSONB = visit_JSONB
+
 
 from app.main import app
 from app.database import Base, get_db
 from app.models import (
     Candidate,
+    CandidateVerticalProfile,
     Employer,
     Job,
     InterviewSession,
@@ -20,18 +38,30 @@ from app.models import (
     InterviewQuestion,
     InviteToken,
     InterviewStatus,
+    FollowupQueue,
+    FollowupQueueStatus,
+    Match,
+    MatchStatus,
+    Message,
+    MessageType,
 )
 from app.utils.auth import create_access_token, get_password_hash
 
 
-# Use SQLite in-memory database for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+# Use TEST_DATABASE_URL if available, fallback to SQLite for basic tests
+import os
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite:///:memory:")
+
+if TEST_DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+else:
+    engine = create_engine(TEST_DATABASE_URL)
+
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -82,11 +112,13 @@ def mock_background_tasks():
     """Mock background tasks to prevent actual processing."""
     with patch("app.routers.interviews.process_interview_response") as mock_process, \
          patch("app.routers.interviews.generate_interview_summary") as mock_summary, \
-         patch("app.routers.interviews.send_completion_emails") as mock_email:
+         patch("app.routers.interviews.send_completion_emails") as mock_email, \
+         patch("app.routers.interviews.process_match_after_interview") as mock_match:
         yield {
             "process": mock_process,
             "summary": mock_summary,
             "email": mock_email,
+            "match": mock_match,
         }
 
 
@@ -127,7 +159,7 @@ def test_job(db_session, test_employer):
         id=generate_test_id("j"),
         title="Software Engineer",
         description="Test job description",
-        requirements=["Python", "FastAPI", "PostgreSQL"],
+        requirements=None,  # None for SQLite compatibility
         location="Shanghai",
         salary_min=15000,
         salary_max=25000,
@@ -148,7 +180,7 @@ def test_candidate(db_session):
         name="Test Candidate",
         email="candidate@test.com",
         phone="13800138000",
-        target_roles=["Software Engineer", "Backend Developer"],
+        target_roles=None,  # None for SQLite compatibility
     )
     db_session.add(candidate)
     db_session.commit()
@@ -243,3 +275,54 @@ def test_invite(db_session, test_job):
     db_session.commit()
     db_session.refresh(invite)
     return invite
+
+
+@pytest.fixture
+def practice_interview(db_session, test_candidate, test_job):
+    """Create a test practice interview session."""
+    session = InterviewSession(
+        id=generate_test_id("i"),
+        status=InterviewStatus.IN_PROGRESS,
+        is_practice=True,
+        candidate_id=test_candidate.id,
+        job_id=test_job.id,
+    )
+    db_session.add(session)
+    db_session.commit()
+    db_session.refresh(session)
+    return session
+
+
+@pytest.fixture
+def test_match(db_session, test_candidate, test_job):
+    """Create a test match record."""
+    match = Match(
+        id=generate_test_id("m"),
+        candidate_id=test_candidate.id,
+        job_id=test_job.id,
+        score=75.0,
+        status=MatchStatus.PENDING,
+        overall_match_score=0.75,
+        interview_score=75.0,
+        skills_match_score=0.80,
+        experience_match_score=0.70,
+    )
+    db_session.add(match)
+    db_session.commit()
+    db_session.refresh(match)
+    return match
+
+
+@pytest.fixture
+def mock_cache_service():
+    """Mock the cache service for tests."""
+    with patch("app.services.cache.cache_service") as mock:
+        mock.get.return_value = None
+        mock.set.return_value = True
+        mock.delete.return_value = True
+        mock.is_available = True
+        mock.get_dashboard_stats.return_value = None
+        mock.get_questions.return_value = None
+        mock.get_top_candidates.return_value = None
+        mock.get_interview_session.return_value = None
+        yield mock

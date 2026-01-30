@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
@@ -8,12 +8,15 @@ import uuid
 import json
 
 from ..database import get_db
-from ..models.candidate import Candidate
-from ..models.employer import Job
+from ..models.candidate import Candidate, CandidateVerticalProfile, VerticalProfileStatus
+from ..models.employer import Job, Vertical, RoleType
+from ..models.interview import Match, MatchStatus
 from ..schemas.candidate import (
     CandidateCreate,
+    CandidateLogin,
     CandidateResponse,
     CandidateList,
+    CandidateWithToken,
     ResumeParseResult,
     ResumeResponse,
     ParsedResume,
@@ -25,7 +28,7 @@ from ..schemas.candidate import (
 from ..services.resume import resume_service
 from ..services.storage import storage_service
 from ..services.wechat import wechat_service
-from ..utils.auth import create_token, get_current_candidate, get_current_employer
+from ..utils.auth import create_token, get_current_candidate, get_current_employer, get_password_hash, verify_password
 from ..utils.rate_limit import limiter, RateLimits
 from ..config import settings
 
@@ -37,9 +40,10 @@ def generate_cuid() -> str:
     return f"c{uuid.uuid4().hex[:24]}"
 
 
-@router.post("/", response_model=CandidateResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=CandidateWithToken, status_code=status.HTTP_201_CREATED)
 async def create_candidate(
     candidate_data: CandidateCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     existing = db.query(Candidate).filter(Candidate.email == candidate_data.email).first()
@@ -49,11 +53,15 @@ async def create_candidate(
             detail="该邮箱已被注册"
         )
 
+    # Hash the password
+    password_hash = get_password_hash(candidate_data.password)
+
     candidate = Candidate(
         id=generate_cuid(),
         name=candidate_data.name,
         email=candidate_data.email,
         phone=candidate_data.phone,
+        password_hash=password_hash,
         target_roles=candidate_data.target_roles,
     )
 
@@ -68,7 +76,81 @@ async def create_candidate(
             detail="该邮箱已被注册"
         )
 
-    return candidate
+    # Send verification email
+    from .auth import create_verification_for_candidate
+    create_verification_for_candidate(candidate, db, background_tasks)
+
+    # Generate token for immediate login after registration
+    token = create_token(
+        subject=candidate.id,
+        token_type="candidate",
+        expires_hours=settings.jwt_expiry_hours,
+    )
+
+    return CandidateWithToken(
+        candidate=CandidateResponse(
+            id=candidate.id,
+            name=candidate.name,
+            email=candidate.email,
+            phone=candidate.phone,
+            target_roles=candidate.target_roles or [],
+            resume_url=candidate.resume_url,
+            created_at=candidate.created_at,
+        ),
+        token=token,
+    )
+
+
+@router.post("/login", response_model=CandidateWithToken)
+async def login_candidate(
+    login_data: CandidateLogin,
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticate a candidate with email and password.
+    Returns candidate info with JWT token.
+    """
+    candidate = db.query(Candidate).filter(Candidate.email == login_data.email).first()
+
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="邮箱或密码错误"
+        )
+
+    # Check if candidate has a password (might be WeChat-only user)
+    if not candidate.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="该账户未设置密码，请使用微信登录或重置密码"
+        )
+
+    # Verify password
+    if not verify_password(login_data.password, candidate.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="邮箱或密码错误"
+        )
+
+    # Generate token
+    token = create_token(
+        subject=candidate.id,
+        token_type="candidate",
+        expires_hours=settings.jwt_expiry_hours,
+    )
+
+    return CandidateWithToken(
+        candidate=CandidateResponse(
+            id=candidate.id,
+            name=candidate.name,
+            email=candidate.email,
+            phone=candidate.phone,
+            target_roles=candidate.target_roles or [],
+            resume_url=candidate.resume_url,
+            created_at=candidate.created_at,
+        ),
+        token=token,
+    )
 
 
 @router.get("/", response_model=CandidateList)
@@ -261,6 +343,23 @@ async def get_my_resume(
         parsed_data=parsed_data,
         uploaded_at=current_candidate.resume_uploaded_at
     )
+
+
+@router.delete("/me/resume")
+async def delete_my_resume(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Delete the current candidate's resume."""
+    # Clear resume data
+    current_candidate.resume_url = None
+    current_candidate.resume_raw_text = None
+    current_candidate.resume_parsed_data = None
+    current_candidate.resume_uploaded_at = None
+
+    db.commit()
+
+    return {"success": True, "message": "Resume deleted successfully"}
 
 
 @router.get("/{candidate_id}/resume", response_model=ResumeResponse)
@@ -514,4 +613,219 @@ async def wechat_mini_program_login(
     return await wechat_login(
         data=WeChatLoginRequest(code=js_code, is_mini_program=True),
         db=db,
+    )
+
+
+# ==================== VERTICAL PROFILE ENDPOINTS ====================
+
+from pydantic import BaseModel as PydanticBaseModel
+from datetime import timedelta
+
+MAX_RETAKE_ATTEMPTS = 3
+RETAKE_COOLDOWN_HOURS = 24
+
+
+class VerticalProfileResponse(PydanticBaseModel):
+    """Response for a candidate's vertical profile."""
+    id: str
+    vertical: str
+    role_type: str
+    status: str
+    interview_score: Optional[float] = None
+    best_score: Optional[float] = None
+    attempt_count: int = 0
+    last_attempt_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    can_retake: bool = False
+    next_retake_available_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class VerticalProfileList(PydanticBaseModel):
+    """List of candidate's vertical profiles."""
+    profiles: list[VerticalProfileResponse]
+    total: int
+
+
+class MatchingJobResponse(PydanticBaseModel):
+    """Job that matches a candidate's vertical profile."""
+    job_id: str
+    job_title: str
+    company_name: str
+    vertical: str
+    role_type: Optional[str] = None
+    location: Optional[str] = None
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    match_score: Optional[float] = None
+    match_status: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MatchingJobsResponse(PydanticBaseModel):
+    """List of jobs matching a candidate's vertical profiles."""
+    jobs: list[MatchingJobResponse]
+    total: int
+
+
+@router.get("/me/verticals", response_model=VerticalProfileList)
+async def get_my_vertical_profiles(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Get the current candidate's vertical profiles.
+    Shows interview status and scores for each vertical.
+    """
+    profiles = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.candidate_id == current_candidate.id
+    ).order_by(CandidateVerticalProfile.created_at.desc()).all()
+
+    result = []
+    for profile in profiles:
+        # Calculate retake eligibility
+        can_retake = False
+        next_retake_at = None
+
+        if profile.status == VerticalProfileStatus.COMPLETED:
+            if profile.attempt_count < MAX_RETAKE_ATTEMPTS:
+                if profile.last_attempt_at:
+                    cooldown_end = profile.last_attempt_at + timedelta(hours=RETAKE_COOLDOWN_HOURS)
+                    if datetime.utcnow() >= cooldown_end:
+                        can_retake = True
+                    else:
+                        next_retake_at = cooldown_end
+                else:
+                    can_retake = True
+
+        result.append(VerticalProfileResponse(
+            id=profile.id,
+            vertical=profile.vertical.value,
+            role_type=profile.role_type.value,
+            status=profile.status.value,
+            interview_score=profile.interview_score,
+            best_score=profile.best_score,
+            attempt_count=profile.attempt_count,
+            last_attempt_at=profile.last_attempt_at,
+            completed_at=profile.completed_at,
+            can_retake=can_retake,
+            next_retake_available_at=next_retake_at,
+        ))
+
+    return VerticalProfileList(profiles=result, total=len(result))
+
+
+@router.get("/me/matching-jobs", response_model=MatchingJobsResponse)
+async def get_my_matching_jobs(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Get jobs matching the candidate's completed vertical profiles.
+    Only shows jobs where the candidate has a completed vertical interview.
+    """
+    # Get candidate's completed vertical profiles
+    completed_profiles = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.candidate_id == current_candidate.id,
+        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
+    ).all()
+
+    if not completed_profiles:
+        return MatchingJobsResponse(jobs=[], total=0)
+
+    # Get verticals the candidate has completed
+    completed_verticals = [p.vertical for p in completed_profiles]
+
+    # Find active jobs matching these verticals
+    jobs = db.query(Job).filter(
+        Job.is_active == True,
+        Job.vertical.in_(completed_verticals)
+    ).order_by(Job.created_at.desc()).all()
+
+    result = []
+    for job in jobs:
+        # Check if there's an existing match for this job
+        match = db.query(Match).filter(
+            Match.candidate_id == current_candidate.id,
+            Match.job_id == job.id
+        ).first()
+
+        # Find the profile for this job's vertical
+        profile = next((p for p in completed_profiles if p.vertical == job.vertical), None)
+
+        result.append(MatchingJobResponse(
+            job_id=job.id,
+            job_title=job.title,
+            company_name=job.employer.company_name,
+            vertical=job.vertical.value if job.vertical else "",
+            role_type=job.role_type.value if job.role_type else None,
+            location=job.location,
+            salary_min=job.salary_min,
+            salary_max=job.salary_max,
+            match_score=match.overall_match_score if match else (profile.best_score * 10 if profile else None),
+            match_status=match.status.value if match else None,
+        ))
+
+    return MatchingJobsResponse(jobs=result, total=len(result))
+
+
+@router.get("/me/verticals/{vertical}", response_model=VerticalProfileResponse)
+async def get_my_vertical_profile(
+    vertical: str,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Get a specific vertical profile for the current candidate.
+    """
+    try:
+        vertical_enum = Vertical(vertical)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"无效的行业垂直: {vertical}"
+        )
+
+    profile = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.candidate_id == current_candidate.id,
+        CandidateVerticalProfile.vertical == vertical_enum
+    ).first()
+
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未找到该垂直领域的档案"
+        )
+
+    # Calculate retake eligibility
+    can_retake = False
+    next_retake_at = None
+
+    if profile.status == VerticalProfileStatus.COMPLETED:
+        if profile.attempt_count < MAX_RETAKE_ATTEMPTS:
+            if profile.last_attempt_at:
+                cooldown_end = profile.last_attempt_at + timedelta(hours=RETAKE_COOLDOWN_HOURS)
+                if datetime.utcnow() >= cooldown_end:
+                    can_retake = True
+                else:
+                    next_retake_at = cooldown_end
+            else:
+                can_retake = True
+
+    return VerticalProfileResponse(
+        id=profile.id,
+        vertical=profile.vertical.value,
+        role_type=profile.role_type.value,
+        status=profile.status.value,
+        interview_score=profile.interview_score,
+        best_score=profile.best_score,
+        attempt_count=profile.attempt_count,
+        last_attempt_at=profile.last_attempt_at,
+        completed_at=profile.completed_at,
+        can_retake=can_retake,
+        next_retake_available_at=next_retake_at,
     )

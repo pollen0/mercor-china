@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,13 +9,67 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { candidateRegistrationSchema, targetRoleOptions, type CandidateRegistrationInput } from '@/lib/validations/candidate'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 type FormErrors = Partial<Record<keyof CandidateRegistrationInput, string>>
 
+function WeChatButton() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleWeChatLogin = async () => {
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await fetch(`${API_URL}/api/candidates/auth/wechat/url`)
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.detail || '微信登录暂不可用')
+      }
+
+      const data = await response.json()
+
+      // Store state for CSRF validation
+      sessionStorage.setItem('wechat_oauth_state', data.state)
+
+      // Redirect to WeChat authorization page
+      window.location.href = data.auth_url
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'WeChat login failed')
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full border-[#07C160] text-[#07C160] hover:bg-[#07C160]/10"
+        onClick={handleWeChatLogin}
+        disabled={isLoading}
+      >
+        <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.27-.027-.407-.032zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/>
+        </svg>
+        {isLoading ? '正在跳转...' : '使用微信快速注册'}
+      </Button>
+      {error && (
+        <p className="mt-2 text-sm text-error text-center">{error}</p>
+      )}
+    </div>
+  )
+}
+
 export default function RegisterPage() {
+  const router = useRouter()
   const [formData, setFormData] = useState<CandidateRegistrationInput>({
     name: '',
     email: '',
     phone: '',
+    password: '',
     targetRoles: [],
   })
   const [errors, setErrors] = useState<FormErrors>({})
@@ -70,11 +125,23 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed. Please try again.')
+        throw new Error(data.error || data.detail || 'Registration failed. Please try again.')
       }
 
+      // Store candidate info and token
+      localStorage.setItem('candidate', JSON.stringify({
+        id: data.candidate.id,
+        name: data.candidate.name,
+        email: data.candidate.email,
+      }))
+      localStorage.setItem('candidate_token', data.token)
+
       setSubmitStatus('success')
-      setFormData({ name: '', email: '', phone: '', targetRoles: [] })
+
+      // Redirect to resume upload after short delay
+      setTimeout(() => {
+        router.push('/candidate/resume?onboarding=true')
+      }, 1500)
     } catch (error) {
       setSubmitStatus('error')
       setErrorMessage(error instanceof Error ? error.message : 'Registration failed. Please try again.')
@@ -95,7 +162,7 @@ export default function RegisterPage() {
             </div>
             <CardTitle className="text-success">Registration Successful!</CardTitle>
             <CardDescription>
-              Thank you for registering. We will contact you soon.
+              Next step: Upload your resume to get personalized interview questions.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
@@ -124,6 +191,18 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* WeChat Registration Button */}
+          <WeChatButton />
+
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-warm-200" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-warm-500">或填写表单注册</span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="name">
@@ -177,6 +256,24 @@ export default function RegisterPage() {
               )}
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Password <span className="text-error">*</span>
+              </Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="At least 8 characters with letters and numbers"
+                className={errors.password ? 'border-error focus-visible:ring-error' : ''}
+              />
+              {errors.password && (
+                <p className="text-sm text-error">{errors.password}</p>
+              )}
+            </div>
+
             <div className="space-y-3">
               <Label>Target Roles (select multiple)</Label>
               <div className="flex flex-wrap gap-2">
@@ -203,6 +300,17 @@ export default function RegisterPage() {
               </div>
             )}
 
+            <p className="text-xs text-warm-500 text-center">
+              By registering, you agree to our{' '}
+              <Link href="/privacy" className="text-brand-600 hover:underline">
+                Privacy Policy
+              </Link>
+              {' '}/ 注册即表示您同意我们的
+              <Link href="/privacy" className="text-brand-600 hover:underline">
+                隐私政策
+              </Link>
+            </p>
+
             <Button
               type="submit"
               variant="brand"
@@ -213,26 +321,6 @@ export default function RegisterPage() {
               {isSubmitting ? 'Submitting...' : 'Register Now'}
             </Button>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-warm-200" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-warm-500">或使用以下方式注册</span>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full border-green-500 text-green-600 hover:bg-green-50"
-              onClick={() => window.location.href = '/api/auth/wechat'}
-            >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.328.328 0 00.186-.059l2.114-1.225a.866.866 0 01.627-.097c.853.186 1.753.282 2.697.282 4.801 0 8.692-3.288 8.692-7.342 0-4.054-3.89-7.343-8.692-7.343zm-3.16 5.06c.579 0 1.05.47 1.05 1.05 0 .58-.471 1.05-1.05 1.05-.58 0-1.05-.47-1.05-1.05 0-.58.47-1.05 1.05-1.05zm6.32 0c.58 0 1.05.47 1.05 1.05 0 .58-.47 1.05-1.05 1.05-.58 0-1.05-.47-1.05-1.05 0-.58.47-1.05 1.05-1.05z"/>
-              </svg>
-              微信快速注册 (WeChat Quick Register)
-            </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-warm-500">

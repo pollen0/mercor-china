@@ -35,11 +35,16 @@ class Employer(Base):
     logo = Column(String, nullable=True)
     industry = Column(String, nullable=True)  # 'new_energy', 'sales', 'tech', etc.
     company_size = Column(String, nullable=True)  # 'startup', 'smb', 'enterprise'
+    # Email verification
     is_verified = Column(Boolean, default=False)
+    email_verification_token = Column(String, nullable=True)
+    email_verification_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     jobs = relationship("Job", back_populates="employer")
+    messages = relationship("Message", back_populates="employer")
 
 
 class Job(Base):
@@ -65,6 +70,7 @@ class Job(Base):
     matches = relationship("Match", back_populates="job")
     interview_questions = relationship("InterviewQuestion", back_populates="job")
     invite_tokens = relationship("InviteToken", back_populates="job")
+    messages = relationship("Message", back_populates="job")
 
 
 class InterviewQuestion(Base):
@@ -78,8 +84,15 @@ class InterviewQuestion(Base):
     is_default = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # Question type: "video" (default) or "coding"
+    question_type = Column(String, default="video")
+
     job_id = Column(String, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=True)
     job = relationship("Job", back_populates="interview_questions")
+
+    # Coding challenge reference (for question_type="coding")
+    coding_challenge_id = Column(String, ForeignKey("coding_challenges.id", ondelete="SET NULL"), nullable=True)
+    coding_challenge = relationship("CodingChallenge", back_populates="questions")
 
 
 class InviteToken(Base):

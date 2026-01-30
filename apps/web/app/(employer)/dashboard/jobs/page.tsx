@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { employerApi, inviteApi, type Job, type InviteTokenResponse } from '@/lib/api'
 
-type ViewMode = 'list' | 'create' | 'detail'
+type ViewMode = 'list' | 'create' | 'detail' | 'edit'
 
 // Vertical and Role Type definitions
 const VERTICALS = [
@@ -39,6 +39,9 @@ export default function JobsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isTogglingActive, setIsTogglingActive] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -160,6 +163,89 @@ export default function JobsPage() {
     setFormData({ ...formData, vertical, roleType: '' })
   }
 
+  const handleEditJob = () => {
+    if (!selectedJob) return
+    setFormData({
+      title: selectedJob.title,
+      description: selectedJob.description,
+      requirements: selectedJob.requirements.join('\n'),
+      location: selectedJob.location || '',
+      salaryMin: selectedJob.salaryMin?.toString() || '',
+      salaryMax: selectedJob.salaryMax?.toString() || '',
+      vertical: selectedJob.vertical || '',
+      roleType: selectedJob.roleType || '',
+    })
+    setViewMode('edit')
+  }
+
+  const handleUpdateJob = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedJob) return
+
+    setIsSaving(true)
+    setError(null)
+
+    try {
+      const requirements = formData.requirements
+        .split('\n')
+        .map(r => r.trim())
+        .filter(r => r.length > 0)
+
+      const updated = await employerApi.updateJob(selectedJob.id, {
+        title: formData.title,
+        description: formData.description,
+        requirements,
+        location: formData.location || undefined,
+        salaryMin: formData.salaryMin ? parseInt(formData.salaryMin) : undefined,
+        salaryMax: formData.salaryMax ? parseInt(formData.salaryMax) : undefined,
+        vertical: formData.vertical || undefined,
+        roleType: formData.roleType || undefined,
+      })
+
+      setSelectedJob(updated)
+      setViewMode('detail')
+      loadJobs()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update job')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteJob = async () => {
+    if (!selectedJob) return
+
+    setIsDeleting(true)
+    try {
+      await employerApi.deleteJob(selectedJob.id)
+      setSelectedJob(null)
+      setShowDeleteConfirm(false)
+      setViewMode('list')
+      loadJobs()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete job')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleToggleActive = async () => {
+    if (!selectedJob) return
+
+    setIsTogglingActive(true)
+    try {
+      const updated = await employerApi.updateJob(selectedJob.id, {
+        isActive: !selectedJob.isActive
+      })
+      setSelectedJob(updated)
+      loadJobs()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update job status')
+    } finally {
+      setIsTogglingActive(false)
+    }
+  }
+
   const getVerticalLabel = (value: string) => {
     return VERTICALS.find(v => v.value === value)?.label || value
   }
@@ -189,11 +275,13 @@ export default function JobsPage() {
             {viewMode === 'list' && 'Jobs'}
             {viewMode === 'create' && 'Create New Job'}
             {viewMode === 'detail' && selectedJob?.title}
+            {viewMode === 'edit' && `Edit: ${selectedJob?.title}`}
           </h1>
           <p className="text-gray-500 mt-1">
             {viewMode === 'list' && `${jobs.length} job${jobs.length !== 1 ? 's' : ''} posted`}
             {viewMode === 'create' && 'Add a new position to start interviewing candidates'}
             {viewMode === 'detail' && 'Manage job details and invite links'}
+            {viewMode === 'edit' && 'Update job details'}
           </p>
         </div>
         <div className="flex gap-3">
@@ -442,7 +530,7 @@ export default function JobsPage() {
           {/* Job Info Card */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-start justify-between mb-4">
-              <div>
+              <div className="flex-1">
                 <h2 className="text-xl font-semibold text-gray-900">{selectedJob.title}</h2>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   {selectedJob.vertical && (
@@ -465,11 +553,39 @@ export default function JobsPage() {
                   )}
                 </div>
               </div>
-              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                selectedJob.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {selectedJob.isActive ? 'Active' : 'Inactive'}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                  selectedJob.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {selectedJob.isActive ? 'Active' : 'Inactive'}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleActive}
+                  disabled={isTogglingActive}
+                  className="text-gray-600"
+                >
+                  {isTogglingActive ? 'Updating...' : (selectedJob.isActive ? 'Deactivate' : 'Activate')}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleEditJob}>
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete
+                </Button>
+              </div>
             </div>
             <p className="text-gray-600 mb-4">{selectedJob.description}</p>
             {selectedJob.requirements && selectedJob.requirements.length > 0 && (
@@ -568,6 +684,181 @@ export default function JobsPage() {
                 View Interviews for This Job
               </Button>
             </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Job Form */}
+      {viewMode === 'edit' && selectedJob && (
+        <form onSubmit={handleUpdateJob} className="bg-white border border-gray-200 rounded-xl p-6">
+          <div className="space-y-6">
+            {/* Vertical Selection */}
+            <div>
+              <Label className="text-sm font-medium">Industry Vertical *</Label>
+              <p className="text-xs text-gray-500 mb-3">This determines the interview questions template</p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {VERTICALS.map((v) => (
+                  <button
+                    key={v.value}
+                    type="button"
+                    onClick={() => handleVerticalChange(v.value)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      formData.vertical === v.value
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="font-medium text-gray-900">{v.label}</div>
+                    <div className="text-sm text-gray-500">{v.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Role Type Selection */}
+            {formData.vertical && ROLE_TYPES[formData.vertical] && (
+              <div>
+                <Label className="text-sm font-medium">Role Type *</Label>
+                <p className="text-xs text-gray-500 mb-3">Select the specific role for tailored interview questions</p>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {ROLE_TYPES[formData.vertical].map((r) => (
+                    <button
+                      key={r.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, roleType: r.value })}
+                      className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                        formData.roleType === r.value
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="edit-title" className="text-sm font-medium">Job Title *</Label>
+              <Input
+                id="edit-title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Senior Battery Engineer"
+                className="mt-2"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-description" className="text-sm font-medium">Description *</Label>
+              <textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe the role, responsibilities, and what you're looking for..."
+                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[120px] resize-y"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-requirements" className="text-sm font-medium">Requirements (one per line)</Label>
+              <textarea
+                id="edit-requirements"
+                value={formData.requirements}
+                onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
+                placeholder="5+ years of battery engineering experience&#10;Experience with lithium-ion cell design&#10;Strong problem-solving skills"
+                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[100px] resize-y font-mono text-sm"
+              />
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="edit-location" className="text-sm font-medium">Location</Label>
+                <Input
+                  id="edit-location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="e.g. Shanghai"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-salaryMin" className="text-sm font-medium">Min Salary (per month)</Label>
+                <Input
+                  id="edit-salaryMin"
+                  type="number"
+                  value={formData.salaryMin}
+                  onChange={(e) => setFormData({ ...formData, salaryMin: e.target.value })}
+                  placeholder="15000"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-salaryMax" className="text-sm font-medium">Max Salary (per month)</Label>
+                <Input
+                  id="edit-salaryMax"
+                  type="number"
+                  value={formData.salaryMax}
+                  onChange={(e) => setFormData({ ...formData, salaryMax: e.target.value })}
+                  placeholder="30000"
+                  className="mt-2"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => setViewMode('detail')}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSaving || !formData.vertical || !formData.roleType}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedJob && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Job</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete <strong>{selectedJob.title}</strong>? All associated invite links will also be deleted.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteJob}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Job'}
+              </Button>
+            </div>
           </div>
         </div>
       )}

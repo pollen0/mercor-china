@@ -113,6 +113,116 @@ cp apps/api/.env.example apps/api/.env
 | `R2_SECRET_ACCESS_KEY` | R2 secret key | For video storage |
 | `RESEND_API_KEY` | Resend API key for emails | Optional |
 | `REDIS_URL` | Redis connection string | Optional (caching) |
+| `WECHAT_APP_ID` | WeChat Open Platform App ID | For WeChat login |
+| `WECHAT_APP_SECRET` | WeChat Open Platform App Secret | For WeChat login |
+
+---
+
+## TODO: Production Setup Required
+
+### WeChat OAuth Login Setup (微信登录配置)
+
+WeChat login is implemented but requires credentials from WeChat Open Platform. Follow these steps:
+
+#### Step 1: Register on WeChat Open Platform
+
+1. Go to **WeChat Open Platform**: https://open.weixin.qq.com
+2. Click "注册" (Register) to create a developer account
+3. You'll need:
+   - Valid email address
+   - Mobile phone number (Chinese number preferred)
+   - For business: Chinese business license (营业执照)
+   - For individual: Chinese ID card or passport
+
+#### Step 2: Complete Developer Verification
+
+1. Log in to your Open Platform account
+2. Go to "账号中心" (Account Center) → "开发者资质认证" (Developer Verification)
+3. Submit required documents:
+   - **Business account**: Business license, legal representative ID, authorization letter
+   - **Individual account**: Personal ID verification
+4. Pay verification fee (¥300 for businesses)
+5. Wait for approval (typically 1-7 business days)
+
+#### Step 3: Create Website Application (网站应用)
+
+1. After verification, go to "管理中心" (Management Center)
+2. Click "创建网站应用" (Create Website Application)
+3. Fill in application details:
+   - **应用名称** (App Name): Your app name (e.g., "智面招聘平台")
+   - **应用简介** (Description): Brief description of your platform
+   - **应用官网** (Official Website): Your production domain (e.g., `https://zhimian.ai`)
+   - **授权回调域** (Callback Domain): Your domain WITHOUT protocol (e.g., `zhimian.ai`)
+4. Upload app logo (108x108 pixels, PNG/JPG)
+5. Submit for review (typically 1-3 business days)
+
+#### Step 4: Get Credentials
+
+Once approved, you'll find your credentials in the application details:
+- **AppID** (应用ID): e.g., `wx1234567890abcdef`
+- **AppSecret** (应用密钥): Click "查看" to reveal
+
+#### Step 5: Configure Environment Variables
+
+Add to your `apps/api/.env` file:
+
+```env
+# WeChat OAuth
+WECHAT_APP_ID=wx1234567890abcdef
+WECHAT_APP_SECRET=your_app_secret_here
+
+# Must match your registered callback domain
+FRONTEND_URL=https://yourdomain.com
+```
+
+#### Step 6: Verify Callback URL
+
+Ensure your callback URL matches exactly:
+- Registered callback domain: `zhimian.ai`
+- Actual callback URL: `https://zhimian.ai/auth/wechat/callback`
+
+#### Testing with WeChat Sandbox (Optional)
+
+For development/testing before full approval:
+
+1. Go to WeChat MP Sandbox: https://mp.weixin.qq.com/debug/cgi-bin/sandbox?t=sandbox/login
+2. Scan QR code with WeChat to get test credentials
+3. Note: Sandbox has limited features and only works with specific test accounts
+
+#### Troubleshooting
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "redirect_uri 参数错误" | Callback domain mismatch | Ensure domain in Open Platform matches your FRONTEND_URL |
+| "invalid appid" | Wrong AppID | Double-check WECHAT_APP_ID in .env |
+| "未获得授权" | App not approved | Wait for Open Platform approval |
+| "scope参数错误" | Wrong scope | Ensure using `snsapi_login` for web login |
+
+#### WeChat Login Flow
+
+```
+User clicks "微信登录"
+    ↓
+Frontend calls GET /api/candidates/auth/wechat/url
+    ↓
+Backend generates auth URL with state token
+    ↓
+User redirected to WeChat QR code page
+    ↓
+User scans QR with WeChat mobile app
+    ↓
+WeChat redirects to /auth/wechat/callback?code=xxx&state=xxx
+    ↓
+Frontend sends code to POST /api/candidates/auth/wechat/login
+    ↓
+Backend exchanges code for access_token + user info
+    ↓
+Backend creates/finds user, returns JWT token
+    ↓
+User logged in, redirected to dashboard
+```
+
+---
 
 ### 2. Start the Database
 

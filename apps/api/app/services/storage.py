@@ -29,11 +29,11 @@ class StorageService:
             )
         return self._client
 
-    def _generate_key(self, session_id: str, question_index: int, extension: str = "webm") -> str:
+    def _generate_key(self, session_id: str, question_index: int, extension: str = "webm", suffix: str = "") -> str:
         """Generate a unique storage key for a video."""
         timestamp = datetime.utcnow().strftime("%Y%m%d")
         unique_id = uuid.uuid4().hex[:8]
-        return f"interviews/{session_id}/{question_index}_{timestamp}_{unique_id}.{extension}"
+        return f"interviews/{session_id}/{question_index}{suffix}_{timestamp}_{unique_id}.{extension}"
 
     async def upload_video(
         self,
@@ -81,7 +81,8 @@ class StorageService:
         session_id: str,
         question_index: int,
         content_type: str = "video/webm",
-        extension: str = "webm"
+        extension: str = "webm",
+        suffix: str = ""
     ) -> str:
         """
         Upload video bytes to R2 storage.
@@ -92,13 +93,31 @@ class StorageService:
             question_index: Question number (0-indexed)
             content_type: MIME type of the video
             extension: File extension
+            suffix: Optional suffix for the key (e.g., "_followup")
 
         Returns:
             The storage key for the uploaded video
         """
         from io import BytesIO
         file = BytesIO(data)
-        return await self.upload_video(file, session_id, question_index, content_type, extension)
+        key = self._generate_key(session_id, question_index, extension, suffix)
+
+        try:
+            self.client.upload_fileobj(
+                file,
+                settings.r2_bucket_name,
+                key,
+                ExtraArgs={
+                    "ContentType": content_type,
+                    "Metadata": {
+                        "session_id": session_id,
+                        "question_index": str(question_index),
+                    }
+                }
+            )
+            return key
+        except ClientError as e:
+            raise Exception(f"Failed to upload video: {e}")
 
     def get_signed_url(self, key: str, expiration: int = 3600) -> str:
         """
@@ -188,6 +207,25 @@ class StorageService:
             return True
         except ClientError:
             return False
+
+    async def download_video(self, key: str) -> bytes:
+        """
+        Download a video from R2 storage.
+
+        Args:
+            key: Storage key of the video
+
+        Returns:
+            Video bytes
+        """
+        try:
+            response = self.client.get_object(
+                Bucket=settings.r2_bucket_name,
+                Key=key
+            )
+            return response['Body'].read()
+        except ClientError as e:
+            raise Exception(f"Failed to download video: {e}")
 
 
 # Global instance

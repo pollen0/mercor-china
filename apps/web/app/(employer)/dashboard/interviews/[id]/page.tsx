@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { VideoPlayer } from '@/components/dashboard/video-player'
 import { ScoreCard } from '@/components/dashboard/score-card'
 import { TranscriptViewer } from '@/components/dashboard/transcript-viewer'
+import { ContactCandidateModal } from '@/components/dashboard/contact-candidate-modal'
 import { employerApi, type InterviewSession, type ScoreDetails } from '@/lib/api'
 
 export default function InterviewDetailPage() {
@@ -18,6 +19,7 @@ export default function InterviewDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showContactModal, setShowContactModal] = useState(false)
 
   useEffect(() => {
     const loadInterview = async () => {
@@ -52,6 +54,11 @@ export default function InterviewDetailPage() {
     } finally {
       setIsUpdating(false)
     }
+  }
+
+  const handleContactCandidate = async (data: { subject: string; body: string; messageType: string; jobId?: string }) => {
+    if (!interview?.candidateId) throw new Error('No candidate ID')
+    await employerApi.contactCandidate(interview.candidateId, data)
   }
 
   const parseScoreDetails = (aiAnalysis: string | undefined): ScoreDetails | null => {
@@ -184,6 +191,16 @@ export default function InterviewDetailPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Shortlist
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowContactModal(true)}
+                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Contact
                 </Button>
                 <Button
                   variant="outline"
@@ -369,6 +386,20 @@ export default function InterviewDetailPage() {
           })}
         </div>
       </div>
+
+      {/* Contact Candidate Modal */}
+      {interview && (
+        <ContactCandidateModal
+          isOpen={showContactModal}
+          onClose={() => setShowContactModal(false)}
+          candidateId={interview.candidateId}
+          candidateName={interview.candidateName || 'Candidate'}
+          candidateEmail="" // Email not available in InterviewSession, would need to fetch from candidate
+          jobId={interview.jobId}
+          jobTitle={interview.jobTitle}
+          onSend={handleContactCandidate}
+        />
+      )}
     </main>
   )
 }

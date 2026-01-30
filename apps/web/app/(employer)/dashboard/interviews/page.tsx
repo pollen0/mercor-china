@@ -19,6 +19,12 @@ export default function InterviewsListPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [minScore, setMinScore] = useState<string>('')
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isBulkActionLoading, setIsBulkActionLoading] = useState(false)
+  const [bulkActionResult, setBulkActionResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -75,6 +81,77 @@ export default function InterviewsListPage() {
     loadInterviews()
   }
 
+  // Bulk selection handlers
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === interviews.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(interviews.map(i => i.id)))
+    }
+  }
+
+  const handleBulkAction = async (action: 'shortlist' | 'reject') => {
+    if (selectedIds.size === 0) return
+
+    setIsBulkActionLoading(true)
+    setBulkActionResult(null)
+
+    try {
+      const result = await employerApi.bulkAction(Array.from(selectedIds), action)
+      setBulkActionResult({
+        success: result.success,
+        message: `Successfully ${action === 'shortlist' ? 'shortlisted' : 'rejected'} ${result.processed} interview(s)${result.failed > 0 ? `. ${result.failed} failed.` : ''}`,
+      })
+      setSelectedIds(new Set())
+      // Reload interviews to show updated statuses
+      loadInterviews()
+    } catch (err) {
+      setBulkActionResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'Bulk action failed',
+      })
+    } finally {
+      setIsBulkActionLoading(false)
+    }
+  }
+
+  const clearBulkResult = () => setBulkActionResult(null)
+
+  const handleExportCSV = async () => {
+    setIsExporting(true)
+    try {
+      const blob = await employerApi.exportInterviewsCsv(selectedJob || undefined)
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `interviews-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error('Export failed:', err)
+      setBulkActionResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'Export failed',
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -108,9 +185,30 @@ export default function InterviewsListPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">All Interviews</h1>
-          <p className="text-gray-500 mt-1">{total} total interviews</p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">All Interviews</h1>
+            <p className="text-gray-500 mt-1">{total} total interviews</p>
+          </div>
+          <Button
+            onClick={handleExportCSV}
+            disabled={isExporting || interviews.length === 0}
+            variant="outline"
+          >
+            {isExporting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mr-2" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export CSV
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Filters */}
@@ -181,6 +279,62 @@ export default function InterviewsListPage() {
           </div>
         </div>
 
+        {/* Bulk Action Toolbar */}
+        {selectedIds.size > 0 && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="font-medium text-emerald-800">
+                {selectedIds.size} interview{selectedIds.size > 1 ? 's' : ''} selected
+              </span>
+              <Button
+                onClick={() => handleBulkAction('shortlist')}
+                disabled={isBulkActionLoading}
+                className="bg-emerald-600 hover:bg-emerald-700"
+                size="sm"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Shortlist All
+              </Button>
+              <Button
+                onClick={() => handleBulkAction('reject')}
+                disabled={isBulkActionLoading}
+                variant="outline"
+                className="text-red-600 border-red-200 hover:bg-red-50"
+                size="sm"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Reject All
+              </Button>
+            </div>
+            <Button
+              onClick={() => setSelectedIds(new Set())}
+              variant="ghost"
+              size="sm"
+              className="text-emerald-700"
+            >
+              Clear Selection
+            </Button>
+          </div>
+        )}
+
+        {/* Bulk Action Result */}
+        {bulkActionResult && (
+          <div className={`rounded-xl p-4 mb-6 flex items-center justify-between ${
+            bulkActionResult.success ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'
+          }`}>
+            <span className={bulkActionResult.success ? 'text-emerald-800' : 'text-red-800'}>
+              {bulkActionResult.message}
+            </span>
+            <Button onClick={clearBulkResult} variant="ghost" size="sm">
+              Dismiss
+            </Button>
+          </div>
+        )}
+
         {/* Interview List */}
         {interviews.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12">
@@ -197,31 +351,64 @@ export default function InterviewsListPage() {
             </div>
           </div>
         ) : (
+          <>
+            {/* Select All Header */}
+            <div className="flex items-center gap-3 mb-3 px-2">
+              <input
+                type="checkbox"
+                checked={selectedIds.size === interviews.length && interviews.length > 0}
+                onChange={toggleSelectAll}
+                className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+              />
+              <span className="text-sm text-gray-600">Select all</span>
+            </div>
+
           <div className="space-y-3">
             {interviews.map((interview) => (
               <div
                 key={interview.id}
-                className="bg-white rounded-xl border border-gray-200 p-5 cursor-pointer hover:border-emerald-300 hover:shadow-md transition-all"
-                onClick={() => router.push(`/dashboard/interviews/${interview.id}`)}
+                className={`bg-white rounded-xl border p-5 transition-all ${
+                  selectedIds.has(interview.id)
+                    ? 'border-emerald-400 bg-emerald-50/30 shadow-sm'
+                    : 'border-gray-200 hover:border-emerald-300 hover:shadow-md'
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-                      <span className="text-emerald-700 font-semibold text-lg">
-                        {(interview.candidateName || 'U').charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {interview.candidateName || 'Unknown Candidate'}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {interview.jobTitle} • {new Date(interview.createdAt).toLocaleDateString()}
-                      </p>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(interview.id)}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        toggleSelect(interview.id)
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <div
+                      className="flex items-center gap-4 cursor-pointer"
+                      onClick={() => router.push(`/dashboard/interviews/${interview.id}`)}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+                        <span className="text-emerald-700 font-semibold text-lg">
+                          {(interview.candidateName || 'U').charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">
+                          {interview.candidateName || 'Unknown Candidate'}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {interview.jobTitle} • {new Date(interview.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6">
+                  <div
+                    className="flex items-center gap-6 cursor-pointer"
+                    onClick={() => router.push(`/dashboard/interviews/${interview.id}`)}
+                  >
                     {/* Status badge */}
                     <span
                       className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
@@ -264,6 +451,7 @@ export default function InterviewsListPage() {
               </div>
             ))}
           </div>
+          </>
         )}
       </div>
     </main>

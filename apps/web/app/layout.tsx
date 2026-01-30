@@ -1,12 +1,21 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
-
 export const metadata: Metadata = {
-  title: 'ZhiPin AI - AI-Powered Recruiting Platform',
-  description: 'AI-powered recruiting platform with video interviews, AI scoring, and employer dashboard',
+  title: 'ZhiMian 智面 - AI-Powered Recruiting Platform',
+  description: 'AI-powered recruiting platform with video interviews, AI scoring, and employer dashboard. Built for New Energy/EV and Sales verticals in China.',
+  keywords: ['AI interview', 'recruiting', 'hiring', 'China', 'New Energy', 'EV', 'Sales', '智能面试', '招聘'],
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FAFAFA' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F0F0F' },
+  ],
 }
 
 export default function RootLayout({
@@ -15,8 +24,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body className="min-h-screen bg-background font-sans antialiased">
+        {children}
+      </body>
     </html>
   )
 }
