@@ -57,13 +57,21 @@ export default function SettingsPage() {
   const loadPreferences = async () => {
     try {
       const token = localStorage.getItem('candidate_token')
-      const storedCandidateId = localStorage.getItem('candidate_id')
+      const candidateData = localStorage.getItem('candidate')
       if (!token) {
         router.push('/login')
         return
       }
 
-      setCandidateId(storedCandidateId)
+      // Get candidate ID from stored candidate object
+      if (candidateData) {
+        try {
+          const parsed = JSON.parse(candidateData)
+          setCandidateId(parsed.id)
+        } catch {
+          console.error('Failed to parse candidate data')
+        }
+      }
       const data = await candidateApi.getSharingPreferences(token)
       setOptedIn(data.optedInToSharing)
       if (data.preferences) {
