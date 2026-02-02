@@ -447,7 +447,7 @@ async def start_vertical_interview(
                     if coding_challenge:
                         question_list.append(QuestionInfo(
                             index=len(question_list),
-                            text=f"Coding Challenge: {coding_challenge.title_zh or coding_challenge.title}",
+                            text=f"Coding Challenge: {coding_challenge.title}",
                             text_zh=coding_challenge.title_zh,
                             category="coding",
                             question_type="coding",
@@ -595,7 +595,7 @@ async def start_vertical_interview(
         if coding_challenge:
             question_list.append(QuestionInfo(
                 index=len(question_list),
-                text=f"Coding Challenge: {coding_challenge.title_zh or coding_challenge.title}",
+                text=f"Coding Challenge: {coding_challenge.title}",
                 text_zh=coding_challenge.title_zh,
                 category="coding",
                 question_type="coding",
@@ -846,7 +846,7 @@ async def submit_response(
         response = InterviewResponse(
             id=f"r{uuid.uuid4().hex[:24]}",
             question_index=question_index,
-            question_text=question.text_zh or question.text,
+            question_text=question.text,  # Use English text for US market
             video_url=storage_key,
             session_id=session_id,
         )
@@ -867,7 +867,7 @@ async def submit_response(
         job_title=job_title,
         job_requirements=job_requirements,
         db_url=settings.database_url,
-        question_text=question.text_zh or question.text,
+        question_text=question.text,  # Use English text for US market
     )
 
     return ResponseSubmitResult(
@@ -1793,7 +1793,7 @@ async def submit_code_response(
         response = InterviewResponse(
             id=generate_cuid("r"),
             question_index=question_index,
-            question_text=challenge.title_zh or challenge.title,
+            question_text=challenge.title,  # Use English text for US market
             question_type="coding",
             code_solution=data.code,
             execution_status="processing",
