@@ -117,7 +117,7 @@ export default function InterviewDetailPage() {
             </div>
             <h1 className="text-xl font-semibold text-gray-900 mb-2">Error</h1>
             <p className="text-gray-500 mb-6">{error || 'Interview not found'}</p>
-            <Link href="/employer/dashboard?tab=interviews">
+            <Link href="/dashboard/interviews">
               <Button variant="outline" className="w-full">Back to Interviews</Button>
             </Link>
           </div>
@@ -134,7 +134,7 @@ export default function InterviewDetailPage() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/employer/dashboard" className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -143,13 +143,13 @@ export default function InterviewDetailPage() {
               <span className="font-semibold text-gray-900">Pathway</span>
             </Link>
             <span className="text-gray-300">/</span>
-            <Link href="/employer/dashboard?tab=interviews" className="text-gray-500 hover:text-gray-900">
+            <Link href="/dashboard/interviews" className="text-gray-500 hover:text-gray-900">
               Interviews
             </Link>
             <span className="text-gray-300">/</span>
             <span className="text-gray-600 font-medium">{interview.candidateName || 'Detail'}</span>
           </div>
-          <Link href="/employer/dashboard?tab=interviews">
+          <Link href="/dashboard/interviews">
             <Button variant="outline" size="sm">Back to List</Button>
           </Link>
         </div>

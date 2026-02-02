@@ -72,9 +72,9 @@ export function Navbar({
   const defaultNavItems: NavItem[] = variant === 'dashboard'
     ? [
         { label: 'Overview', href: '/dashboard' },
-        { label: 'Interviews', href: '/dashboard/interviews' },
-        { label: 'Jobs', href: '/dashboard/jobs' },
-        { label: 'Talent Pool', href: '/dashboard/talent-pool' },
+        { label: 'Interviews', href: '/dashboard?tab=interviews' },
+        { label: 'Jobs', href: '/dashboard?tab=jobs' },
+        { label: 'Talent Pool', href: '/dashboard?tab=talent' },
       ]
     : []
 

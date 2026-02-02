@@ -265,7 +265,7 @@ function EmployerDashboardContent() {
         router.push('/dashboard/interviews')
         break
       case 'talent':
-        router.push('/dashboard/talent-pool')
+        router.push('/dashboard?tab=talent')
         break
       default:
         setActiveTab(tab)
@@ -434,7 +434,7 @@ function EmployerDashboardContent() {
                         name={interview.candidateName || 'Unknown'}
                         email={interview.candidateId}
                         score={interview.totalScore}
-                        onClick={() => router.push(`/employer/dashboard/interviews/${interview.id}`)}
+                        onClick={() => router.push(`/dashboard/interviews/${interview.id}`)}
                       />
                     ))}
                   </div>
@@ -727,7 +727,7 @@ function EmployerDashboardContent() {
                 {interviews.map((interview) => (
                   <div
                     key={interview.id}
-                    onClick={() => router.push(`/employer/dashboard/interviews/${interview.id}`)}
+                    onClick={() => router.push(`/dashboard/interviews/${interview.id}`)}
                     className="bg-white border rounded-xl p-4 hover:shadow-md transition-all cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
@@ -868,7 +868,7 @@ function EmployerDashboardContent() {
                             )}
                           </div>
                         )}
-                        <Link href={`/employer/dashboard/talent-pool/${candidate.profileId}`}>
+                        <Link href={`/dashboard/talent-pool/${candidate.profileId}`}>
                           <Button variant="outline" size="sm" className="w-full">View Profile</Button>
                         </Link>
                       </CardContent>

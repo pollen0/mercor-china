@@ -73,7 +73,7 @@ export function Footer({ variant = 'minimal', className, ...props }: FooterProps
                 </Link>
               </li>
               <li>
-                <Link href="/employer/dashboard/talent" className="text-stone-500 hover:text-stone-900 transition-colors duration-300">
+                <Link href="/dashboard?tab=talent" className="text-stone-500 hover:text-stone-900 transition-colors duration-300">
                   Browse Talent
                 </Link>
               </li>
