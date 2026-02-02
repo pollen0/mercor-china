@@ -35,8 +35,9 @@ class MatchingService:
     }
 
     def __init__(self):
-        self.api_key = settings.deepseek_api_key
-        self.base_url = settings.deepseek_base_url
+        # Claude API (exclusive - all AI uses Claude)
+        self.api_key = settings.anthropic_api_key
+        self.base_url = "https://api.anthropic.com/v1"
 
     def calculate_skills_match(
         self,

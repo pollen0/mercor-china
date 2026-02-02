@@ -59,10 +59,10 @@ export default function InterviewCompletePage() {
 
   if (pageState === 'loading') {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading results...</p>
+          <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500">Loading results...</p>
         </div>
       </main>
     )
@@ -70,16 +70,16 @@ export default function InterviewCompletePage() {
 
   if (pageState === 'error') {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-soft-lg border border-stone-100 p-8">
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
               <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Error</h1>
-            <p className="text-gray-500 mb-6">{error}</p>
+            <h1 className="text-xl font-semibold text-stone-900 mb-2">Error</h1>
+            <p className="text-stone-500 mb-6">{error}</p>
             <Link href="/">
               <Button variant="outline" className="w-full">Back to Home</Button>
             </Link>
@@ -91,27 +91,27 @@ export default function InterviewCompletePage() {
 
   if (pageState === 'processing') {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-stone-50">
         {/* Header */}
-        <header className="bg-white border-b border-gray-100">
+        <header className="bg-white border-b border-stone-100">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
               </div>
-              <span className="font-semibold text-gray-900">Pathway</span>
+              <span className="font-semibold text-stone-900">Pathway</span>
             </Link>
           </div>
         </header>
 
         <div className="flex items-center justify-center p-4 min-h-[calc(100vh-65px)]">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-soft-lg border border-stone-100 p-8">
             <div className="text-center mb-8">
               <div className="mx-auto w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mb-6">
                 <div className="w-8 h-8 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
               </div>
-              <h1 className="text-xl font-semibold text-gray-900 mb-2">Processing Your Interview</h1>
-              <p className="text-gray-500">
+              <h1 className="text-xl font-semibold text-stone-900 mb-2">Processing Your Interview</h1>
+              <p className="text-stone-500">
                 We are analyzing your responses. This may take a few minutes.
               </p>
             </div>
@@ -120,9 +120,9 @@ export default function InterviewCompletePage() {
               {results?.responses.map((response, index) => (
                 <div
                   key={response.id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                  className="flex items-center justify-between p-4 bg-stone-50 rounded-xl"
                 >
-                  <span className="text-sm font-medium text-gray-700">Question {index + 1}</span>
+                  <span className="text-sm font-medium text-stone-700">Question {index + 1}</span>
                   {response.transcription ? (
                     <div className="flex items-center gap-2 text-teal-600">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,8 +131,8 @@ export default function InterviewCompletePage() {
                       <span className="text-xs font-medium">Processed</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+                    <div className="flex items-center gap-2 text-stone-400">
+                      <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" />
                       <span className="text-xs">Processing</span>
                     </div>
                   )}
@@ -140,8 +140,8 @@ export default function InterviewCompletePage() {
               ))}
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 text-center">
-              <p className="text-sm text-gray-500">
+            <div className="bg-stone-50 rounded-xl p-4 text-center">
+              <p className="text-sm text-stone-500">
                 You can safely close this page. We will notify you when the analysis is complete.
               </p>
             </div>
@@ -153,21 +153,21 @@ export default function InterviewCompletePage() {
 
   // Complete state
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-stone-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100">
+      <header className="bg-white border-b border-stone-100">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
             </div>
-            <span className="font-semibold text-gray-900">Pathway</span>
+            <span className="font-semibold text-stone-900">Pathway</span>
           </Link>
         </div>
       </header>
 
       <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-soft-lg border border-stone-100 overflow-hidden">
           {/* Success Header */}
           <div className="bg-gradient-to-br from-teal-600 to-teal-600 p-8 text-center text-white">
             <div className="mx-auto w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
@@ -253,9 +253,9 @@ export default function InterviewCompletePage() {
             </div>
 
             {/* Next steps */}
-            <div className="bg-gray-50 rounded-xl p-5 text-center">
-              <h4 className="font-semibold text-gray-900 mb-2">What&apos;s Next?</h4>
-              <p className="text-gray-600 text-sm">
+            <div className="bg-stone-50 rounded-xl p-5 text-center">
+              <h4 className="font-semibold text-stone-900 mb-2">What&apos;s Next?</h4>
+              <p className="text-stone-600 text-sm">
                 The hiring team will review your interview and contact you if they would like to proceed.
                 Thank you for your interest!
               </p>

@@ -406,45 +406,37 @@ async def generate_progressive_questions(
 
 
 async def _call_ai_for_questions(prompt: str) -> List[Dict[str, Any]]:
-    """Call OpenAI or DeepSeek to generate questions."""
+    """Call Claude API to generate questions."""
     import httpx
 
-    # Try OpenAI first, fall back to DeepSeek
-    if settings.openai_api_key:
-        api_key = settings.openai_api_key
-        base_url = "https://api.openai.com/v1"
-        model = "gpt-4-turbo-preview"
-    elif settings.deepseek_api_key:
-        api_key = settings.deepseek_api_key
-        base_url = settings.deepseek_base_url or "https://api.deepseek.com"
-        model = "deepseek-chat"
-    else:
-        raise ValueError("No AI API key configured")
+    # Use Claude exclusively
+    if not settings.anthropic_api_key:
+        raise ValueError("ANTHROPIC_API_KEY not configured - cannot generate questions")
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
-            f"{base_url}/chat/completions",
+            "https://api.anthropic.com/v1/messages",
             headers={
-                "Authorization": f"Bearer {api_key}",
+                "x-api-key": settings.anthropic_api_key,
+                "anthropic-version": "2023-06-01",
                 "Content-Type": "application/json"
             },
             json={
-                "model": model,
+                "model": settings.claude_model,
+                "max_tokens": 2000,
+                "system": "You are an expert technical interviewer. Always respond with valid JSON.",
                 "messages": [
-                    {"role": "system", "content": "You are an expert technical interviewer. Always respond with valid JSON."},
                     {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.7,
-                "max_tokens": 2000
+                ]
             }
         )
 
         if response.status_code != 200:
-            logger.error(f"AI API error: {response.status_code} - {response.text}")
-            raise Exception(f"AI API returned {response.status_code}")
+            logger.error(f"Claude API error: {response.status_code} - {response.text}")
+            raise Exception(f"Claude API returned {response.status_code}")
 
         result = response.json()
-        content = result["choices"][0]["message"]["content"]
+        content = result["content"][0]["text"]
 
         # Parse JSON from response
         # Handle markdown code blocks if present

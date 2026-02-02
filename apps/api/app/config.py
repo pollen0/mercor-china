@@ -24,13 +24,12 @@ class Settings(BaseSettings):
     r2_bucket_name: str = "pathway-videos"
     r2_endpoint_url: Optional[str] = None  # Will be constructed from account_id
 
-    # DeepSeek API (legacy fallback)
-    deepseek_api_key: str = ""
-    deepseek_base_url: str = "https://api.deepseek.com"
-
-    # Claude API (primary - faster and more accurate)
+    # Claude API (primary - all AI/LLM features use Claude Sonnet 4.5)
     anthropic_api_key: str = ""  # Set via ANTHROPIC_API_KEY env var
-    claude_model: str = "claude-sonnet-4-20250514"  # Fast and accurate
+    claude_model: str = "claude-sonnet-4-5-20250514"  # Claude Sonnet 4.5 - best balance of speed and accuracy
+
+    # OpenAI API (for Whisper speech-to-text only - Claude doesn't have native STT)
+    openai_api_key: str = ""  # Set via OPENAI_API_KEY env var
 
     # Admin authentication
     admin_password: str = ""  # Set via ADMIN_PASSWORD env var - REQUIRED for admin access

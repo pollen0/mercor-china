@@ -555,26 +555,26 @@ function DashboardContent() {
 
       {/* Opt-in Banner */}
       {showOptInBanner && (
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+        <div className="bg-gradient-to-r from-teal-600 to-teal-500 text-white">
           <div className="max-w-4xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
                 <p className="font-semibold mb-1">Get matched with companies automatically</p>
-                <p className="text-sm text-indigo-100">
+                <p className="text-sm text-teal-100">
                   Opt in to profile sharing to let vetted employers discover you based on your skills and growth trajectory
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowOptInBanner(false)}
-                  className="text-sm text-indigo-100 hover:text-white underline"
+                  className="text-sm text-teal-100 hover:text-white underline"
                 >
                   Dismiss
                 </button>
                 <Link href="/candidate/settings">
                   <Button
                     size="sm"
-                    className="bg-white text-indigo-600 hover:bg-indigo-50 font-medium"
+                    className="bg-white text-teal-600 hover:bg-teal-50 font-medium"
                   >
                     Enable Sharing
                   </Button>

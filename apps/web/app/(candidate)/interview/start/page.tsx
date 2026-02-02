@@ -99,10 +99,10 @@ function InterviewStartContent() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Validating invite link...</p>
+          <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500">Validating invite link...</p>
         </div>
       </main>
     )
@@ -110,19 +110,19 @@ function InterviewStartContent() {
 
   if (error || !validation?.valid) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-soft-lg border border-stone-100 p-8">
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
               <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Invalid Invite Link</h1>
-            <p className="text-gray-500 mb-6">
+            <h1 className="text-xl font-semibold text-stone-900 mb-2">Invalid Invite Link</h1>
+            <p className="text-stone-500 mb-6">
               {error || validation?.error || 'This invite link is not valid or has expired.'}
             </p>
-            <p className="text-sm text-gray-400 mb-6">
+            <p className="text-sm text-stone-400 mb-6">
               Please contact the recruiter for a new invite link.
             </p>
             <Link href="/">
@@ -135,9 +135,9 @@ function InterviewStartContent() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-stone-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100">
+      <header className="bg-white border-b border-stone-100">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
@@ -145,7 +145,7 @@ function InterviewStartContent() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
-            <span className="font-semibold text-gray-900">Pathway</span>
+            <span className="font-semibold text-stone-900">Pathway</span>
           </Link>
         </div>
       </header>
@@ -165,8 +165,8 @@ function InterviewStartContent() {
                 <p className="text-teal-100">{validation.companyName}</p>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Interview Details</h3>
+              <div className="bg-white rounded-xl border border-stone-200 p-6">
+                <h3 className="font-semibold text-stone-900 mb-4">Interview Details</h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -175,8 +175,8 @@ function InterviewStartContent() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">5 Questions</div>
-                      <div className="text-xs text-gray-500">Tailored to the role</div>
+                      <div className="text-sm font-medium text-stone-900">5 Questions</div>
+                      <div className="text-xs text-stone-500">Tailored to the role</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -186,8 +186,8 @@ function InterviewStartContent() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">~15 Minutes</div>
-                      <div className="text-xs text-gray-500">3 min per question max</div>
+                      <div className="text-sm font-medium text-stone-900">~15 Minutes</div>
+                      <div className="text-xs text-stone-500">3 min per question max</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -197,8 +197,8 @@ function InterviewStartContent() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">Re-record Allowed</div>
-                      <div className="text-xs text-gray-500">Before final submission</div>
+                      <div className="text-sm font-medium text-stone-900">Re-record Allowed</div>
+                      <div className="text-xs text-stone-500">Before final submission</div>
                     </div>
                   </div>
                 </div>
@@ -208,13 +208,13 @@ function InterviewStartContent() {
 
           {/* Right side - Form */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-2">Start Your Interview</h1>
-              <p className="text-gray-500 mb-8">Please fill in your details to begin</p>
+            <div className="bg-white rounded-2xl shadow-soft-sm border border-stone-200 p-8">
+              <h1 className="text-2xl font-semibold text-stone-900 mb-2">Start Your Interview</h1>
+              <p className="text-stone-500 mb-8">Please fill in your details to begin</p>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="name" className="text-sm font-medium text-stone-700">
                     Full Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -233,7 +233,7 @@ function InterviewStartContent() {
                 </div>
 
                 <div>
-                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="email" className="text-sm font-medium text-stone-700">
                     Email <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -253,7 +253,7 @@ function InterviewStartContent() {
                 </div>
 
                 <div>
-                  <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="phone" className="text-sm font-medium text-stone-700">
                     Phone Number <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -299,7 +299,7 @@ function InterviewStartContent() {
                   </Button>
                 </div>
 
-                <p className="text-xs text-center text-gray-400">
+                <p className="text-xs text-center text-stone-400">
                   By starting this interview, you agree to have your video and audio
                   recorded for evaluation purposes.
                 </p>
@@ -315,10 +315,10 @@ function InterviewStartContent() {
 export default function InterviewStartPage() {
   return (
     <Suspense fallback={
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading...</p>
+          <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500">Loading...</p>
         </div>
       </main>
     }>

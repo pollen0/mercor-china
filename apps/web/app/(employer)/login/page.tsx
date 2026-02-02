@@ -48,7 +48,7 @@ export default function EmployerLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex">
+    <main className="min-h-screen bg-stone-50 flex">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:flex-1 lg:flex-col justify-center px-12 bg-gradient-to-br from-teal-600 to-teal-500">
         <div className="max-w-md">
@@ -99,12 +99,12 @@ export default function EmployerLoginPage() {
             </Link>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-soft-lg border border-gray-100 p-8">
+          <div className="bg-white rounded-3xl shadow-soft-lg border border-stone-100 p-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-stone-900">
                 {mode === 'login' ? 'Welcome back' : 'Create your account'}
               </h2>
-              <p className="text-gray-500 mt-2">
+              <p className="text-stone-500 mt-2">
                 {mode === 'login'
                   ? 'Sign in to access your employer dashboard'
                   : 'Start screening candidates smarter'}
@@ -114,7 +114,7 @@ export default function EmployerLoginPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {mode === 'register' && (
                 <div>
-                  <Label htmlFor="companyName" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="companyName" className="text-sm font-medium text-stone-700">
                     Company Name
                   </Label>
                   <Input
@@ -129,7 +129,7 @@ export default function EmployerLoginPage() {
               )}
 
               <div>
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="email" className="text-sm font-medium text-stone-700">
                   Email
                 </Label>
                 <Input
@@ -144,7 +144,7 @@ export default function EmployerLoginPage() {
               </div>
 
               <div>
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="password" className="text-sm font-medium text-stone-700">
                   Password
                 </Label>
                 <Input
@@ -196,7 +196,7 @@ export default function EmployerLoginPage() {
             </div>
           </div>
 
-          <p className="mt-8 text-center text-sm text-gray-500">
+          <p className="mt-8 text-center text-sm text-stone-500">
             By continuing, you agree to Pathway&apos;s Terms of Service and Privacy Policy.
           </p>
         </div>

@@ -405,8 +405,8 @@ export default function InterviewRoomPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Something went wrong</h2>
-          <p className="text-gray-500 mb-6">{error}</p>
+          <h2 className="text-xl font-semibold text-stone-900 mb-2">Something went wrong</h2>
+          <p className="text-stone-500 mb-6">{error}</p>
           <Button
             onClick={() => setRoomState('question')}
             className="bg-teal-600 hover:bg-teal-700"
@@ -422,12 +422,12 @@ export default function InterviewRoomPage() {
     return (
       <main className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">
+          <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-600">
             {roomState === 'code_executing' ? 'Running your code...' : uploadProgress}
           </p>
           {(roomState === 'scoring' || roomState === 'checking_followup' || roomState === 'code_executing') && (
-            <p className="text-sm text-gray-400 mt-2">This may take a moment...</p>
+            <p className="text-sm text-stone-400 mt-2">This may take a moment...</p>
           )}
         </div>
       </main>

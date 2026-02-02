@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
 
-        <p className="text-sm text-gray-500 mb-8">
+        <p className="text-sm text-stone-500 mb-8">
           Last Updated: January 2025
         </p>
 
@@ -34,7 +34,7 @@ export default function PrivacyPolicyPage() {
           {/* Introduction */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">1. Introduction</h3>
-            <p className="mb-4 text-gray-700">
+            <p className="mb-4 text-stone-700">
               Welcome to Pathway (&quot;Pathway&quot;, &quot;we&quot;, &quot;our&quot;, or &quot;us&quot;). We are committed to protecting your privacy and personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered video interview platform designed for college students and early-career professionals.
             </p>
           </section>
@@ -44,7 +44,7 @@ export default function PrivacyPolicyPage() {
             <h3 className="text-xl font-semibold mb-4">2. Information We Collect</h3>
 
             <h4 className="font-medium mb-2">Personal Information</h4>
-            <ul className="list-disc pl-6 mb-4 text-gray-700">
+            <ul className="list-disc pl-6 mb-4 text-stone-700">
               <li>Name, email address, and phone number</li>
               <li>Educational background (university, major, graduation year)</li>
               <li>Resume and professional background</li>
@@ -53,7 +53,7 @@ export default function PrivacyPolicyPage() {
             </ul>
 
             <h4 className="font-medium mb-2">Automatically Collected Information</h4>
-            <ul className="list-disc pl-6 text-gray-700">
+            <ul className="list-disc pl-6 text-stone-700">
               <li>Device information and browser type</li>
               <li>IP address and location data</li>
               <li>Usage data and interaction patterns</li>
@@ -63,8 +63,8 @@ export default function PrivacyPolicyPage() {
           {/* How We Use Information */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">3. How We Use Your Information</h3>
-            <p className="mb-4 text-gray-700">We use the collected information to:</p>
-            <ul className="list-disc pl-6 text-gray-700">
+            <p className="mb-4 text-stone-700">We use the collected information to:</p>
+            <ul className="list-disc pl-6 text-stone-700">
               <li>Provide and maintain our interview services</li>
               <li>Process and analyze video interviews using AI technology</li>
               <li>Track your progress and growth over time</li>
@@ -78,16 +78,16 @@ export default function PrivacyPolicyPage() {
           {/* AI Processing */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">4. AI Processing</h3>
-            <p className="mb-4 text-gray-700">
+            <p className="mb-4 text-stone-700">
               Our platform uses AI technology to analyze interview responses. This includes:
             </p>
-            <ul className="list-disc pl-6 text-gray-700">
+            <ul className="list-disc pl-6 text-stone-700">
               <li>Speech-to-text transcription of video responses</li>
               <li>Assessment of communication skills, problem-solving ability, and domain knowledge</li>
               <li>Resume parsing and analysis</li>
               <li>Progress tracking across multiple interviews</li>
             </ul>
-            <p className="mt-4 text-gray-700">
+            <p className="mt-4 text-stone-700">
               AI assessments are provided to assist employers in their hiring decisions but are not the sole determining factor. We believe in showing your growth trajectory, not just a single snapshot.
             </p>
           </section>
@@ -95,13 +95,13 @@ export default function PrivacyPolicyPage() {
           {/* Data Sharing */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">5. Information Sharing</h3>
-            <p className="mb-4 text-gray-700">We may share your information with:</p>
-            <ul className="list-disc pl-6 text-gray-700">
+            <p className="mb-4 text-stone-700">We may share your information with:</p>
+            <ul className="list-disc pl-6 text-stone-700">
               <li><strong>Employers</strong>: Interview results, profile information, and progress history for job matching</li>
               <li><strong>Service Providers</strong>: Cloud storage, AI processing, and analytics services</li>
               <li><strong>Legal Requirements</strong>: When required by law or to protect our rights</li>
             </ul>
-            <p className="mt-4 text-gray-700">
+            <p className="mt-4 text-stone-700">
               We do not sell your personal information to third parties.
             </p>
           </section>
@@ -109,7 +109,7 @@ export default function PrivacyPolicyPage() {
           {/* GitHub Integration */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">6. GitHub Integration</h3>
-            <p className="mb-4 text-gray-700">
+            <p className="mb-4 text-stone-700">
               If you choose to connect your GitHub account, we access your public profile information, public repositories, and contribution statistics. We use this information to showcase your coding activity and projects to potential employers. You can disconnect your GitHub account at any time from your profile settings.
             </p>
           </section>
@@ -117,10 +117,10 @@ export default function PrivacyPolicyPage() {
           {/* Data Security */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">7. Data Security</h3>
-            <p className="mb-4 text-gray-700">
+            <p className="mb-4 text-stone-700">
               We implement appropriate technical and organizational security measures to protect your personal information, including:
             </p>
-            <ul className="list-disc pl-6 text-gray-700">
+            <ul className="list-disc pl-6 text-stone-700">
               <li>Encryption of data in transit and at rest</li>
               <li>Secure cloud storage infrastructure</li>
               <li>Access controls and authentication</li>
@@ -131,7 +131,7 @@ export default function PrivacyPolicyPage() {
           {/* Data Retention */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">8. Data Retention</h3>
-            <p className="mb-4 text-gray-700">
+            <p className="mb-4 text-stone-700">
               We retain your personal information for as long as necessary to provide our services and fulfill the purposes described in this policy. Interview recordings are typically retained for 24 months to track your progress over time, unless you request earlier deletion.
             </p>
           </section>
@@ -139,8 +139,8 @@ export default function PrivacyPolicyPage() {
           {/* Your Rights */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">9. Your Rights</h3>
-            <p className="mb-4 text-gray-700">You have the right to:</p>
-            <ul className="list-disc pl-6 text-gray-700">
+            <p className="mb-4 text-stone-700">You have the right to:</p>
+            <ul className="list-disc pl-6 text-stone-700">
               <li>Access your personal information</li>
               <li>Correct inaccurate information</li>
               <li>Request deletion of your data</li>
@@ -148,7 +148,7 @@ export default function PrivacyPolicyPage() {
               <li>Export your data in a portable format</li>
               <li>Disconnect third-party integrations (like GitHub)</li>
             </ul>
-            <p className="mt-4 text-gray-700">
+            <p className="mt-4 text-stone-700">
               To exercise these rights, please contact us at the email address below.
             </p>
           </section>
@@ -156,7 +156,7 @@ export default function PrivacyPolicyPage() {
           {/* Updates to Policy */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">10. Changes to This Policy</h3>
-            <p className="mb-4 text-gray-700">
+            <p className="mb-4 text-stone-700">
               We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy on this page and updating the &quot;Last Updated&quot; date.
             </p>
           </section>
@@ -164,12 +164,12 @@ export default function PrivacyPolicyPage() {
           {/* Contact */}
           <section className="mb-10">
             <h3 className="text-xl font-semibold mb-4">11. Contact Us</h3>
-            <p className="mb-4 text-gray-700">
+            <p className="mb-4 text-stone-700">
               If you have questions about this Privacy Policy or our data practices, please contact us:
             </p>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-gray-700"><strong>Email:</strong> privacy@pathway.careers</p>
-              <p className="text-gray-700"><strong>Platform:</strong> Pathway</p>
+            <div className="bg-stone-50 p-4 rounded-lg">
+              <p className="text-stone-700"><strong>Email:</strong> privacy@pathway.careers</p>
+              <p className="text-stone-700"><strong>Platform:</strong> Pathway</p>
             </div>
           </section>
         </div>
@@ -190,7 +190,7 @@ export default function PrivacyPolicyPage() {
 
       {/* Footer */}
       <footer className="border-t py-8 mt-12">
-        <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
+        <div className="container mx-auto px-4 text-center text-stone-500 text-sm">
           <p>&copy; {new Date().getFullYear()} Pathway. All rights reserved.</p>
         </div>
       </footer>

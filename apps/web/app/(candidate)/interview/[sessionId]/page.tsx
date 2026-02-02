@@ -51,10 +51,10 @@ export default function InterviewStartPage() {
 
   if (pageState === 'loading') {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading interview...</p>
+          <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500">Loading interview...</p>
         </div>
       </main>
     )
@@ -62,16 +62,16 @@ export default function InterviewStartPage() {
 
   if (pageState === 'error') {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-soft-lg border border-stone-100 p-8">
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
               <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Error</h1>
-            <p className="text-gray-500 mb-6">{error}</p>
+            <h1 className="text-xl font-semibold text-stone-900 mb-2">Error</h1>
+            <p className="text-stone-500 mb-6">{error}</p>
             <Link href="/">
               <Button variant="outline" className="w-full">Back to Home</Button>
             </Link>
@@ -83,9 +83,9 @@ export default function InterviewStartPage() {
 
   if (pageState === 'permission') {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-stone-50">
         {/* Header */}
-        <header className="bg-white border-b border-gray-100">
+        <header className="bg-white border-b border-stone-100">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
@@ -93,7 +93,7 @@ export default function InterviewStartPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
               </div>
-              <span className="font-semibold text-gray-900">Pathway</span>
+              <span className="font-semibold text-stone-900">Pathway</span>
             </Link>
           </div>
         </header>
@@ -106,9 +106,9 @@ export default function InterviewStartPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-stone-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-100">
+      <header className="bg-white border-b border-stone-100">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
@@ -116,7 +116,7 @@ export default function InterviewStartPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
-            <span className="font-semibold text-gray-900">Pathway</span>
+            <span className="font-semibold text-stone-900">Pathway</span>
           </Link>
         </div>
       </header>
@@ -136,8 +136,8 @@ export default function InterviewStartPage() {
                 <p className="text-teal-100">{session?.companyName}</p>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Interview Details</h3>
+              <div className="bg-white rounded-xl border border-stone-200 p-6">
+                <h3 className="font-semibold text-stone-900 mb-4">Interview Details</h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -146,8 +146,8 @@ export default function InterviewStartPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{session?.responses.length || 5} Questions</div>
-                      <div className="text-xs text-gray-500">Tailored to the role</div>
+                      <div className="text-sm font-medium text-stone-900">{session?.responses.length || 5} Questions</div>
+                      <div className="text-xs text-stone-500">Tailored to the role</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -157,8 +157,8 @@ export default function InterviewStartPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">2 min per question</div>
-                      <div className="text-xs text-gray-500">Maximum recording time</div>
+                      <div className="text-sm font-medium text-stone-900">2 min per question</div>
+                      <div className="text-xs text-stone-500">Maximum recording time</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -168,8 +168,8 @@ export default function InterviewStartPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-gray-900">Re-record Allowed</div>
-                      <div className="text-xs text-gray-500">Before final submission</div>
+                      <div className="text-sm font-medium text-stone-900">Re-record Allowed</div>
+                      <div className="text-xs text-stone-500">Before final submission</div>
                     </div>
                   </div>
                 </div>
@@ -179,9 +179,9 @@ export default function InterviewStartPage() {
 
           {/* Right side - Instructions */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-2">Ready to Begin</h1>
-              <p className="text-gray-500 mb-8">Review the instructions below, then start your interview</p>
+            <div className="bg-white rounded-2xl shadow-soft-sm border border-stone-200 p-8">
+              <h1 className="text-2xl font-semibold text-stone-900 mb-2">Ready to Begin</h1>
+              <p className="text-stone-500 mb-8">Review the instructions below, then start your interview</p>
 
               {/* Instructions */}
               <div className="bg-gradient-to-br from-teal-50 to-teal-50 rounded-xl p-6 mb-6">
@@ -231,14 +231,14 @@ export default function InterviewStartPage() {
               </div>
 
               {/* Status indicators */}
-              <div className="flex items-center justify-center gap-6 mb-8 py-4 border-y border-gray-100">
+              <div className="flex items-center justify-center gap-6 mb-8 py-4 border-y border-stone-100">
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-teal-500' : 'bg-gray-300'}`} />
-                  <span className="text-sm text-gray-600">Camera Ready</span>
+                  <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-teal-500' : 'bg-stone-300'}`} />
+                  <span className="text-sm text-stone-600">Camera Ready</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-teal-500' : 'bg-gray-300'}`} />
-                  <span className="text-sm text-gray-600">Microphone Ready</span>
+                  <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-teal-500' : 'bg-stone-300'}`} />
+                  <span className="text-sm text-stone-600">Microphone Ready</span>
                 </div>
               </div>
 
@@ -256,7 +256,7 @@ export default function InterviewStartPage() {
                 </span>
               </Button>
 
-              <p className="text-xs text-center text-gray-400 mt-4">
+              <p className="text-xs text-center text-stone-400 mt-4">
                 By starting this interview, you agree to have your video and audio
                 recorded for evaluation purposes.
               </p>

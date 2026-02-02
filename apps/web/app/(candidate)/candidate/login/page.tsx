@@ -59,11 +59,11 @@ export default function CandidateLoginPage() {
     <main className="min-h-screen bg-white flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block text-xl font-semibold text-gray-900 mb-6 hover:text-gray-600 transition-colors">
+          <Link href="/" className="inline-block text-xl font-semibold text-stone-900 mb-6 hover:text-stone-600 transition-colors">
             Pathway
           </Link>
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Welcome back, Student</h1>
-          <p className="text-gray-400 text-sm">
+          <h1 className="text-2xl font-semibold text-stone-900 mb-2">Welcome back, Student</h1>
+          <p className="text-stone-400 text-sm">
             Sign in to continue your journey
           </p>
         </div>
@@ -71,7 +71,7 @@ export default function CandidateLoginPage() {
         <div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-gray-600 text-sm">Email</Label>
+              <Label htmlFor="email" className="text-stone-600 text-sm">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -79,12 +79,12 @@ export default function CandidateLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="border-gray-200 focus:border-gray-400 focus:ring-0"
+                className="border-stone-200 focus:border-stone-400 focus:ring-0"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-gray-600 text-sm">Password</Label>
+              <Label htmlFor="password" className="text-stone-600 text-sm">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -92,7 +92,7 @@ export default function CandidateLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Your password"
                 required
-                className="border-gray-200 focus:border-gray-400 focus:ring-0"
+                className="border-stone-200 focus:border-stone-400 focus:ring-0"
               />
             </div>
 
@@ -104,23 +104,23 @@ export default function CandidateLoginPage() {
               <Button
                 type="submit"
                 disabled={isLoading || !email || !password}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full h-11"
+                className="w-full bg-stone-900 hover:bg-stone-800 text-white rounded-full h-11"
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </div>
           </form>
 
-          <p className="mt-8 text-center text-sm text-gray-400">
+          <p className="mt-8 text-center text-sm text-stone-400">
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-gray-900 hover:text-gray-600">
+            <Link href="/register" className="text-stone-900 hover:text-stone-600">
               Get started
             </Link>
           </p>
 
-          <p className="mt-4 text-center text-sm text-gray-400">
+          <p className="mt-4 text-center text-sm text-stone-400">
             Are you an employer?{' '}
-            <Link href="/employer/login" className="text-gray-900 hover:text-gray-600">
+            <Link href="/employer/login" className="text-stone-900 hover:text-stone-600">
               Sign in here
             </Link>
           </p>

@@ -20,12 +20,13 @@ class ResumeService:
     """Service for parsing resumes and generating personalized questions using Claude."""
 
     def __init__(self):
+        # Claude API (exclusive - all AI uses Claude Sonnet 4.5)
         self.anthropic_api_key = settings.anthropic_api_key
         self.claude_model = settings.claude_model
         self.anthropic_base_url = "https://api.anthropic.com/v1"
-        # Fallback to DeepSeek if Claude not configured
-        self.deepseek_api_key = settings.deepseek_api_key
-        self.deepseek_base_url = settings.deepseek_base_url
+
+        if not self.anthropic_api_key:
+            logger.warning("ANTHROPIC_API_KEY not set - resume AI features will not work")
 
     async def extract_text(self, file_bytes: bytes, filename: str) -> str:
         """
@@ -141,8 +142,8 @@ class ResumeService:
             ParsedResume with structured data
         """
         if not self.anthropic_api_key:
-            # Fallback to DeepSeek if Claude not configured
-            return await self._parse_resume_deepseek(raw_text)
+            logger.error("ANTHROPIC_API_KEY not configured - cannot parse resume")
+            return ParsedResume()
 
         system_prompt = """You are an expert resume parser. Extract structured information from resumes with high accuracy.
 Be precise and only include information clearly stated. For missing fields, use null.
@@ -218,84 +219,6 @@ Return this exact JSON structure:
 
         except Exception as e:
             logger.error(f"Claude resume parsing error: {e}")
-            # Try DeepSeek fallback
-            if self.deepseek_api_key:
-                return await self._parse_resume_deepseek(raw_text)
-            return ParsedResume()
-
-    async def _parse_resume_deepseek(self, raw_text: str) -> ParsedResume:
-        """Fallback to DeepSeek for resume parsing."""
-        if not self.deepseek_api_key:
-            return ParsedResume()
-
-        system_prompt = """You are an expert resume parser. Extract structured information accurately.
-Respond in valid JSON format only."""
-
-        user_prompt = f"""Parse this resume:
-
-{raw_text[:8000]}
-
-Respond with JSON:
-{{
-    "name": "Full Name or null",
-    "email": "email or null",
-    "phone": "phone or null",
-    "location": "location or null",
-    "summary": "summary or null",
-    "skills": ["skill1", "skill2"],
-    "experience": [{{"company": "...", "title": "...", "start_date": "...", "end_date": "...", "description": "...", "highlights": []}}],
-    "education": [{{"institution": "...", "degree": "...", "field_of_study": "...", "start_date": "...", "end_date": "...", "gpa": "..."}}],
-    "projects": [{{"name": "...", "description": "...", "technologies": [], "highlights": []}}],
-    "languages": [],
-    "certifications": []
-}}"""
-
-        try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(
-                    f"{self.deepseek_base_url}/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.deepseek_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": "deepseek-chat",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        "temperature": 0.1,
-                        "max_tokens": 3000,
-                        "response_format": {"type": "json_object"}
-                    }
-                )
-                response.raise_for_status()
-                result = response.json()
-                content = result["choices"][0]["message"]["content"]
-                parsed = json.loads(content)
-
-                return ParsedResume(
-                    name=parsed.get("name"),
-                    email=parsed.get("email"),
-                    phone=parsed.get("phone"),
-                    location=parsed.get("location"),
-                    summary=parsed.get("summary"),
-                    skills=parsed.get("skills", []),
-                    experience=[
-                        ExperienceItem(**exp) for exp in parsed.get("experience", [])
-                    ],
-                    education=[
-                        EducationItem(**edu) for edu in parsed.get("education", [])
-                    ],
-                    projects=[
-                        ProjectItem(**proj) for proj in parsed.get("projects", [])
-                    ],
-                    languages=parsed.get("languages", []),
-                    certifications=parsed.get("certifications", [])
-                )
-
-        except Exception as e:
-            logger.error(f"DeepSeek resume parsing error: {e}")
             return ParsedResume()
 
     async def generate_personalized_questions(
@@ -318,7 +241,8 @@ Respond with JSON:
         Returns:
             List of PersonalizedQuestion objects
         """
-        if not self.anthropic_api_key and not self.deepseek_api_key:
+        if not self.anthropic_api_key:
+            logger.error("ANTHROPIC_API_KEY not configured - cannot generate questions")
             return []
 
         # Build context from resume
@@ -362,33 +286,7 @@ Return JSON:
 }}"""
 
         try:
-            if self.anthropic_api_key:
-                parsed = await self._call_claude(system_prompt, user_prompt, max_tokens=2000)
-            else:
-                # Fallback to DeepSeek
-                async with httpx.AsyncClient(timeout=60.0) as client:
-                    response = await client.post(
-                        f"{self.deepseek_base_url}/v1/chat/completions",
-                        headers={
-                            "Authorization": f"Bearer {self.deepseek_api_key}",
-                            "Content-Type": "application/json"
-                        },
-                        json={
-                            "model": "deepseek-chat",
-                            "messages": [
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": user_prompt}
-                            ],
-                            "temperature": 0.7,
-                            "max_tokens": 2000,
-                            "response_format": {"type": "json_object"}
-                        }
-                    )
-                    response.raise_for_status()
-                    result = response.json()
-                    content = result["choices"][0]["message"]["content"]
-                    parsed = json.loads(content)
-
+            parsed = await self._call_claude(system_prompt, user_prompt, max_tokens=2000)
             return [
                 PersonalizedQuestion(**q)
                 for q in parsed.get("questions", [])
@@ -423,12 +321,8 @@ Return JSON:
         Returns:
             List of PersonalizedQuestion objects
         """
-        if not self.anthropic_api_key and not self.deepseek_api_key:
-            # Fall back to basic personalized questions if we have a resume
-            if parsed_resume:
-                return await self.generate_personalized_questions(
-                    parsed_resume, job_title, job_requirements, num_questions
-                )
+        if not self.anthropic_api_key:
+            logger.error("ANTHROPIC_API_KEY not configured - cannot generate adaptive questions")
             return []
 
         # Build comprehensive context string
@@ -556,32 +450,7 @@ Return JSON:
 }}"""
 
         try:
-            if self.anthropic_api_key:
-                parsed = await self._call_claude(system_prompt, user_prompt, max_tokens=2000)
-            else:
-                async with httpx.AsyncClient(timeout=60.0) as client:
-                    response = await client.post(
-                        f"{self.deepseek_base_url}/v1/chat/completions",
-                        headers={
-                            "Authorization": f"Bearer {self.deepseek_api_key}",
-                            "Content-Type": "application/json"
-                        },
-                        json={
-                            "model": "deepseek-chat",
-                            "messages": [
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": user_prompt}
-                            ],
-                            "temperature": 0.7,
-                            "max_tokens": 2000,
-                            "response_format": {"type": "json_object"}
-                        }
-                    )
-                    response.raise_for_status()
-                    result = response.json()
-                    content = result["choices"][0]["message"]["content"]
-                    parsed = json.loads(content)
-
+            parsed = await self._call_claude(system_prompt, user_prompt, max_tokens=2000)
             questions = [
                 PersonalizedQuestion(**q)
                 for q in parsed.get("questions", [])
@@ -596,11 +465,6 @@ Return JSON:
 
         except Exception as e:
             logger.error(f"Adaptive question generation error: {e}")
-            # Fall back to basic personalized questions
-            if parsed_resume:
-                return await self.generate_personalized_questions(
-                    parsed_resume, job_title, job_requirements, num_questions
-                )
             return []
 
 

@@ -50,7 +50,7 @@ class InterviewSummary:
 
 
 class ScoringService:
-    """Service for AI-powered interview scoring using Claude (primary) or DeepSeek (fallback)."""
+    """Service for AI-powered interview scoring using Claude Sonnet 4.5."""
 
     # =============================================================================
     # VERTICAL-SPECIFIC SCORING WEIGHTS & RUBRICS
@@ -271,13 +271,13 @@ Do NOT penalize for accent, appearance, or background.
 Always respond in valid JSON format."""
 
     def __init__(self):
-        # Claude API (primary - faster and more accurate)
+        # Claude API (exclusive - all AI uses Claude Sonnet 4.5)
         self.anthropic_api_key = settings.anthropic_api_key
         self.claude_model = settings.claude_model
         self.anthropic_base_url = "https://api.anthropic.com/v1"
-        # DeepSeek (fallback)
-        self.deepseek_api_key = settings.deepseek_api_key
-        self.deepseek_base_url = settings.deepseek_base_url
+
+        if not self.anthropic_api_key:
+            logger.warning("ANTHROPIC_API_KEY not set - AI features will not work")
 
     async def _call_claude(self, system_prompt: str, user_prompt: str, max_tokens: int = 2000) -> dict:
         """Call Claude API for fast, accurate AI processing."""
@@ -310,28 +310,11 @@ Always respond in valid JSON format."""
 
             return {"parsed": json.loads(content.strip())}
 
-    async def _call_deepseek(self, messages: list[dict], temperature: float = 0.3) -> dict:
-        """Fallback to DeepSeek API."""
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
-                f"{self.deepseek_base_url}/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.deepseek_api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "deepseek-chat",
-                    "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": 2000,
-                    "response_format": {"type": "json_object"}
-                }
-            )
-            response.raise_for_status()
-            return response.json()
-
     async def _call_llm(self, messages: list[dict], temperature: float = 0.3) -> dict:
-        """Call LLM - uses Claude as primary, DeepSeek as fallback."""
+        """Call Claude API for all AI processing."""
+        if not self.anthropic_api_key:
+            raise ValueError("ANTHROPIC_API_KEY not configured - cannot process AI request")
+
         # Extract system and user messages
         system_prompt = ""
         user_prompt = ""
@@ -341,23 +324,15 @@ Always respond in valid JSON format."""
             elif msg["role"] == "user":
                 user_prompt = msg["content"]
 
-        # Try Claude first (faster and more accurate)
-        if self.anthropic_api_key:
-            try:
-                result = await self._call_claude(system_prompt, user_prompt)
-                # Convert to DeepSeek-like format for compatibility
-                return {
-                    "choices": [{
-                        "message": {
-                            "content": json.dumps(result["parsed"])
-                        }
-                    }]
+        result = await self._call_claude(system_prompt, user_prompt)
+        # Convert to standard format for compatibility
+        return {
+            "choices": [{
+                "message": {
+                    "content": json.dumps(result["parsed"])
                 }
-            except Exception:
-                pass  # Fall through to DeepSeek
-
-        # Fallback to DeepSeek
-        return await self._call_deepseek(messages, temperature)
+            }]
+        }
 
     def _get_vertical_config(self, vertical: Optional[str]) -> tuple[dict, str]:
         """Get the scoring weights and rubric for a vertical."""

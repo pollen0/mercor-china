@@ -322,19 +322,19 @@ export default function SettingsPage() {
 
               {/* Email Digest */}
               <div className="mb-8">
-                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-start gap-4 p-4 bg-stone-50 rounded-xl">
                   <input
                     type="checkbox"
                     id="email-digest"
                     checked={emailDigest}
                     onChange={(e) => setEmailDigest(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    className="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
                   />
                   <div className="flex-1">
-                    <Label htmlFor="email-digest" className="font-medium cursor-pointer">
+                    <Label htmlFor="email-digest" className="font-medium cursor-pointer text-stone-900">
                       Email Digest Notifications
                     </Label>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-stone-500 mt-1">
                       Receive weekly updates when companies view your profile
                     </p>
                   </div>
@@ -344,7 +344,7 @@ export default function SettingsPage() {
           )}
 
           {/* Save Button */}
-          <div className="flex justify-end gap-4 pt-6 border-t">
+          <div className="flex justify-end gap-4 pt-6 border-t border-stone-100">
             <Button
               variant="outline"
               onClick={() => router.back()}
@@ -355,7 +355,7 @@ export default function SettingsPage() {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              variant="brand"
             >
               {saving ? 'Saving...' : 'Save Preferences'}
             </Button>
@@ -364,50 +364,50 @@ export default function SettingsPage() {
 
         {/* Info Card */}
         {!optedIn ? (
-          <Card className="p-6 bg-blue-50 border-blue-200">
-            <h3 className="font-semibold text-blue-900 mb-2">
+          <Card className="p-6 bg-teal-50/50 border-teal-100 shadow-soft-sm">
+            <h3 className="font-semibold text-stone-900 mb-3">
               Why opt in to profile sharing?
             </h3>
-            <ul className="text-sm text-blue-800 space-y-2">
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
+            <ul className="text-sm text-stone-600 space-y-2.5">
+              <li className="flex items-start gap-2.5">
+                <span className="text-teal-600 mt-0.5">✓</span>
                 <span>Get matched with relevant job opportunities automatically</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
+              <li className="flex items-start gap-2.5">
+                <span className="text-teal-600 mt-0.5">✓</span>
                 <span>Companies can reach out to you directly based on your skills and growth</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
+              <li className="flex items-start gap-2.5">
+                <span className="text-teal-600 mt-0.5">✓</span>
                 <span>Your profile is shown to ALL employers - preferences just help you rank higher</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">✓</span>
+              <li className="flex items-start gap-2.5">
+                <span className="text-teal-600 mt-0.5">✓</span>
                 <span>Your contact information stays private until you approve</span>
               </li>
             </ul>
           </Card>
         ) : (
-          <Card className="p-6 bg-indigo-50 border-indigo-200">
-            <h3 className="font-semibold text-indigo-900 mb-2">
+          <Card className="p-6 bg-stone-50 border-stone-100 shadow-soft-sm">
+            <h3 className="font-semibold text-stone-900 mb-3">
               How preferences work
             </h3>
-            <ul className="text-sm text-indigo-800 space-y-2">
-              <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-0.5">•</span>
-                <span><strong>Shown to everyone:</strong> Your profile is visible to all employers on Pathway</span>
+            <ul className="text-sm text-stone-600 space-y-2.5">
+              <li className="flex items-start gap-2.5">
+                <span className="text-teal-600 mt-0.5">•</span>
+                <span><strong className="text-stone-700">Shown to everyone:</strong> Your profile is visible to all employers on Pathway</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-0.5">•</span>
-                <span><strong>Prioritized for preferences:</strong> You rank higher for companies matching your preferences</span>
+              <li className="flex items-start gap-2.5">
+                <span className="text-teal-600 mt-0.5">•</span>
+                <span><strong className="text-stone-700">Prioritized for preferences:</strong> You rank higher for companies matching your preferences</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-0.5">•</span>
-                <span><strong>Optional:</strong> Leave preferences blank to be equally visible to all companies</span>
+              <li className="flex items-start gap-2.5">
+                <span className="text-teal-600 mt-0.5">•</span>
+                <span><strong className="text-stone-700">Optional:</strong> Leave preferences blank to be equally visible to all companies</span>
               </li>
-              <li className="flex items-start gap-2">
-                <span className="text-indigo-600 mt-0.5">•</span>
-                <span><strong>Limits exist:</strong> Max selections help you focus on what matters most</span>
+              <li className="flex items-start gap-2.5">
+                <span className="text-teal-600 mt-0.5">•</span>
+                <span><strong className="text-stone-700">Limits exist:</strong> Max selections help you focus on what matters most</span>
               </li>
             </ul>
           </Card>

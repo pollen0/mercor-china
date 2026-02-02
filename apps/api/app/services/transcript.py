@@ -128,8 +128,13 @@ class TranscriptService:
     """Service for parsing and scoring academic transcripts."""
 
     def __init__(self):
-        self.api_key = settings.deepseek_api_key
-        self.base_url = settings.deepseek_base_url
+        # Claude API (exclusive - all AI uses Claude Sonnet 4.5)
+        self.api_key = settings.anthropic_api_key
+        self.claude_model = settings.claude_model
+        self.base_url = "https://api.anthropic.com/v1"
+
+        if not self.api_key:
+            logger.warning("ANTHROPIC_API_KEY not set - transcript AI features will not work")
 
     # ============= PDF Parsing =============
 
@@ -216,28 +221,37 @@ Notes:
 - Mark courses as is_transfer=true if transferred from another institution"""
 
         try:
+            if not self.api_key:
+                raise ValueError("ANTHROPIC_API_KEY not configured")
+
             async with httpx.AsyncClient(timeout=90.0) as client:
                 response = await client.post(
-                    f"{self.base_url}/v1/chat/completions",
+                    f"{self.base_url}/messages",
                     headers={
-                        "Authorization": f"Bearer {self.api_key}",
+                        "x-api-key": self.api_key,
+                        "anthropic-version": "2023-06-01",
                         "Content-Type": "application/json"
                     },
                     json={
-                        "model": "deepseek-chat",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        "temperature": 0.1,
+                        "model": self.claude_model,
                         "max_tokens": 8000,
-                        "response_format": {"type": "json_object"}
+                        "system": system_prompt,
+                        "messages": [
+                            {"role": "user", "content": user_prompt}
+                        ]
                     }
                 )
                 response.raise_for_status()
                 result = response.json()
-                content = result["choices"][0]["message"]["content"]
-                parsed = json.loads(content)
+                content = result["content"][0]["text"]
+
+                # Extract JSON from response (Claude may include markdown code blocks)
+                if "```json" in content:
+                    content = content.split("```json")[1].split("```")[0]
+                elif "```" in content:
+                    content = content.split("```")[1].split("```")[0]
+
+                parsed = json.loads(content.strip())
 
                 # Convert to our data structures
                 all_courses = []
@@ -1049,26 +1063,32 @@ Respond with JSON:
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
-                    f"{self.base_url}/v1/chat/completions",
+                    f"{self.base_url}/messages",
                     headers={
-                        "Authorization": f"Bearer {self.api_key}",
+                        "x-api-key": self.api_key,
+                        "anthropic-version": "2023-06-01",
                         "Content-Type": "application/json"
                     },
                     json={
-                        "model": "deepseek-chat",
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        "temperature": 0.3,
+                        "model": self.claude_model,
                         "max_tokens": 1000,
-                        "response_format": {"type": "json_object"}
+                        "system": system_prompt,
+                        "messages": [
+                            {"role": "user", "content": user_prompt}
+                        ]
                     }
                 )
                 response.raise_for_status()
                 result = response.json()
-                content = result["choices"][0]["message"]["content"]
-                return json.loads(content)
+                content = result["content"][0]["text"]
+
+                # Extract JSON from response (Claude may include markdown code blocks)
+                if "```json" in content:
+                    content = content.split("```json")[1].split("```")[0]
+                elif "```" in content:
+                    content = content.split("```")[1].split("```")[0]
+
+                return json.loads(content.strip())
 
         except Exception as e:
             logger.error(f"Course research error: {e}")

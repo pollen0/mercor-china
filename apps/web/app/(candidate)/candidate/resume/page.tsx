@@ -25,8 +25,8 @@ function ResumeRedirect() {
   return (
     <main className="min-h-screen bg-white flex items-center justify-center">
       <div className="text-center">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-gray-400 text-sm">Redirecting to dashboard...</p>
+        <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-stone-400 text-sm">Redirecting to dashboard...</p>
       </div>
     </main>
   )
@@ -36,7 +36,7 @@ export default function ResumePage() {
   return (
     <Suspense fallback={
       <main className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
       </main>
     }>
       <ResumeRedirect />

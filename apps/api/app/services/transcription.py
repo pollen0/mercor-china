@@ -10,11 +10,12 @@ logger = logging.getLogger("pathway.transcription")
 
 
 class TranscriptionService:
-    """Service for transcribing audio/video using DeepSeek ASR API."""
+    """Service for transcribing audio/video using OpenAI Whisper API."""
 
     def __init__(self):
-        self.api_key = settings.deepseek_api_key
-        self.base_url = settings.deepseek_base_url
+        # OpenAI Whisper for speech-to-text (Claude doesn't have native STT)
+        self.api_key = settings.openai_api_key
+        self.base_url = "https://api.openai.com"
 
     async def transcribe_from_url(self, video_url: str, language: str = "en") -> str:
         """
@@ -58,11 +59,11 @@ class TranscriptionService:
 
     async def transcribe_file(self, file_path: str, language: str = "en") -> str:
         """
-        Transcribe audio from a local file using DeepSeek ASR.
+        Transcribe audio from a local file using OpenAI Whisper.
 
         Args:
             file_path: Path to the audio/video file
-            language: Language code (default "zh" for Chinese)
+            language: Language code (default "en" for English)
 
         Returns:
             Transcribed text
@@ -70,13 +71,13 @@ class TranscriptionService:
         with open(file_path, "rb") as audio_file:
             audio_data = audio_file.read()
 
-        return await self._transcribe_with_deepseek(audio_data, file_path, language)
+        return await self._transcribe_with_whisper(audio_data, file_path, language)
 
-    async def _transcribe_with_deepseek(
+    async def _transcribe_with_whisper(
         self, audio_data: bytes, filename: str, language: str = "en"
     ) -> str:
         """
-        Transcribe using DeepSeek ASR API (OpenAI Whisper-compatible).
+        Transcribe using OpenAI Whisper API.
 
         Args:
             audio_data: Raw audio bytes
@@ -87,11 +88,11 @@ class TranscriptionService:
             Transcribed text
         """
         if not self.api_key:
-            return "[Transcription unavailable - DeepSeek API not configured]"
+            return "[Transcription unavailable - OpenAI API not configured]"
 
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
-                # DeepSeek uses OpenAI-compatible audio transcription endpoint
+                # OpenAI Whisper audio transcription endpoint
                 response = await client.post(
                     f"{self.base_url}/v1/audio/transcriptions",
                     headers={
@@ -110,10 +111,9 @@ class TranscriptionService:
                 return response.text.strip()
 
         except httpx.HTTPStatusError as e:
-            # If DeepSeek doesn't support audio API, fall back to placeholder
             if e.response.status_code == 404:
-                return "[Transcription unavailable - ASR endpoint not available]"
-            logger.error(f"DeepSeek transcription error: {e}")
+                return "[Transcription unavailable - Whisper endpoint not available]"
+            logger.error(f"OpenAI Whisper transcription error: {e}")
             return f"[Transcription error: {str(e)}]"
         except Exception as e:
             logger.error(f"Transcription error: {e}")
@@ -128,12 +128,12 @@ class TranscriptionService:
         Args:
             data: Raw audio/video bytes
             filename: Filename hint for the API
-            language: Language code (default "zh" for Chinese)
+            language: Language code (default "en" for English)
 
         Returns:
             Transcribed text
         """
-        return await self._transcribe_with_deepseek(data, filename, language)
+        return await self._transcribe_with_whisper(data, filename, language)
 
 
 # Global instance

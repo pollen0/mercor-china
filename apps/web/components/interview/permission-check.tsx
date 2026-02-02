@@ -97,8 +97,8 @@ export function PermissionCheck({ onPermissionGranted }: PermissionCheckProps) {
         )
       default:
         return (
-          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-            <div className="w-2 h-2 bg-gray-400 rounded-full" />
+          <div className="w-10 h-10 bg-stone-100 rounded-full flex items-center justify-center">
+            <div className="w-2 h-2 bg-stone-400 rounded-full" />
           </div>
         )
     }
@@ -107,45 +107,45 @@ export function PermissionCheck({ onPermissionGranted }: PermissionCheckProps) {
   const allGranted = cameraStatus === 'granted' && micStatus === 'granted'
 
   return (
-    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+    <div className="w-full max-w-md bg-white rounded-2xl shadow-soft-lg border border-stone-100 p-8">
       <div className="text-center mb-8">
         <div className="mx-auto w-16 h-16 bg-gradient-to-br from-teal-100 to-teal-50 rounded-full flex items-center justify-center mb-6">
           <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
         </div>
-        <h1 className="text-xl font-semibold text-gray-900 mb-2">Permission Required</h1>
-        <p className="text-gray-500 text-sm">
+        <h1 className="text-xl font-semibold text-stone-900 mb-2">Permission Required</h1>
+        <p className="text-stone-500 text-sm">
           We need access to your camera and microphone to record your interview responses.
         </p>
       </div>
 
       <div className="space-y-3 mb-6">
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+        <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
             <div>
-              <span className="font-medium text-gray-900">Camera</span>
-              <p className="text-xs text-gray-500">For video recording</p>
+              <span className="font-medium text-stone-900">Camera</span>
+              <p className="text-xs text-stone-500">For video recording</p>
             </div>
           </div>
           {getStatusIcon(cameraStatus)}
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+        <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
             </div>
             <div>
-              <span className="font-medium text-gray-900">Microphone</span>
-              <p className="text-xs text-gray-500">For audio recording</p>
+              <span className="font-medium text-stone-900">Microphone</span>
+              <p className="text-xs text-stone-500">For audio recording</p>
             </div>
           </div>
           {getStatusIcon(micStatus)}
@@ -210,7 +210,7 @@ export function PermissionCheck({ onPermissionGranted }: PermissionCheckProps) {
         </Button>
       )}
 
-      <p className="text-xs text-gray-400 text-center mt-4">
+      <p className="text-xs text-stone-400 text-center mt-4">
         Your privacy is important. Videos are only used for interview evaluation.
       </p>
     </div>

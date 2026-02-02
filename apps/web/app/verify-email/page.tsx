@@ -70,7 +70,7 @@ function VerifyEmailContent() {
         {status === 'loading' && (
           <>
             <div className="w-14 h-14 mx-auto mb-4">
-              <div className="w-14 h-14 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
+              <div className="w-14 h-14 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin" />
             </div>
             <CardTitle className="text-lg">Verifying...</CardTitle>
             <CardDescription>Please wait</CardDescription>
@@ -91,8 +91,8 @@ function VerifyEmailContent() {
 
         {status === 'error' && (
           <>
-            <div className="w-14 h-14 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              <svg className="w-7 h-7 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-14 h-14 mx-auto mb-4 bg-stone-100 rounded-full flex items-center justify-center">
+              <svg className="w-7 h-7 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
@@ -103,10 +103,10 @@ function VerifyEmailContent() {
       </CardHeader>
 
       <CardContent className="text-center space-y-4">
-        <p className="text-gray-600 text-sm">{message}</p>
+        <p className="text-stone-600 text-sm">{message}</p>
 
         {status === 'success' && email && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-stone-500">
             Verified: <span className="font-medium">{email}</span>
           </p>
         )}
@@ -142,7 +142,7 @@ function LoadingState() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <div className="w-14 h-14 mx-auto mb-4">
-          <div className="w-14 h-14 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
+          <div className="w-14 h-14 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin" />
         </div>
         <CardTitle className="text-lg">Loading...</CardTitle>
       </CardHeader>
@@ -152,7 +152,7 @@ function LoadingState() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
       <Suspense fallback={<LoadingState />}>
         <VerifyEmailContent />
       </Suspense>

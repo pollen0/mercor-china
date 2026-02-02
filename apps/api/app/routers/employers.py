@@ -1857,6 +1857,40 @@ async def get_talent_profile_detail(
             }
             break
 
+    # Build completion status
+    completion_status = {
+        "resume_uploaded": candidate.resume_url is not None,
+        "github_connected": candidate.github_username is not None,
+        "interview_completed": profile.status == VerticalProfileStatus.COMPLETED,
+        "education_filled": candidate.university is not None or candidate.major is not None,
+    }
+
+    # Build profile score if no completed interview
+    profile_score = None
+    if profile.status != VerticalProfileStatus.COMPLETED:
+        breakdown = {}
+        if candidate.resume_parsed_data:
+            parsed = candidate.resume_parsed_data
+            skill_count = len(parsed.get("skills", []))
+            breakdown["technical_skills"] = min(5.0 + skill_count * 0.3, 9.0)
+            exp_count = len(parsed.get("experience", []))
+            breakdown["experience_quality"] = min(5.0 + exp_count * 1.0, 8.5)
+        if candidate.gpa:
+            breakdown["education"] = min(5.0 + (candidate.gpa - 3.0) * 2, 9.5)
+        if candidate.github_data:
+            repos = candidate.github_data.get("repos", [])
+            contributions = candidate.github_data.get("totalContributions", 0)
+            breakdown["github_activity"] = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
+        if breakdown:
+            weights = {"technical_skills": 0.3, "experience_quality": 0.25, "education": 0.25, "github_activity": 0.2}
+            total_weight = sum(weights.get(k, 0) for k in breakdown)
+            if total_weight > 0:
+                score = sum(breakdown.get(k, 5.0) * weights.get(k, 0) for k in weights) / total_weight
+                profile_score = {
+                    "score": round(score, 2),
+                    "breakdown": {k: round(v, 2) for k, v in breakdown.items()},
+                }
+
     return {
         "profile": {
             "id": profile.id,
@@ -1866,15 +1900,24 @@ async def get_talent_profile_detail(
             "best_score": profile.best_score,
             "total_interviews": profile.total_interviews,
             "completed_at": profile.completed_at.isoformat() if profile.completed_at else None,
+            "status": profile.status.value if profile.status else "pending",
         },
         "candidate": {
             "id": candidate.id,
             "name": candidate.name,
             "email": candidate.email,
             "phone": candidate.phone,
+            "university": candidate.university,
+            "major": candidate.major,
+            "graduation_year": candidate.graduation_year,
+            "gpa": candidate.gpa,
             "resume_url": candidate.resume_url,
             "resume_data": candidate.resume_parsed_data,
+            "github_username": candidate.github_username,
+            "github_data": candidate.github_data,
         },
+        "completion_status": completion_status,
+        "profile_score": profile_score,
         "interview": interview_data,
         "employer_status": employer_status,
     }
