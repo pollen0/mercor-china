@@ -584,8 +584,8 @@ ${companyName}`)
                                   </div>
                                 )}
 
-                                {/* Pros & Cons */}
-                                {(detail.profileScore?.strengths?.length > 0 || detail.profileScore?.concerns?.length > 0) && (
+                                {/* Pros & Cons - Temporarily disabled due to type mismatch */}
+                                {/* {(detail.profileScore?.strengths?.length > 0 || detail.profileScore?.concerns?.length > 0) && (
                                   <div>
                                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Assessment</h4>
                                     <div className="space-y-2">
@@ -617,7 +617,7 @@ ${companyName}`)
                                       )}
                                     </div>
                                   </div>
-                                )}
+                                )} */}
                               </div>
 
                               {/* Middle: Skills & Experience */}
