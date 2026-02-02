@@ -8,6 +8,7 @@ import json
 
 from ..database import get_db
 from ..models import Employer, Job, InterviewSession, InterviewStatus, MatchStatus, Match, InviteToken, Vertical, RoleType, Message, MessageType, Candidate, CandidateVerticalProfile, VerticalProfileStatus
+from ..models.activity import CandidateActivity, CandidateAward, Club
 from ..schemas.employer import (
     EmployerRegister,
     EmployerLogin,
@@ -1226,6 +1227,28 @@ class ScoreBreakdown(PydanticBaseModel):
     github_activity: Optional[float] = None
 
 
+class ActivitySummary(PydanticBaseModel):
+    """Summary of a candidate's activity/club involvement."""
+    name: str
+    role: Optional[str] = None
+    prestige_tier: Optional[int] = None  # 1-5 scale
+    category: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AwardSummary(PydanticBaseModel):
+    """Summary of a candidate's award."""
+    name: str
+    issuer: Optional[str] = None
+    award_type: Optional[str] = None
+    prestige_tier: Optional[int] = None  # 1-5 scale
+
+    class Config:
+        from_attributes = True
+
+
 class TalentPoolCandidate(PydanticBaseModel):
     """Candidate info for talent pool browsing."""
     profile_id: Optional[str] = None  # May be None for candidates without vertical profile
@@ -1247,6 +1270,17 @@ class TalentPoolCandidate(PydanticBaseModel):
     completion_status: CompletionStatus = CompletionStatus()
     # Score breakdown
     score_breakdown: Optional[ScoreBreakdown] = None
+    # Activities and awards
+    activities: list[ActivitySummary] = []
+    awards: list[AwardSummary] = []
+    # Education info
+    university: Optional[str] = None
+    major: Optional[str] = None
+    graduation_year: Optional[int] = None
+    gpa: Optional[float] = None
+    # GitHub info
+    github_username: Optional[str] = None
+    github_languages: list[str] = []  # Top languages
 
     class Config:
         from_attributes = True
@@ -1394,6 +1428,42 @@ async def browse_talent_pool(
                         culture_fit=round(sum(avg_scores["culture_fit"]) / len(avg_scores["culture_fit"]), 2) if avg_scores["culture_fit"] else None,
                     )
 
+        # Get activities and awards for this candidate
+        activities_list = db.query(CandidateActivity).filter(
+            CandidateActivity.candidate_id == candidate.id
+        ).order_by(CandidateActivity.activity_score.desc().nulls_last()).limit(5).all()
+
+        activities = [
+            ActivitySummary(
+                name=a.activity_name,
+                role=a.role,
+                prestige_tier=a.club.prestige_tier if a.club else None,
+                category=a.club.category if a.club else None,
+            )
+            for a in activities_list
+        ]
+
+        awards_list = db.query(CandidateAward).filter(
+            CandidateAward.candidate_id == candidate.id
+        ).order_by(CandidateAward.prestige_tier.desc().nulls_last()).limit(5).all()
+
+        awards = [
+            AwardSummary(
+                name=a.name,
+                issuer=a.issuer,
+                award_type=a.award_type,
+                prestige_tier=a.prestige_tier,
+            )
+            for a in awards_list
+        ]
+
+        # Get GitHub languages
+        github_languages = []
+        if candidate.github_data:
+            langs = candidate.github_data.get("languages", {})
+            # Sort by bytes and take top 5
+            github_languages = sorted(langs.keys(), key=lambda x: langs.get(x, 0), reverse=True)[:5]
+
         candidates_result.append(TalentPoolCandidate(
             profile_id=profile.id,
             candidate_id=candidate.id,
@@ -1411,6 +1481,14 @@ async def browse_talent_pool(
             location=location,
             completion_status=completion_status,
             score_breakdown=score_breakdown,
+            activities=activities,
+            awards=awards,
+            university=candidate.university,
+            major=candidate.major,
+            graduation_year=candidate.graduation_year,
+            gpa=candidate.gpa,
+            github_username=candidate.github_username,
+            github_languages=github_languages,
         ))
 
     # Part 2: Get candidates with profile data but no completed interview
@@ -1529,6 +1607,41 @@ async def browse_talent_pool(
             if min_score > 0 and (profile_score is None or profile_score < min_score):
                 continue
 
+            # Get activities and awards for this candidate
+            activities_list = db.query(CandidateActivity).filter(
+                CandidateActivity.candidate_id == candidate.id
+            ).order_by(CandidateActivity.activity_score.desc().nulls_last()).limit(5).all()
+
+            activities = [
+                ActivitySummary(
+                    name=a.activity_name,
+                    role=a.role,
+                    prestige_tier=a.club.prestige_tier if a.club else None,
+                    category=a.club.category if a.club else None,
+                )
+                for a in activities_list
+            ]
+
+            awards_list = db.query(CandidateAward).filter(
+                CandidateAward.candidate_id == candidate.id
+            ).order_by(CandidateAward.prestige_tier.desc().nulls_last()).limit(5).all()
+
+            awards = [
+                AwardSummary(
+                    name=a.name,
+                    issuer=a.issuer,
+                    award_type=a.award_type,
+                    prestige_tier=a.prestige_tier,
+                )
+                for a in awards_list
+            ]
+
+            # Get GitHub languages
+            github_languages = []
+            if candidate.github_data:
+                langs = candidate.github_data.get("languages", {})
+                github_languages = sorted(langs.keys(), key=lambda x: langs.get(x, 0), reverse=True)[:5]
+
             candidates_result.append(TalentPoolCandidate(
                 profile_id=existing_profile.id if existing_profile else None,
                 candidate_id=candidate.id,
@@ -1546,6 +1659,14 @@ async def browse_talent_pool(
                 location=location,
                 completion_status=completion_status,
                 score_breakdown=score_breakdown,
+                activities=activities,
+                awards=awards,
+                university=candidate.university,
+                major=candidate.major,
+                graduation_year=candidate.graduation_year,
+                gpa=candidate.gpa,
+                github_username=candidate.github_username,
+                github_languages=github_languages,
             ))
 
     # Sort all candidates: completed interviews first (by best_score), then profile-only (by profile_score)
@@ -1697,9 +1818,43 @@ async def get_talent_candidate_detail(
             total_weight = sum(weights[k] for k in breakdown if k in weights)
             if total_weight > 0:
                 profile_score = sum(breakdown.get(k, 5.0) * weights.get(k, 0) for k in weights) / total_weight
+
+                # Generate strengths and concerns based on scores
+                strengths = []
+                concerns = []
+
+                tech_score = breakdown.get("technical_skills", 5.0)
+                if tech_score >= 7.5:
+                    skill_count = len((candidate.resume_parsed_data or {}).get("skills", []))
+                    strengths.append(f"Strong technical skill set ({skill_count} skills)")
+                elif tech_score < 5.0:
+                    concerns.append("Limited technical skills listed")
+
+                exp_score = breakdown.get("experience_quality", 5.0)
+                if exp_score >= 7.5:
+                    exp_list = (candidate.resume_parsed_data or {}).get("experience", [])
+                    if exp_list:
+                        strengths.append(f"Solid work experience ({len(exp_list)} positions)")
+                elif exp_score < 5.0:
+                    concerns.append("Limited work experience")
+
+                edu_score = breakdown.get("education", 5.0)
+                if edu_score >= 8.0 and candidate.gpa:
+                    strengths.append(f"Strong academic record (GPA: {candidate.gpa:.2f})")
+                elif edu_score < 5.0:
+                    concerns.append("Academic record could be stronger")
+
+                github_score = breakdown.get("github_activity", 5.0)
+                if github_score >= 7.0:
+                    strengths.append("Active GitHub contributor")
+                elif "github_activity" not in breakdown:
+                    concerns.append("No GitHub profile connected")
+
                 profile_score_data = {
                     "score": round(profile_score, 2),
                     "breakdown": {k: round(v, 2) for k, v in breakdown.items()},
+                    "strengths": strengths,
+                    "concerns": concerns,
                 }
 
     # Get current status with this employer (if any match exists)
@@ -1886,9 +2041,43 @@ async def get_talent_profile_detail(
             total_weight = sum(weights.get(k, 0) for k in breakdown)
             if total_weight > 0:
                 score = sum(breakdown.get(k, 5.0) * weights.get(k, 0) for k in weights) / total_weight
+
+                # Generate strengths and concerns
+                strengths = []
+                concerns = []
+
+                tech_score = breakdown.get("technical_skills", 5.0)
+                if tech_score >= 7.5:
+                    skill_count = len((candidate.resume_parsed_data or {}).get("skills", []))
+                    strengths.append(f"Strong technical skill set ({skill_count} skills)")
+                elif tech_score < 5.0:
+                    concerns.append("Limited technical skills listed")
+
+                exp_score = breakdown.get("experience_quality", 5.0)
+                if exp_score >= 7.5:
+                    exp_list = (candidate.resume_parsed_data or {}).get("experience", [])
+                    if exp_list:
+                        strengths.append(f"Solid work experience ({len(exp_list)} positions)")
+                elif exp_score < 5.0:
+                    concerns.append("Limited work experience")
+
+                edu_score = breakdown.get("education", 5.0)
+                if edu_score >= 8.0 and candidate.gpa:
+                    strengths.append(f"Strong academic record (GPA: {candidate.gpa:.2f})")
+                elif edu_score < 5.0:
+                    concerns.append("Academic record could be stronger")
+
+                github_score = breakdown.get("github_activity", 5.0)
+                if github_score >= 7.0:
+                    strengths.append("Active GitHub contributor")
+                elif "github_activity" not in breakdown:
+                    concerns.append("No GitHub profile connected")
+
                 profile_score = {
                     "score": round(score, 2),
                     "breakdown": {k: round(v, 2) for k, v in breakdown.items()},
+                    "strengths": strengths,
+                    "concerns": concerns,
                 }
 
     return {

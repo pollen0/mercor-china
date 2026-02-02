@@ -561,18 +561,60 @@ ${companyName}`)
                                   <div>
                                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Score Breakdown</h4>
                                     <div className="space-y-1">
-                                      {detail.profileScore?.breakdown && Object.entries(detail.profileScore.breakdown).map(([key, value]) => (
-                                        <div key={key} className="flex items-center gap-2">
-                                          <span className="text-xs text-gray-500 w-24 capitalize">{key.replace(/_/g, ' ')}</span>
-                                          <div className="flex-1 h-2 bg-gray-200 rounded-full">
-                                            <div
-                                              className="h-2 bg-teal-500 rounded-full"
-                                              style={{ width: `${((value as number) / 10) * 100}%` }}
-                                            />
+                                      {detail.profileScore?.breakdown && Object.entries(detail.profileScore.breakdown).map(([key, value]) => {
+                                        // Convert camelCase to Title Case with spaces
+                                        const label = key
+                                          .replace(/([A-Z])/g, ' $1')
+                                          .replace(/^./, str => str.toUpperCase())
+                                          .trim()
+                                        return (
+                                          <div key={key} className="flex items-center gap-2">
+                                            <span className="text-xs text-gray-500 w-28">{label}</span>
+                                            <div className="flex-1 h-2 bg-gray-200 rounded-full">
+                                              <div
+                                                className="h-2 bg-teal-500 rounded-full"
+                                                style={{ width: `${((value as number) / 10) * 100}%` }}
+                                              />
+                                            </div>
+                                            <span className="text-xs font-medium w-8">{(value as number).toFixed(1)}</span>
                                           </div>
-                                          <span className="text-xs font-medium w-8">{(value as number).toFixed(1)}</span>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Pros & Cons */}
+                                {(detail.profileScore?.strengths?.length > 0 || detail.profileScore?.concerns?.length > 0) && (
+                                  <div>
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Assessment</h4>
+                                    <div className="space-y-2">
+                                      {detail.profileScore?.strengths?.length > 0 && (
+                                        <div>
+                                          <p className="text-xs font-medium text-green-700 mb-1">Strengths</p>
+                                          <ul className="space-y-0.5">
+                                            {detail.profileScore.strengths.slice(0, 3).map((s: string, i: number) => (
+                                              <li key={i} className="text-xs text-gray-600 flex items-start gap-1">
+                                                <span className="text-green-500 mt-0.5">+</span>
+                                                <span>{s}</span>
+                                              </li>
+                                            ))}
+                                          </ul>
                                         </div>
-                                      ))}
+                                      )}
+                                      {detail.profileScore?.concerns?.length > 0 && (
+                                        <div>
+                                          <p className="text-xs font-medium text-amber-700 mb-1">Areas to Explore</p>
+                                          <ul className="space-y-0.5">
+                                            {detail.profileScore.concerns.slice(0, 3).map((c: string, i: number) => (
+                                              <li key={i} className="text-xs text-gray-600 flex items-start gap-1">
+                                                <span className="text-amber-500 mt-0.5">•</span>
+                                                <span>{c}</span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 )}
