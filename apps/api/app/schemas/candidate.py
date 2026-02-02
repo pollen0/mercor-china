@@ -39,8 +39,11 @@ class CandidateCreate(BaseModel):
     def validate_graduation_year(cls, v: Optional[int]) -> Optional[int]:
         if v is not None:
             current_year = datetime.now().year
-            if v < current_year or v > current_year + 6:
-                raise ValueError(f"Graduation year must be between {current_year} and {current_year + 6}")
+            # Allow recent graduates (previous year) and future graduates
+            min_year = current_year - 1
+            max_year = current_year + 6
+            if v < min_year or v > max_year:
+                raise ValueError(f"Graduation year must be between {min_year} and {max_year}")
         return v
 
 

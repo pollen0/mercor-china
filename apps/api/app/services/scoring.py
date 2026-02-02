@@ -270,6 +270,12 @@ Evaluate potential and trajectory, not just current skills.
 Do NOT penalize for accent, appearance, or background.
 Always respond in valid JSON format."""
 
+    # Alias for backwards compatibility - many methods reference SYSTEM_PROMPT
+    @property
+    def SYSTEM_PROMPT(self) -> str:
+        """Alias for SYSTEM_PROMPT_BASE for backwards compatibility."""
+        return self.SYSTEM_PROMPT_BASE
+
     def __init__(self):
         # Claude API (exclusive - all AI uses Claude Sonnet 4.5)
         self.anthropic_api_key = settings.anthropic_api_key

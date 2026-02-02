@@ -36,6 +36,7 @@ from ..services.resume import resume_service
 from ..services.storage import storage_service
 from ..utils.auth import create_token, get_current_candidate, get_current_employer, get_password_hash, verify_password
 from ..utils.rate_limit import limiter, RateLimits
+from ..utils.crypto import encrypt_token, decrypt_token
 from ..config import settings
 
 logger = logging.getLogger("pathway.candidates")
@@ -854,7 +855,7 @@ async def github_callback(
 
         # Update candidate with GitHub data
         current_candidate.github_username = github_data["username"]
-        current_candidate.github_access_token = access_token  # Should encrypt in production
+        current_candidate.github_access_token = encrypt_token(access_token)  # Encrypted for security
         current_candidate.github_data = github_data
         current_candidate.github_connected_at = datetime.utcnow()
 
@@ -948,9 +949,9 @@ async def refresh_github_data(
         )
 
     try:
-        github_data = await github_service.get_full_profile(
-            current_candidate.github_access_token
-        )
+        # Decrypt the stored token before using it
+        decrypted_token = decrypt_token(current_candidate.github_access_token)
+        github_data = await github_service.get_full_profile(decrypted_token)
 
         current_candidate.github_data = github_data
         db.commit()
@@ -1031,9 +1032,12 @@ async def analyze_github_profile(
         )
 
     try:
+        # Decrypt the stored token before using it
+        decrypted_token = decrypt_token(current_candidate.github_access_token)
+
         # Perform the analysis
         analysis = await github_analysis_service.analyze_profile(
-            access_token=current_candidate.github_access_token,
+            access_token=decrypted_token,
             username=current_candidate.github_username,
             include_private=True,
             max_repos=15,  # Limit for rate limiting
@@ -1382,6 +1386,161 @@ async def get_my_vertical_profile(
         can_interview=can_interview,
         next_interview_available_at=next_interview_at,
     )
+
+
+# ============================================================================
+# PROFILE SCORING
+# ============================================================================
+
+from ..services.scoring import scoring_service
+
+
+class ProfileScoreResponse(PydanticBaseModel):
+    """Response for profile scoring."""
+    profile_score: Optional[float] = None
+    breakdown: dict = {}
+    strengths: list[str] = []
+    gaps: list[str] = []
+    summary: str = ""
+    completeness: int = 0
+    algorithm_version: str = ""
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/me/profile-score", response_model=ProfileScoreResponse)
+async def get_my_profile_score(
+    vertical: Optional[str] = None,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Get an AI-generated profile score for the current student.
+    Scores based on resume, GitHub, and education data.
+    This provides an initial assessment before completing an interview.
+    """
+    # Build education data
+    education_data = None
+    if current_candidate.university:
+        education_data = {
+            "university": current_candidate.university,
+            "major": current_candidate.major,
+            "graduation_year": current_candidate.graduation_year,
+            "gpa": current_candidate.gpa,
+            "courses": current_candidate.courses,
+        }
+
+    # Get resume data
+    resume_data = current_candidate.resume_parsed_data
+
+    # Get GitHub data
+    github_data = current_candidate.github_data
+
+    # Check if we have any data to score
+    if not any([resume_data, github_data, education_data]):
+        return ProfileScoreResponse(
+            profile_score=None,
+            completeness=0,
+            summary="Please complete your profile (upload resume, connect GitHub, or add education info) to receive a profile score.",
+            algorithm_version="2.0.0",
+        )
+
+    try:
+        result = await scoring_service.score_profile(
+            resume_data=resume_data,
+            github_data=github_data,
+            education_data=education_data,
+            vertical=vertical,
+        )
+
+        return ProfileScoreResponse(
+            profile_score=result.get("profile_score"),
+            breakdown=result.get("breakdown", {}),
+            strengths=result.get("strengths", []),
+            gaps=result.get("gaps", []),
+            summary=result.get("summary", ""),
+            completeness=result.get("completeness", 0),
+            algorithm_version=result.get("algorithm_version", ""),
+        )
+
+    except Exception as e:
+        logger.error(f"Profile scoring error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to score profile: {str(e)}"
+        )
+
+
+@router.post("/{candidate_id}/profile-score", response_model=ProfileScoreResponse)
+async def get_candidate_profile_score(
+    candidate_id: str,
+    vertical: Optional[str] = None,
+    db: Session = Depends(get_db),
+    _employer = Depends(get_current_employer),
+):
+    """
+    Get an AI-generated profile score for a specific candidate (employer only).
+    Useful for employers to quickly assess candidates in the talent pool.
+    """
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    # Build education data
+    education_data = None
+    if candidate.university:
+        education_data = {
+            "university": candidate.university,
+            "major": candidate.major,
+            "graduation_year": candidate.graduation_year,
+            "gpa": candidate.gpa,
+            "courses": candidate.courses,
+        }
+
+    # Get resume data
+    resume_data = candidate.resume_parsed_data
+
+    # Get GitHub data
+    github_data = candidate.github_data
+
+    # Check if we have any data to score
+    if not any([resume_data, github_data, education_data]):
+        return ProfileScoreResponse(
+            profile_score=None,
+            completeness=0,
+            summary="Candidate has not completed their profile yet.",
+            algorithm_version="2.0.0",
+        )
+
+    try:
+        result = await scoring_service.score_profile(
+            resume_data=resume_data,
+            github_data=github_data,
+            education_data=education_data,
+            vertical=vertical,
+        )
+
+        return ProfileScoreResponse(
+            profile_score=result.get("profile_score"),
+            breakdown=result.get("breakdown", {}),
+            strengths=result.get("strengths", []),
+            gaps=result.get("gaps", []),
+            summary=result.get("summary", ""),
+            completeness=result.get("completeness", 0),
+            algorithm_version=result.get("algorithm_version", ""),
+        )
+
+    except Exception as e:
+        logger.error(f"Profile scoring error for {candidate_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to score profile: {str(e)}"
+        )
 
 
 # ============================================================================

@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     cache_ttl_seconds: int = 300  # 5 minutes default TTL
 
+    # Encryption key for sensitive data (GitHub tokens, etc.)
+    # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    encryption_key: str = ""  # Set via ENCRYPTION_KEY env var - REQUIRED for token encryption
+
     @property
     def r2_endpoint(self) -> str:
         if self.r2_endpoint_url:
