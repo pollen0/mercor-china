@@ -2139,4 +2139,147 @@ export const authApi = {
     verified: boolean
   }> =>
     apiRequest(`/api/auth/verification-status?email=${encodeURIComponent(email)}&user_type=${userType}`),
+
+  // Forgot password
+  forgotPassword: (email: string, userType: 'candidate' | 'employer'): Promise<{
+    success: boolean
+    message: string
+  }> =>
+    apiRequest('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        user_type: userType,
+      }),
+    }),
+
+  // Reset password
+  resetPassword: (token: string, userType: 'candidate' | 'employer', newPassword: string): Promise<{
+    success: boolean
+    message: string
+  }> =>
+    apiRequest('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        token,
+        user_type: userType,
+        new_password: newPassword,
+      }),
+    }),
+}
+
+// ==================== CALENDAR API ====================
+
+export interface CalendarStatus {
+  connected: boolean
+  connectedAt?: string
+}
+
+export interface MeetingDetails {
+  eventId: string
+  calendarLink: string
+  meetLink?: string
+}
+
+export const calendarApi = {
+  // Get Google OAuth URL
+  getGoogleAuthUrl: async (): Promise<{ url: string; state: string }> => {
+    const response = await apiRequest<{ url: string; state: string }>('/api/calendar/google/url')
+    return response
+  },
+
+  // Connect Google Calendar (exchange code for tokens)
+  connectGoogle: async (code: string, state?: string, candidateId?: string): Promise<{
+    success: boolean
+    message: string
+  }> => {
+    const candidateToken = typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null
+    if (!candidateToken) {
+      throw new ApiError(401, 'You must be logged in to connect Google Calendar')
+    }
+
+    const url = `${API_BASE_URL}/api/calendar/google/callback?candidate_id=${candidateId}`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${candidateToken}`,
+      },
+      body: JSON.stringify({ code, state }),
+    })
+
+    if (!res.ok) {
+      let message = 'Failed to connect Google Calendar'
+      try {
+        const error = await res.json()
+        message = error.detail || error.message || message
+      } catch {
+        // ignore JSON parse errors
+      }
+      throw new ApiError(res.status, message)
+    }
+
+    return res.json()
+  },
+
+  // Get calendar connection status
+  getStatus: async (candidateId: string): Promise<CalendarStatus> => {
+    const response = await apiRequest<{ connected: boolean; connected_at?: string }>(
+      `/api/calendar/google/status?candidate_id=${candidateId}`
+    )
+    return {
+      connected: response.connected,
+      connectedAt: response.connected_at,
+    }
+  },
+
+  // Disconnect Google Calendar
+  disconnect: async (candidateId: string): Promise<{ success: boolean; message: string }> => {
+    return apiRequest(`/api/calendar/google/disconnect?candidate_id=${candidateId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  // Create a meeting with Google Meet link
+  createMeeting: async (
+    candidateId: string,
+    data: {
+      title: string
+      description: string
+      startTime: Date
+      durationMinutes?: number
+      attendeeEmails: string[]
+      timezone?: string
+    }
+  ): Promise<MeetingDetails> => {
+    const response = await apiRequest<{
+      success: boolean
+      event_id: string
+      calendar_link: string
+      meet_link?: string
+    }>(`/api/calendar/meetings/create?candidate_id=${candidateId}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        title: data.title,
+        description: data.description,
+        start_time: data.startTime.toISOString(),
+        duration_minutes: data.durationMinutes || 30,
+        attendee_emails: data.attendeeEmails,
+        timezone: data.timezone || 'America/Los_Angeles',
+      }),
+    })
+
+    return {
+      eventId: response.event_id,
+      calendarLink: response.calendar_link,
+      meetLink: response.meet_link,
+    }
+  },
+
+  // Cancel a meeting
+  cancelMeeting: async (candidateId: string, eventId: string): Promise<{ success: boolean; message: string }> => {
+    return apiRequest(`/api/calendar/meetings/${eventId}?candidate_id=${candidateId}`, {
+      method: 'DELETE',
+    })
+  },
 }

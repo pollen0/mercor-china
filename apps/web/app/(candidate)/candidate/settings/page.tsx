@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { candidateApi } from '@/lib/api'
+import { CalendarSettings } from '@/components/calendar'
 
 const COMPANY_STAGES = [
   { value: 'seed', label: 'Seed Stage' },
@@ -42,6 +43,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
+  const [candidateId, setCandidateId] = useState<string | null>(null)
   const [optedIn, setOptedIn] = useState(false)
   const [companyStages, setCompanyStages] = useState<string[]>([])
   const [locations, setLocations] = useState<string[]>([])
@@ -55,11 +57,13 @@ export default function SettingsPage() {
   const loadPreferences = async () => {
     try {
       const token = localStorage.getItem('candidate_token')
+      const storedCandidateId = localStorage.getItem('candidate_id')
       if (!token) {
         router.push('/login')
         return
       }
 
+      setCandidateId(storedCandidateId)
       const data = await candidateApi.getSharingPreferences(token)
       setOptedIn(data.optedInToSharing)
       if (data.preferences) {
@@ -148,9 +152,9 @@ export default function SettingsPage() {
           >
             ← Back
           </button>
-          <h1 className="text-3xl font-bold text-stone-900">Privacy & Sharing Settings</h1>
+          <h1 className="text-3xl font-bold text-stone-900">Settings</h1>
           <p className="text-stone-500 mt-2">
-            Control how your profile is shared with employers
+            Manage your integrations and profile visibility
           </p>
         </div>
 
@@ -361,6 +365,13 @@ export default function SettingsPage() {
             </Button>
           </div>
         </Card>
+
+        {/* Calendar Integration */}
+        {candidateId && (
+          <div className="mb-6">
+            <CalendarSettings candidateId={candidateId} />
+          </div>
+        )}
 
         {/* Info Card */}
         {!optedIn ? (
