@@ -173,7 +173,7 @@ export default function PublicCandidateProfilePage() {
                       .sort(([, a]: any, [, b]: any) => b - a)
                       .slice(0, 5)
                       .map(([lang]: any) => (
-                        <Badge key={lang} variant="secondary">{lang}</Badge>
+                        <Badge key={lang} variant="default">{lang}</Badge>
                       ))}
                   </div>
                 </div>
