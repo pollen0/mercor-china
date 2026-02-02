@@ -181,42 +181,35 @@ export default function InterviewRoomPage() {
           handleContinueAfterFeedback()
         }
       } else {
-        // Non-practice mode: check for follow-up questions
-        setRoomState('checking_followup')
-        setUploadProgress('Checking for follow-up questions...')
+        // Non-practice mode: move to next question IMMEDIATELY
+        // No waiting for follow-ups - this makes transitions instant
+        const questionJustAnswered = currentQuestionIndex
 
-        // Wait a bit for the backend to process and generate follow-ups
-        await new Promise(resolve => setTimeout(resolve, 3000))
-
-        try {
-          const followups = await interviewApi.getFollowups(sessionId, currentQuestionIndex)
-
-          if (followups.hasFollowups && followups.followupQuestions.length > 0) {
-            setFollowupData(followups)
-            setRoomState('followup_prompt')
-          } else {
-            // No follow-ups, move to next question or complete
-            if (currentQuestionIndex < questions.length - 1) {
-              setCurrentQuestionIndex(prev => prev + 1)
-              setRoomState('question')
-            } else {
-              setUploadProgress('Completing interview...')
-              await interviewApi.complete(sessionId)
-              router.push(`/interview/${sessionId}/complete`)
-            }
-          }
-        } catch (followupErr) {
-          console.error('Failed to check follow-ups:', followupErr)
-          // If follow-up check fails, continue normally
-          if (currentQuestionIndex < questions.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1)
-            setRoomState('question')
-          } else {
-            setUploadProgress('Completing interview...')
-            await interviewApi.complete(sessionId)
-            router.push(`/interview/${sessionId}/complete`)
-          }
+        if (currentQuestionIndex < questions.length - 1) {
+          // Move to next question immediately - no blocking
+          setCurrentQuestionIndex(prev => prev + 1)
+          setRoomState('question')
+        } else {
+          // Last question - complete the interview
+          setUploadProgress('Completing interview...')
+          await interviewApi.complete(sessionId)
+          router.push(`/interview/${sessionId}/complete`)
         }
+
+        // Check for follow-ups in TRUE background (fire and forget, don't await)
+        // This allows the UI to transition immediately while follow-ups are checked
+        interviewApi.getFollowups(sessionId, questionJustAnswered)
+          .then(followups => {
+            if (followups.hasFollowups && followups.followupQuestions.length > 0) {
+              // Show follow-up prompt if we're still on the question state
+              setFollowupData(followups)
+              setRoomState('followup_prompt')
+            }
+          })
+          .catch(err => {
+            console.error('Failed to check follow-ups (background):', err)
+            // Silent failure - user continues normally
+          })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload video')
@@ -396,7 +389,7 @@ export default function InterviewRoomPage() {
     return (
       <main className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-slate-700 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-slate-700 border-t-teal-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-slate-400">Loading interview questions...</p>
         </div>
       </main>
@@ -416,7 +409,7 @@ export default function InterviewRoomPage() {
           <p className="text-gray-500 mb-6">{error}</p>
           <Button
             onClick={() => setRoomState('question')}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-teal-600 hover:bg-teal-700"
           >
             Try Again
           </Button>
@@ -429,7 +422,7 @@ export default function InterviewRoomPage() {
     return (
       <main className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-600">
             {roomState === 'code_executing' ? 'Running your code...' : uploadProgress}
           </p>
@@ -464,14 +457,14 @@ export default function InterviewRoomPage() {
         <header className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xs">智</span>
+              <div className="w-7 h-7 bg-gradient-to-br from-teal-500 to-teal-500 rounded-lg flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
               </div>
-              <span className="font-medium text-white text-sm">ZhiMian</span>
+              <span className="font-medium text-white text-sm">Pathway</span>
             </Link>
             <div className="flex items-center gap-3">
               {isPractice && (
-                <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
+                <span className="px-2 py-1 bg-teal-500/20 text-teal-300 text-xs rounded-full border border-teal-500/30">
                   Practice Mode
                 </span>
               )}
@@ -519,7 +512,7 @@ export default function InterviewRoomPage() {
             {completedQuestions.length === questions.length && (
               <Button
                 onClick={finishInterview}
-                className={isPractice ? 'bg-purple-600 hover:bg-purple-700' : 'bg-emerald-600 hover:bg-emerald-700'}
+                className={isPractice ? 'bg-teal-500 hover:bg-teal-600' : 'bg-teal-600 hover:bg-teal-700'}
               >
                 {isPractice ? 'Finish Practice' : 'Finish Interview'}
               </Button>
@@ -572,14 +565,14 @@ export default function InterviewRoomPage() {
       <header className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">智</span>
+            <div className="w-7 h-7 bg-gradient-to-br from-teal-500 to-teal-500 rounded-lg flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
             </div>
-            <span className="font-medium text-white text-sm">ZhiMian</span>
+            <span className="font-medium text-white text-sm">Pathway</span>
           </Link>
           <div className="flex items-center gap-3">
             {isPractice && (
-              <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full border border-purple-500/30">
+              <span className="px-2 py-1 bg-teal-500/20 text-teal-300 text-xs rounded-full border border-teal-500/30">
                 Practice Mode
               </span>
             )}
@@ -596,13 +589,13 @@ export default function InterviewRoomPage() {
       <div className="max-w-4xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
         {/* Practice mode info banner */}
         {isPractice && (
-          <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 flex items-start gap-3">
-            <svg className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-teal-500/10 border border-teal-500/30 rounded-xl p-4 flex items-start gap-3">
+            <svg className="w-5 h-5 text-teal-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="text-purple-300 text-sm font-medium">Practice Mode Active</p>
-              <p className="text-purple-300/70 text-xs mt-1">
+              <p className="text-teal-300 text-sm font-medium">Practice Mode Active</p>
+              <p className="text-teal-300/70 text-xs mt-1">
                 You&apos;ll receive instant feedback after each answer. This session is private and won&apos;t be visible to employers.
               </p>
             </div>
@@ -644,20 +637,20 @@ export default function InterviewRoomPage() {
           /* Regular Question Card */
           <div className={`rounded-xl p-5 sm:p-6 text-white shadow-lg ${
             isPractice
-              ? 'bg-gradient-to-br from-purple-600 to-indigo-700'
-              : 'bg-gradient-to-br from-emerald-600 to-teal-700'
+              ? 'bg-gradient-to-br from-teal-500 to-teal-700'
+              : 'bg-gradient-to-br from-teal-600 to-teal-600'
           }`}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
                 <span className="text-xs font-semibold">{currentQuestionIndex + 1}</span>
               </div>
-              <span className={`text-sm ${isPractice ? 'text-purple-100' : 'text-emerald-100'}`}>
+              <span className={`text-sm ${isPractice ? 'text-teal-100' : 'text-teal-100'}`}>
                 Question {currentQuestionIndex + 1} of {questions.length}
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-medium leading-relaxed">{currentQuestion.text}</h2>
             {currentQuestion.textZh && (
-              <p className={`mt-2 text-sm sm:text-base ${isPractice ? 'text-purple-100' : 'text-emerald-100'}`}>
+              <p className={`mt-2 text-sm sm:text-base ${isPractice ? 'text-teal-100' : 'text-teal-100'}`}>
                 {currentQuestion.textZh}
               </p>
             )}
@@ -694,8 +687,8 @@ export default function InterviewRoomPage() {
               onClick={finishInterview}
               className={`min-h-[48px] ${
                 isPractice
-                  ? 'bg-purple-600 hover:bg-purple-700'
-                  : 'bg-emerald-600 hover:bg-emerald-700'
+                  ? 'bg-teal-500 hover:bg-teal-600'
+                  : 'bg-teal-600 hover:bg-teal-700'
               }`}
             >
               <span className="flex items-center gap-2">

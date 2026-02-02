@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from datetime import datetime, timedelta
+from pydantic import BaseModel as PydanticBaseModel
 import uuid
 
 from ..database import get_db
@@ -27,6 +28,9 @@ from ..schemas.candidate import (
     GitHubConnectResponse,
     EducationInfo,
     GitHubInfo,
+    SharingPreferences,
+    SharingPreferencesUpdate,
+    SharingPreferencesResponse,
 )
 from ..services.resume import resume_service
 from ..services.storage import storage_service
@@ -69,7 +73,7 @@ async def create_candidate(
         university=candidate_data.university,
         major=candidate_data.major,
         graduation_year=candidate_data.graduation_year,
-        target_roles=[],
+        target_roles=None,  # Use None for SQLite compatibility in tests
     )
 
     try:
@@ -83,9 +87,12 @@ async def create_candidate(
             detail="An account with this email already exists"
         )
 
-    # Send verification email
-    from .auth import create_verification_for_candidate
-    create_verification_for_candidate(candidate, db, background_tasks)
+    # Send verification email (non-blocking - don't fail registration if email fails)
+    try:
+        from .auth import create_verification_for_candidate
+        create_verification_for_candidate(candidate, db, background_tasks)
+    except Exception as e:
+        logger.warning(f"Failed to send verification email for {candidate.email}: {e}")
 
     # Generate token for immediate login after registration
     token = create_token(
@@ -407,11 +414,12 @@ async def upload_resume(
 
         storage_key = f"resumes/{candidate_id}/{uuid.uuid4().hex[:8]}.{extension}"
 
-        # Upload to R2
+        # Upload to R2 using settings for bucket name
         from io import BytesIO
+        from ..config import settings
         storage_service.client.upload_fileobj(
             BytesIO(file_bytes),
-            storage_service.client._bucket_name if hasattr(storage_service.client, '_bucket_name') else "pathway-videos",
+            settings.r2_bucket_name,
             storage_key,
             ExtraArgs={"ContentType": content_type}
         )
@@ -570,8 +578,212 @@ async def get_personalized_questions(
     return questions
 
 
+# ==================== TRANSCRIPT ENDPOINTS ====================
+
+@router.post("/{candidate_id}/transcript")
+@limiter.limit(RateLimits.AI_RESUME_PARSE)
+async def upload_transcript(
+    request: Request,
+    candidate_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """
+    Upload and parse a student's unofficial transcript.
+    Extracts course names, grades, and other academic data.
+    """
+    # Verify candidate is uploading their own transcript
+    if current_candidate.id != candidate_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only upload your own transcript"
+        )
+
+    candidate = current_candidate
+
+    # Validate file type (PDF only for transcripts)
+    filename = file.filename or "transcript.pdf"
+    if not filename.lower().endswith('.pdf'):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please upload a PDF file"
+        )
+
+    # Read file content
+    try:
+        file_bytes = await file.read()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to read file: {str(e)}"
+        )
+
+    # Check file size (max 10MB)
+    if len(file_bytes) > 10 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size cannot exceed 10MB"
+        )
+
+    # Extract text from transcript
+    try:
+        raw_text = await resume_service.extract_text(file_bytes, filename)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to parse transcript: {str(e)}"
+        )
+
+    if not raw_text or len(raw_text.strip()) < 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not extract text from transcript. Please ensure it's not a scanned image."
+        )
+
+    # Upload transcript file to storage
+    transcript_url = None
+    try:
+        storage_key = f"transcripts/{candidate_id}/{uuid.uuid4().hex[:8]}.pdf"
+
+        # Upload to R2 using settings for bucket name
+        from io import BytesIO
+        from ..config import settings
+        storage_service.client.upload_fileobj(
+            BytesIO(file_bytes),
+            settings.r2_bucket_name,
+            storage_key,
+            ExtraArgs={"ContentType": "application/pdf"}
+        )
+        transcript_url = storage_key
+    except Exception as e:
+        logger.error(f"Transcript upload error for student {candidate_id}: {e}")
+        transcript_url = None  # Continue without storage
+
+    # Parse transcript with AI (using a modified prompt for transcripts)
+    try:
+        parsed_data = await parse_transcript(raw_text)
+    except Exception as e:
+        logger.error(f"Transcript parsing error: {e}")
+        parsed_data = None
+
+    # Store parsed transcript data in the courses field
+    if parsed_data:
+        candidate.courses = parsed_data.get("courses", [])
+        if parsed_data.get("gpa"):
+            candidate.gpa = parsed_data.get("gpa")
+        db.commit()
+
+    return {
+        "success": True,
+        "message": "Transcript uploaded and parsed successfully",
+        "parsed_data": parsed_data,
+        "transcript_url": transcript_url
+    }
+
+
+async def parse_transcript(raw_text: str) -> dict:
+    """
+    Parse transcript text using AI to extract courses and grades.
+    Uses Claude as primary, DeepSeek as fallback.
+    """
+    import httpx
+    import json
+    from ..config import settings
+
+    system_prompt = """You are an expert at parsing academic transcripts. Extract course information from the transcript.
+Be accurate and only include information clearly stated. Respond in valid JSON format only."""
+
+    user_prompt = f"""Parse this transcript and extract course information:
+
+TRANSCRIPT TEXT:
+{raw_text[:10000]}
+
+Respond with JSON in this format:
+{{
+    "gpa": 3.5,
+    "courses": [
+        {{
+            "code": "CS 101",
+            "name": "Introduction to Computer Science",
+            "grade": "A",
+            "credits": 3,
+            "semester": "Fall 2023"
+        }}
+    ],
+    "total_credits": 60,
+    "university": "University Name"
+}}"""
+
+    # Try Claude first (faster and more accurate)
+    if settings.anthropic_api_key:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": settings.anthropic_api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": settings.claude_model,
+                        "max_tokens": 3000,
+                        "system": system_prompt,
+                        "messages": [
+                            {"role": "user", "content": user_prompt}
+                        ]
+                    }
+                )
+                response.raise_for_status()
+                result = response.json()
+                content = result["content"][0]["text"]
+
+                # Extract JSON from response
+                if "```json" in content:
+                    content = content.split("```json")[1].split("```")[0]
+                elif "```" in content:
+                    content = content.split("```")[1].split("```")[0]
+
+                return json.loads(content.strip())
+        except Exception as e:
+            logger.warning(f"Claude transcript parsing failed, trying DeepSeek: {e}")
+
+    # Fallback to DeepSeek
+    if settings.deepseek_api_key:
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{settings.deepseek_base_url}/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.deepseek_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "deepseek-chat",
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "temperature": 0.1,
+                        "max_tokens": 3000,
+                        "response_format": {"type": "json_object"}
+                    }
+                )
+                response.raise_for_status()
+                result = response.json()
+                content = result["choices"][0]["message"]["content"]
+                return json.loads(content)
+        except Exception as e:
+            logger.error(f"DeepSeek transcript parsing error: {e}")
+
+    return {"courses": [], "gpa": None}
+
+
 # ==================== GITHUB OAUTH ENDPOINTS ====================
-# TODO: Implement GitHub OAuth for connecting GitHub profiles
+
+from ..services.github import github_service
+import secrets
 
 @router.get("/auth/github/url", response_model=GitHubAuthUrlResponse)
 async def get_github_auth_url(
@@ -580,10 +792,28 @@ async def get_github_auth_url(
     """
     Get GitHub authorization URL for connecting GitHub account.
     """
-    # TODO: Implement GitHub OAuth
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="GitHub OAuth not yet implemented"
+    if not github_service.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="GitHub OAuth is not configured"
+        )
+
+    # Generate CSRF state token
+    state = secrets.token_urlsafe(16)
+
+    # Default redirect URI
+    from ..config import settings
+    if not redirect_uri:
+        redirect_uri = f"{settings.frontend_url}/auth/github/callback"
+
+    auth_url = github_service.get_auth_url(
+        redirect_uri=redirect_uri,
+        state=state,
+    )
+
+    return GitHubAuthUrlResponse(
+        auth_url=auth_url,
+        state=state,
     )
 
 
@@ -595,17 +825,348 @@ async def github_callback(
 ):
     """
     Complete GitHub OAuth and connect to user profile.
+    Requires authenticated candidate to connect their GitHub account.
     """
-    # TODO: Implement GitHub OAuth callback
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="GitHub OAuth not yet implemented"
+    if not github_service.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="GitHub OAuth is not configured"
+        )
+
+    try:
+        # Exchange code for access token
+        access_token = await github_service.exchange_code_for_token(data.code)
+
+        # Get full GitHub profile
+        github_data = await github_service.get_full_profile(access_token)
+
+        # Check if GitHub account is already connected to another user
+        existing = db.query(Candidate).filter(
+            Candidate.github_username == github_data["username"],
+            Candidate.id != current_candidate.id
+        ).first()
+
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This GitHub account is already connected to another user"
+            )
+
+        # Update candidate with GitHub data
+        current_candidate.github_username = github_data["username"]
+        current_candidate.github_access_token = access_token  # Should encrypt in production
+        current_candidate.github_data = github_data
+        current_candidate.github_connected_at = datetime.utcnow()
+
+        db.commit()
+
+        return GitHubConnectResponse(
+            success=True,
+            message="GitHub account connected successfully",
+            github_username=github_data["username"],
+            github_data=GitHubInfo(
+                username=github_data["username"],
+                connected_at=current_candidate.github_connected_at,
+                top_repos=github_data.get("top_repos"),
+                total_repos=github_data.get("public_repos"),
+                total_contributions=github_data.get("total_contributions"),
+                languages=github_data.get("languages"),
+            ),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"GitHub OAuth error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to connect GitHub: {str(e)}"
+        )
+
+
+@router.delete("/me/github")
+async def disconnect_github(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Disconnect GitHub account from student profile.
+    """
+    if not current_candidate.github_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No GitHub account connected"
+        )
+
+    current_candidate.github_username = None
+    current_candidate.github_access_token = None
+    current_candidate.github_data = None
+    current_candidate.github_connected_at = None
+
+    db.commit()
+
+    return {"success": True, "message": "GitHub account disconnected"}
+
+
+@router.get("/me/github", response_model=GitHubInfo)
+async def get_my_github(
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """
+    Get current student's connected GitHub info.
+    """
+    if not current_candidate.github_username:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No GitHub account connected"
+        )
+
+    github_data = current_candidate.github_data or {}
+
+    return GitHubInfo(
+        username=current_candidate.github_username,
+        connected_at=current_candidate.github_connected_at,
+        top_repos=github_data.get("top_repos"),
+        total_repos=github_data.get("public_repos"),
+        total_contributions=github_data.get("total_contributions"),
+        languages=github_data.get("languages"),
+    )
+
+
+@router.post("/me/github/refresh")
+async def refresh_github_data(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Refresh GitHub profile data from the API.
+    """
+    if not current_candidate.github_access_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No GitHub account connected"
+        )
+
+    try:
+        github_data = await github_service.get_full_profile(
+            current_candidate.github_access_token
+        )
+
+        current_candidate.github_data = github_data
+        db.commit()
+
+        return {
+            "success": True,
+            "message": "GitHub data refreshed",
+            "github_data": GitHubInfo(
+                username=github_data["username"],
+                connected_at=current_candidate.github_connected_at,
+                top_repos=github_data.get("top_repos"),
+                total_repos=github_data.get("public_repos"),
+                total_contributions=github_data.get("total_contributions"),
+                languages=github_data.get("languages"),
+            ),
+        }
+
+    except Exception as e:
+        logger.error(f"GitHub refresh error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to refresh GitHub data. You may need to reconnect your account."
+        )
+
+
+# ==================== GITHUB ANALYSIS ENDPOINTS ====================
+
+from ..services.github_analysis import github_analysis_service, GitHubProfileAnalysis
+from ..models.github_analysis import GitHubAnalysis
+
+class GitHubAnalysisResponse(PydanticBaseModel):
+    """Response for GitHub analysis results."""
+    overall_score: float
+    originality_score: float
+    activity_score: float
+    depth_score: float
+    collaboration_score: float
+
+    total_repos_analyzed: int
+    total_commits: int
+    total_lines_added: int
+
+    personal_projects: int
+    class_projects: int
+    ai_assisted_repos: int
+
+    organic_code_ratio: float
+    has_tests: bool
+    has_ci_cd: bool
+
+    primary_languages: list[dict]
+    flags: list[dict]
+    requires_review: bool
+
+    analyzed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+@router.post("/me/github/analyze", response_model=GitHubAnalysisResponse)
+@limiter.limit(RateLimits.AI_RESUME_PARSE)  # Rate limit since it makes many API calls
+async def analyze_github_profile(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Perform deep analysis of the student's GitHub profile.
+    Analyzes contribution patterns, code origin, project types, etc.
+    This is computationally intensive and makes many GitHub API calls.
+    """
+    if not current_candidate.github_access_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No GitHub account connected"
+        )
+
+    try:
+        # Perform the analysis
+        analysis = await github_analysis_service.analyze_profile(
+            access_token=current_candidate.github_access_token,
+            username=current_candidate.github_username,
+            include_private=True,
+            max_repos=15,  # Limit for rate limiting
+        )
+
+        # Store analysis in database
+        existing_analysis = db.query(GitHubAnalysis).filter(
+            GitHubAnalysis.candidate_id == current_candidate.id
+        ).first()
+
+        if existing_analysis:
+            # Update existing
+            existing_analysis.overall_score = analysis.overall_score
+            existing_analysis.originality_score = analysis.originality_score
+            existing_analysis.activity_score = analysis.activity_score
+            existing_analysis.depth_score = analysis.depth_score
+            existing_analysis.collaboration_score = analysis.collaboration_score
+            existing_analysis.total_repos_analyzed = analysis.total_repos_analyzed
+            existing_analysis.total_commits_by_user = analysis.total_commits_by_user
+            existing_analysis.total_lines_added = analysis.total_lines_added
+            existing_analysis.total_lines_removed = analysis.total_lines_removed
+            existing_analysis.personal_projects_count = analysis.personal_projects_count
+            existing_analysis.class_projects_count = analysis.class_projects_count
+            existing_analysis.fork_contributions_count = analysis.fork_contributions_count
+            existing_analysis.organic_code_ratio = analysis.organic_code_ratio
+            existing_analysis.ai_assisted_repos = analysis.ai_assisted_repos
+            existing_analysis.has_tests = analysis.has_tests
+            existing_analysis.has_ci_cd = analysis.has_ci_cd
+            existing_analysis.has_documentation = analysis.has_documentation
+            existing_analysis.primary_languages = analysis.primary_languages
+            existing_analysis.flags = analysis.flags
+            existing_analysis.requires_review = analysis.requires_review
+            existing_analysis.repo_analyses = analysis.repo_analyses
+            existing_analysis.analyzed_at = datetime.utcnow()
+        else:
+            # Create new
+            new_analysis = GitHubAnalysis(
+                id=f"gha_{uuid.uuid4().hex[:16]}",
+                candidate_id=current_candidate.id,
+                overall_score=analysis.overall_score,
+                originality_score=analysis.originality_score,
+                activity_score=analysis.activity_score,
+                depth_score=analysis.depth_score,
+                collaboration_score=analysis.collaboration_score,
+                total_repos_analyzed=analysis.total_repos_analyzed,
+                total_commits_by_user=analysis.total_commits_by_user,
+                total_lines_added=analysis.total_lines_added,
+                total_lines_removed=analysis.total_lines_removed,
+                personal_projects_count=analysis.personal_projects_count,
+                class_projects_count=analysis.class_projects_count,
+                fork_contributions_count=analysis.fork_contributions_count,
+                organic_code_ratio=analysis.organic_code_ratio,
+                ai_assisted_repos=analysis.ai_assisted_repos,
+                has_tests=analysis.has_tests,
+                has_ci_cd=analysis.has_ci_cd,
+                has_documentation=analysis.has_documentation,
+                primary_languages=analysis.primary_languages,
+                flags=analysis.flags,
+                requires_review=analysis.requires_review,
+                repo_analyses=analysis.repo_analyses,
+            )
+            db.add(new_analysis)
+
+        db.commit()
+
+        return GitHubAnalysisResponse(
+            overall_score=analysis.overall_score,
+            originality_score=analysis.originality_score,
+            activity_score=analysis.activity_score,
+            depth_score=analysis.depth_score,
+            collaboration_score=analysis.collaboration_score,
+            total_repos_analyzed=analysis.total_repos_analyzed,
+            total_commits=analysis.total_commits_by_user,
+            total_lines_added=analysis.total_lines_added,
+            personal_projects=analysis.personal_projects_count,
+            class_projects=analysis.class_projects_count,
+            ai_assisted_repos=analysis.ai_assisted_repos,
+            organic_code_ratio=analysis.organic_code_ratio,
+            has_tests=analysis.has_tests,
+            has_ci_cd=analysis.has_ci_cd,
+            primary_languages=analysis.primary_languages,
+            flags=analysis.flags,
+            requires_review=analysis.requires_review,
+            analyzed_at=datetime.utcnow(),
+        )
+
+    except Exception as e:
+        logger.error(f"GitHub analysis error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze GitHub profile: {str(e)}"
+        )
+
+
+@router.get("/me/github/analysis", response_model=Optional[GitHubAnalysisResponse])
+async def get_github_analysis(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Get the stored GitHub analysis for the current student.
+    Returns None if analysis hasn't been performed yet.
+    """
+    analysis = db.query(GitHubAnalysis).filter(
+        GitHubAnalysis.candidate_id == current_candidate.id
+    ).first()
+
+    if not analysis:
+        return None
+
+    return GitHubAnalysisResponse(
+        overall_score=analysis.overall_score or 0,
+        originality_score=analysis.originality_score or 0,
+        activity_score=analysis.activity_score or 0,
+        depth_score=analysis.depth_score or 0,
+        collaboration_score=analysis.collaboration_score or 0,
+        total_repos_analyzed=analysis.total_repos_analyzed or 0,
+        total_commits=analysis.total_commits_by_user or 0,
+        total_lines_added=analysis.total_lines_added or 0,
+        personal_projects=analysis.personal_projects_count or 0,
+        class_projects=analysis.class_projects_count or 0,
+        ai_assisted_repos=analysis.ai_assisted_repos or 0,
+        organic_code_ratio=analysis.organic_code_ratio or 0,
+        has_tests=analysis.has_tests or False,
+        has_ci_cd=analysis.has_ci_cd or False,
+        primary_languages=analysis.primary_languages or [],
+        flags=analysis.flags or [],
+        requires_review=analysis.requires_review or False,
+        analyzed_at=analysis.analyzed_at,
     )
 
 
 # ==================== VERTICAL PROFILE ENDPOINTS ====================
-
-from pydantic import BaseModel as PydanticBaseModel
 
 # Monthly interview cooldown (30 days)
 MONTHLY_COOLDOWN_DAYS = 30
@@ -617,6 +1178,7 @@ class VerticalProfileResponse(PydanticBaseModel):
     vertical: str
     role_type: str
     status: str
+    interview_session_id: Optional[str] = None  # Current/last interview session ID
     interview_score: Optional[float] = None
     best_score: Optional[float] = None
     total_interviews: int = 0
@@ -695,6 +1257,7 @@ async def get_my_vertical_profiles(
             vertical=profile.vertical.value,
             role_type=profile.role_type.value,
             status=profile.status.value,
+            interview_session_id=profile.interview_session_id,
             interview_score=profile.interview_score,
             best_score=profile.best_score,
             total_interviews=profile.total_interviews or 0,
@@ -810,6 +1373,7 @@ async def get_my_vertical_profile(
         vertical=profile.vertical.value,
         role_type=profile.role_type.value,
         status=profile.status.value,
+        interview_session_id=profile.interview_session_id,
         interview_score=profile.interview_score,
         best_score=profile.best_score,
         total_interviews=profile.total_interviews or 0,
@@ -818,3 +1382,85 @@ async def get_my_vertical_profile(
         can_interview=can_interview,
         next_interview_available_at=next_interview_at,
     )
+
+
+# ============================================================================
+# SHARING PREFERENCES (GTM)
+# ============================================================================
+
+@router.get("/me/sharing-preferences", response_model=SharingPreferencesResponse)
+async def get_sharing_preferences(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Get the current student's profile sharing preferences.
+    Used to control which employers can see their profile.
+    """
+    preferences = None
+    if current_candidate.sharing_preferences:
+        preferences = SharingPreferences(**current_candidate.sharing_preferences)
+
+    return SharingPreferencesResponse(
+        opted_in_to_sharing=current_candidate.opted_in_to_sharing,
+        preferences=preferences
+    )
+
+
+@router.patch("/me/sharing-preferences", response_model=SharingPreferencesResponse)
+async def update_sharing_preferences(
+    preferences_update: SharingPreferencesUpdate,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Update the current student's profile sharing preferences.
+
+    Students can control:
+    - Whether to opt in to profile sharing (opted_in_to_sharing)
+    - Which company stages they're interested in (seed, series_a, etc.)
+    - Preferred locations (remote, sf, nyc, etc.)
+    - Industries of interest (fintech, climate, ai, etc.)
+    - Email digest notifications
+    """
+    try:
+        # Update opt-in status if provided
+        if preferences_update.opted_in_to_sharing is not None:
+            current_candidate.opted_in_to_sharing = preferences_update.opted_in_to_sharing
+
+        # Update sharing preferences JSONB
+        current_prefs = current_candidate.sharing_preferences or {}
+
+        if preferences_update.company_stages is not None:
+            current_prefs["company_stages"] = preferences_update.company_stages
+
+        if preferences_update.locations is not None:
+            current_prefs["locations"] = preferences_update.locations
+
+        if preferences_update.industries is not None:
+            current_prefs["industries"] = preferences_update.industries
+
+        if preferences_update.email_digest is not None:
+            current_prefs["email_digest"] = preferences_update.email_digest
+
+        current_candidate.sharing_preferences = current_prefs
+        db.commit()
+        db.refresh(current_candidate)
+
+        logger.info(f"Updated sharing preferences for candidate {current_candidate.id}")
+
+        # Build response
+        preferences = SharingPreferences(**current_candidate.sharing_preferences) if current_candidate.sharing_preferences else None
+
+        return SharingPreferencesResponse(
+            opted_in_to_sharing=current_candidate.opted_in_to_sharing,
+            preferences=preferences
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating sharing preferences: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update sharing preferences"
+        )

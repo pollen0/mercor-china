@@ -35,19 +35,19 @@ export function FollowupModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
+        <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-4">
           <h3 className="text-lg font-semibold text-white">
-            追问机会
+            Follow-up Question
           </h3>
-          <p className="text-sm text-emerald-100 mt-1">
-            基于您的回答，AI 生成了以下追问问题
+          <p className="text-sm text-teal-100 mt-1">
+            Based on your response, here are some follow-up questions
           </p>
         </div>
 
         {/* Content */}
         <div className="p-6">
           <p className="text-sm text-gray-600 mb-4">
-            您可以选择回答一个追问问题来补充您的答案，或者跳过继续下一题。
+            You can choose to answer a follow-up question to expand on your answer, or skip to continue to the next question.
           </p>
 
           {/* Follow-up questions */}
@@ -59,14 +59,14 @@ export function FollowupModal({
                 disabled={isLoading}
                 className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                   selectedIndex === index
-                    ? 'border-emerald-500 bg-emerald-50'
-                    : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50'
+                    ? 'border-teal-500 bg-teal-50'
+                    : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
                 } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                     selectedIndex === index
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-teal-500 text-white'
                       : 'bg-gray-200 text-gray-600'
                   }`}>
                     {index + 1}
@@ -84,7 +84,7 @@ export function FollowupModal({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className="text-sm text-blue-700">
-                追问是可选的。如果您觉得已经充分回答了问题，可以选择跳过。
+                Follow-ups are optional. If you feel you&apos;ve fully answered the question, you can skip.
               </p>
             </div>
           </div>
@@ -97,12 +97,12 @@ export function FollowupModal({
             disabled={isLoading}
             className="px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
           >
-            跳过追问
+            Skip Follow-up
           </button>
           <button
             onClick={handleAsk}
             disabled={selectedIndex === null || isLoading}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isLoading ? (
               <>
@@ -110,11 +110,11 @@ export function FollowupModal({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                处理中...
+                Processing...
               </>
             ) : (
               <>
-                回答追问
+                Answer Follow-up
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>

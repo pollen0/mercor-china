@@ -6,7 +6,7 @@ export default function LoginLoading() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left panel */}
-      <div className="hidden lg:flex bg-warm-100 items-center justify-center p-12">
+      <div className="hidden lg:flex bg-gray-100 items-center justify-center p-12">
         <div className="w-full max-w-md space-y-6">
           <Skeleton className="h-12 w-48" />
           <Skeleton className="h-6 w-full" />

@@ -24,7 +24,7 @@ function ScoreIndicator({ score, label, maxScore = 10 }: { score?: number; label
 
   const percentage = (score / maxScore) * 100
   const getColor = () => {
-    if (percentage >= 80) return 'text-emerald-600'
+    if (percentage >= 80) return 'text-teal-600'
     if (percentage >= 60) return 'text-yellow-600'
     return 'text-red-600'
   }
@@ -52,7 +52,7 @@ export function MatchScoreCard({
 }: MatchScoreCardProps) {
   const getOverallColor = () => {
     if (!overallScore) return 'bg-gray-100 text-gray-600'
-    if (overallScore >= 80) return 'bg-emerald-100 text-emerald-700'
+    if (overallScore >= 80) return 'bg-teal-100 text-teal-700'
     if (overallScore >= 60) return 'bg-yellow-100 text-yellow-700'
     return 'bg-red-100 text-red-700'
   }
@@ -60,7 +60,7 @@ export function MatchScoreCard({
   const getStatusBadge = () => {
     switch (status) {
       case 'SHORTLISTED':
-        return <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Shortlisted</span>
+        return <span className="px-2 py-0.5 bg-teal-100 text-teal-700 text-xs rounded-full">Shortlisted</span>
       case 'REJECTED':
         return <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">Rejected</span>
       case 'HIRED':
@@ -72,7 +72,7 @@ export function MatchScoreCard({
 
   return (
     <div
-      className={`bg-white border rounded-lg p-4 ${onClick ? 'cursor-pointer hover:border-emerald-300 hover:shadow-sm transition-all' : ''}`}
+      className={`bg-white border rounded-lg p-4 ${onClick ? 'cursor-pointer hover:border-teal-300 hover:shadow-sm transition-all' : ''}`}
       onClick={onClick}
     >
       <div className="flex items-start gap-4">
@@ -102,7 +102,7 @@ export function MatchScoreCard({
                 {locationMatch === undefined || locationMatch === null ? (
                   <span className="text-gray-500">N/A</span>
                 ) : locationMatch ? (
-                  <span className="text-emerald-600">
+                  <span className="text-teal-600">
                     <svg className="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>

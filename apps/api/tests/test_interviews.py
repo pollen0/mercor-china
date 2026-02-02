@@ -42,7 +42,7 @@ class TestInterviewStart:
         })
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert "候选人" in response.json()["detail"]
+        assert "not found" in response.json()["detail"].lower()
 
     def test_start_interview_job_not_found(self, client, test_candidate):
         """Test starting interview with nonexistent job."""
@@ -52,7 +52,7 @@ class TestInterviewStart:
         })
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert "职位" in response.json()["detail"]
+        assert "not found" in response.json()["detail"].lower()
 
     def test_start_interview_returns_existing(self, client, test_interview, test_candidate, test_job, test_questions):
         """Test that starting interview returns existing active session."""

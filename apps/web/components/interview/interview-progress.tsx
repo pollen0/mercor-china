@@ -26,7 +26,7 @@ export function InterviewProgress({
       {/* Progress bar */}
       <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500 ease-out"
+          className="h-full bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-500 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -44,11 +44,11 @@ export function InterviewProgress({
               className={`
                 w-8 h-8 rounded-full flex items-center justify-center
                 text-sm font-medium transition-all
-                ${isCurrent ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-800' : ''}
+                ${isCurrent ? 'ring-2 ring-teal-400 ring-offset-2 ring-offset-slate-800' : ''}
                 ${isCompleted
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-teal-500 text-white'
                   : isCurrent
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-teal-500 text-white'
                   : 'bg-slate-700 text-slate-400'
                 }
               `}

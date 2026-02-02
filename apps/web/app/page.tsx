@@ -1,235 +1,244 @@
+'use client'
+
 import Link from 'next/link'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
-import { Container, Section, PageWrapper } from '@/components/layout/container'
 
 export default function Home() {
   return (
-    <PageWrapper navbarOffset={true}>
+    <main className="min-h-screen bg-stone-50/50">
       <Navbar />
 
-      {/* Hero Section - Split for Candidates and Employers */}
-      <Section size="lg" className="pt-12">
-        <Container>
-          {/* Main headline */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-50 text-brand-700 text-sm font-medium mb-8">
-              <span className="w-2 h-2 bg-brand-500 rounded-full animate-pulse"></span>
-              AI-Powered Recruiting for China
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-warm-900 leading-tight mb-6 text-balance">
-              The future of hiring in
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-brand-600"> New Energy & Sales</span>
-            </h1>
-            <p className="text-lg sm:text-xl text-warm-600 max-w-3xl mx-auto leading-relaxed">
-              15-minute AI video interviews that match top talent with leading companies in China&apos;s fastest-growing industries.
-            </p>
+      {/* Hero */}
+      <section className="pt-36 pb-28 px-6">
+        <div className="max-w-3xl mx-auto text-center animate-fade-in">
+          <h1 className="text-4xl sm:text-5xl font-semibold text-stone-900 leading-[1.15] tracking-tight mb-6">
+            Your growth story,
+            <br />
+            <span className="text-stone-400">told through interviews.</span>
+          </h1>
+          <p className="text-lg text-stone-500 leading-relaxed mb-12 max-w-xl mx-auto">
+            Most platforms show a snapshot. Pathway shows your trajectory.
+            Interview monthly, connect your GitHub, and let employers see
+            how far you've come.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/register"
+              className="inline-flex items-center justify-center px-8 py-3.5 text-sm font-medium text-white bg-stone-900 rounded-full hover:bg-stone-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+            >
+              Get Started Free
+            </Link>
+            <Link
+              href="/employer/login"
+              className="inline-flex items-center justify-center px-8 py-3.5 text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors duration-300"
+            >
+              I'm hiring →
+            </Link>
           </div>
+        </div>
+      </section>
 
-          {/* Two CTAs - Candidate and Employer */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Candidate CTA */}
-            <div className="bg-gradient-to-br from-brand-50 to-brand-100/50 border border-brand-100 rounded-3xl p-8 text-center hover:shadow-soft-lg transition-all duration-300 group">
-              <div className="w-16 h-16 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-brand group-hover:shadow-brand-lg transition-shadow">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-warm-900 mb-3">I&apos;m looking for a job</h2>
-              <p className="text-warm-600 mb-8 leading-relaxed">
-                Take a 15-minute AI interview and get matched with top companies in New Energy, EV, and Sales.
-              </p>
-              <Link
-                href="/candidate/register"
-                className="inline-flex items-center justify-center w-full px-6 py-4 text-base font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 rounded-xl hover:from-brand-600 hover:to-brand-700 transition-all shadow-brand hover:shadow-brand-lg hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Start Interview
-                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
-              <p className="text-sm text-warm-500 mt-4">
-                Already have an account? <Link href="/candidate/login" className="text-brand-600 hover:text-brand-700 font-medium">Sign in</Link>
+      {/* Problem/Solution */}
+      <section className="py-28 px-6 bg-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-16 md:gap-24">
+            <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+              <p className="text-[11px] font-medium text-stone-400 uppercase tracking-[0.2em] mb-4">The problem</p>
+              <h2 className="text-xl font-semibold text-stone-900 mb-4 leading-snug">
+                Traditional hiring is broken for students
+              </h2>
+              <p className="text-stone-500 leading-relaxed">
+                One interview, one chance. Employers only see where you are today,
+                not the progress you've made. Your sophomore self doesn't reflect
+                your senior capabilities.
               </p>
             </div>
-
-            {/* Employer CTA */}
-            <div className="bg-gradient-to-br from-warm-50 to-warm-100/50 border border-warm-200 rounded-3xl p-8 text-center hover:shadow-soft-lg transition-all duration-300 group">
-              <div className="w-16 h-16 bg-warm-900 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-soft-md group-hover:shadow-soft-lg transition-shadow">
-                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-warm-900 mb-3">I&apos;m hiring talent</h2>
-              <p className="text-warm-600 mb-8 leading-relaxed">
-                Screen candidates 10x faster with AI interviews. Get scored results with video, transcript, and analysis.
-              </p>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center w-full px-6 py-4 text-base font-semibold text-white bg-warm-900 rounded-xl hover:bg-warm-800 transition-all shadow-soft-md hover:shadow-soft-lg hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Post a Job
-                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
-              <p className="text-sm text-warm-500 mt-4">
-                Already have an account? <Link href="/login" className="text-warm-900 hover:text-warm-700 font-medium">Sign in</Link>
+            <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+              <p className="text-[11px] font-medium text-teal-600/70 uppercase tracking-[0.2em] mb-4">Our approach</p>
+              <h2 className="text-xl font-semibold text-stone-900 mb-4 leading-snug">
+                Growth over snapshots
+              </h2>
+              <p className="text-stone-500 leading-relaxed">
+                Interview monthly throughout college. Each interview builds on the last.
+                Employers see your improvement curve—how you learn, adapt, and grow
+                over 2-4 years.
               </p>
             </div>
           </div>
-        </Container>
-      </Section>
+        </div>
+      </section>
 
-      {/* Stats Section */}
-      <Section size="sm" className="bg-warm-50 border-y border-warm-100">
-        <Container>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-warm-900 mb-1">10x</div>
-              <div className="text-sm text-warm-600">Faster Screening</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-warm-900 mb-1">15min</div>
-              <div className="text-sm text-warm-600">AI Interview</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-warm-900 mb-1">5</div>
-              <div className="text-sm text-warm-600">Scoring Dimensions</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-warm-900 mb-1">24/7</div>
-              <div className="text-sm text-warm-600">Async Interviews</div>
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      {/* How It Works - For Candidates */}
-      <Section size="lg">
-        <Container>
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-warm-900 mb-4">
-              How It Works for Candidates
+      {/* How it works */}
+      <section className="py-32 px-6 bg-stone-50/50">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-20 animate-fade-in">
+            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-[0.2em] mb-4">How it works</p>
+            <h2 className="text-2xl font-semibold text-stone-900 mb-4">
+              Build your profile over time
             </h2>
-            <p className="text-lg text-warm-600 max-w-2xl mx-auto">
-              Get discovered by top companies in three simple steps
+            <p className="text-stone-500 max-w-md mx-auto">
+              Not in a single high-pressure moment, but through consistent growth.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-            <div className="relative">
-              <div className="absolute -top-4 -left-4 w-12 h-12 bg-brand-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-brand">
-                1
+          <div className="grid md:grid-cols-4 gap-10">
+            {[
+              {
+                step: '01',
+                title: 'Create your profile',
+                description: 'Sign up with your university email. Add your major, graduation year, and target roles.',
+              },
+              {
+                step: '02',
+                title: 'Connect GitHub',
+                description: 'Link your GitHub to showcase your projects, contributions, and coding activity.',
+              },
+              {
+                step: '03',
+                title: 'Interview monthly',
+                description: '15-minute video interviews tailored to your target role. Technical roles include coding.',
+              },
+              {
+                step: '04',
+                title: 'Get discovered',
+                description: 'Employers browse the talent pool and reach out when they find a match.',
+              },
+            ].map((item, i) => (
+              <div
+                key={item.step}
+                className="animate-slide-up group"
+                style={{ animationDelay: `${i * 100}ms` }}
+              >
+                <div className="text-2xl font-light text-stone-300 mb-4 group-hover:text-teal-600/60 transition-colors duration-300">{item.step}</div>
+                <h3 className="font-medium text-stone-900 mb-2">{item.title}</h3>
+                <p className="text-sm text-stone-500 leading-relaxed">{item.description}</p>
               </div>
-              <div className="bg-white border border-warm-200 rounded-2xl p-8 pt-12 h-full shadow-soft hover:shadow-soft-md transition-shadow">
-                <h3 className="text-xl font-semibold text-warm-900 mb-3">Create Your Profile</h3>
-                <p className="text-warm-600 leading-relaxed">
-                  Sign up with your basic info and select the roles you&apos;re interested in.
-                </p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="absolute -top-4 -left-4 w-12 h-12 bg-brand-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-brand">
-                2
-              </div>
-              <div className="bg-white border border-warm-200 rounded-2xl p-8 pt-12 h-full shadow-soft hover:shadow-soft-md transition-shadow">
-                <h3 className="text-xl font-semibold text-warm-900 mb-3">Complete AI Interview</h3>
-                <p className="text-warm-600 leading-relaxed">
-                  Answer 5 video questions in about 15 minutes. Our AI analyzes your responses.
-                </p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <div className="absolute -top-4 -left-4 w-12 h-12 bg-brand-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-brand">
-                3
-              </div>
-              <div className="bg-white border border-warm-200 rounded-2xl p-8 pt-12 h-full shadow-soft hover:shadow-soft-md transition-shadow">
-                <h3 className="text-xl font-semibold text-warm-900 mb-3">Get Matched</h3>
-                <p className="text-warm-600 leading-relaxed">
-                  Your profile is visible to employers. Get contacted for roles that match your skills.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
-        </Container>
-      </Section>
+        </div>
+      </section>
 
-      {/* Verticals Section */}
-      <Section id="verticals" size="lg" className="bg-warm-50">
-        <Container>
+      {/* Features */}
+      <section className="py-32 px-6 bg-stone-900 text-white">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-20">
+            <p className="text-[11px] font-medium text-stone-500 uppercase tracking-[0.2em] mb-4">Features</p>
+            <h2 className="text-2xl font-semibold mb-4">
+              Built for how students actually grow
+            </h2>
+            <p className="text-stone-400">
+              Not just another job board. A career development platform.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-x-12 gap-y-14">
+            {[
+              {
+                title: 'Progress tracking',
+                description: 'See your scores improve month over month. Understand your strengths and areas to develop.',
+              },
+              {
+                title: 'GitHub integration',
+                description: 'Your projects and contributions speak for themselves. We surface your best work automatically.',
+              },
+              {
+                title: 'Multiple attempts',
+                description: 'Bad interview day? Interview again next month. Your best score is what employers see.',
+              },
+              {
+                title: 'Role-specific questions',
+                description: 'Tailored interviews for engineering, data, business, and design roles.',
+              },
+              {
+                title: 'AI-powered feedback',
+                description: 'Get detailed feedback after each interview to help you improve for next time.',
+              },
+              {
+                title: 'Employer matching',
+                description: 'Companies find you based on your vertical, scores, and growth trajectory.',
+              },
+            ].map((feature, i) => (
+              <div
+                key={feature.title}
+                className="animate-fade-in group"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                <h3 className="font-medium text-white mb-2.5 group-hover:text-teal-200 transition-colors duration-300">{feature.title}</h3>
+                <p className="text-sm text-stone-400 leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Career paths */}
+      <section className="py-32 px-6 bg-white">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-warm-900 mb-4">
-              Focus Industries
+            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-[0.2em] mb-4">Verticals</p>
+            <h2 className="text-2xl font-semibold text-stone-900 mb-4">
+              Four career paths
             </h2>
-            <p className="text-lg text-warm-600 max-w-2xl mx-auto">
-              Specialized for China&apos;s highest-growth sectors
+            <p className="text-stone-500">
+              One interview per vertical. Your profile reaches all employers in that space.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-            {/* New Energy/EV */}
-            <div className="bg-white border border-warm-200 rounded-2xl p-8 hover:shadow-soft-md transition-all duration-300 shadow-soft">
-              <div className="w-12 h-12 bg-warm-100 rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-warm-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-warm-900 mb-3">New Energy / EV</h3>
-              <p className="text-sm text-warm-500 mb-4">新能源 / 电动汽车</p>
-              <p className="text-warm-600 leading-relaxed">
-                Battery Engineers, Embedded Software, Autonomous Driving, Supply Chain, EV Sales
-              </p>
-            </div>
-
-            {/* Sales/BD */}
-            <div className="bg-white border border-warm-200 rounded-2xl p-8 hover:shadow-soft-md transition-all duration-300 shadow-soft">
-              <div className="w-12 h-12 bg-warm-100 rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-warm-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-warm-900 mb-3">Sales / BD</h3>
-              <p className="text-sm text-warm-500 mb-4">销售 / 商务拓展</p>
-              <p className="text-warm-600 leading-relaxed">
-                Sales Representatives, BD Managers, Account Managers, Customer Success
-              </p>
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      {/* CTA Section */}
-      <Section size="lg" className="bg-warm-900 text-white">
-        <Container size="md">
-          <div className="text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Ready to get started?
-            </h2>
-            <p className="text-lg text-warm-400 mb-10">
-              Whether you&apos;re looking for your next opportunity or hiring top talent.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/candidate/register"
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-warm-900 bg-white rounded-xl hover:bg-warm-100 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-5">
+            {[
+              { name: 'Engineering', roles: 'Software, Frontend, Backend, Mobile, DevOps' },
+              { name: 'Data', roles: 'Analytics, Data Science, ML, Data Engineering' },
+              { name: 'Business', roles: 'Product, Marketing, Finance, Consulting' },
+              { name: 'Design', roles: 'UX, UI, Product Design' },
+            ].map((vertical, i) => (
+              <div
+                key={vertical.name}
+                className="p-6 bg-stone-50 rounded-2xl hover:bg-stone-100 transition-all duration-300 hover:scale-[1.02] animate-slide-up cursor-default"
+                style={{ animationDelay: `${i * 75}ms` }}
               >
-                I&apos;m a Candidate
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white border border-white/30 rounded-xl hover:bg-white/10 transition-all"
-              >
-                I&apos;m an Employer
-              </Link>
-            </div>
+                <h3 className="font-medium text-stone-900 mb-2">{vertical.name}</h3>
+                <p className="text-xs text-stone-500 leading-relaxed">{vertical.roles}</p>
+              </div>
+            ))}
           </div>
-        </Container>
-      </Section>
+        </div>
+      </section>
+
+      {/* Social proof */}
+      <section className="py-28 px-6 bg-stone-50/50">
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="text-xl text-stone-600 leading-relaxed font-light mb-8">
+            "Finally, a platform that understands college students aren't finished products.
+            Pathway let me show my growth from a nervous sophomore to a confident senior."
+          </p>
+          <p className="text-sm text-stone-400">— CS Student, Stanford '25</p>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-32 px-6 bg-white">
+        <div className="max-w-xl mx-auto text-center">
+          <h2 className="text-2xl font-semibold text-stone-900 mb-4">
+            Start building your trajectory
+          </h2>
+          <p className="text-stone-500 mb-10">
+            Free for students. Your first interview takes 15 minutes.
+          </p>
+          <Link
+            href="/register"
+            className="inline-flex items-center justify-center px-10 py-4 text-sm font-medium text-white bg-stone-900 rounded-full hover:bg-stone-800 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+          >
+            Create Free Account
+          </Link>
+          <p className="mt-8 text-xs text-stone-400">
+            No credit card required. Interview from anywhere.
+          </p>
+        </div>
+      </section>
 
       <Footer />
-    </PageWrapper>
+    </main>
   )
 }

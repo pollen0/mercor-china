@@ -70,10 +70,20 @@ class Candidate(Base):
 
     # Education Information
     university = Column(String, nullable=True)  # e.g., "Stanford University"
-    major = Column(String, nullable=True)  # e.g., "Computer Science"
+    major = Column(String, nullable=True)  # Primary major (kept for backwards compat)
+    majors = Column(JSONB, nullable=True)  # List of majors for double/triple majors
+    minors = Column(JSONB, nullable=True)  # List of minors
+    certificates = Column(JSONB, nullable=True)  # List of certificates/concentrations
     graduation_year = Column(Integer, nullable=True)  # e.g., 2026
-    gpa = Column(Float, nullable=True)  # Optional, 0.0-4.0 scale
+    gpa = Column(Float, nullable=True)  # Cumulative GPA, 0.0-4.0 scale
+    major_gpa = Column(Float, nullable=True)  # Major-specific GPA (often higher for CS)
     courses = Column(JSONB, nullable=True)  # Array of current/past relevant courses
+
+    # Transfer/AP credit tracking
+    is_transfer = Column(Boolean, default=False)  # Is transfer student
+    transfer_university = Column(String, nullable=True)  # Previous school if transfer
+    ap_credits = Column(JSONB, nullable=True)  # List of AP credits: [{exam, score, units}]
+    transfer_units = Column(Integer, nullable=True)  # Total transfer units
 
     # GitHub Integration
     github_username = Column(String, unique=True, nullable=True)
@@ -82,7 +92,7 @@ class Candidate(Base):
     github_connected_at = Column(DateTime(timezone=True), nullable=True)
 
     # Profile
-    target_roles = Column(ARRAY(String), default=[])
+    target_roles = Column(ARRAY(String), nullable=True)  # No default for SQLite compatibility
     bio = Column(Text, nullable=True)  # Short bio/about me
     linkedin_url = Column(String, nullable=True)
     portfolio_url = Column(String, nullable=True)
@@ -98,6 +108,10 @@ class Candidate(Base):
     email_verification_token = Column(String, nullable=True)
     email_verification_expires_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Profile Sharing & Preferences (for GTM)
+    opted_in_to_sharing = Column(Boolean, default=False, nullable=False)  # Consent to share profile with employers
+    sharing_preferences = Column(JSONB, nullable=True)  # {company_stages, locations, industries, email_digest}
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -106,6 +120,9 @@ class Candidate(Base):
     messages = relationship("Message", back_populates="candidate")
     vertical_profiles = relationship("CandidateVerticalProfile", back_populates="candidate")
     interview_history = relationship("InterviewHistoryEntry", back_populates="candidate")
+    activities = relationship("CandidateActivity", back_populates="candidate", cascade="all, delete-orphan")
+    awards = relationship("CandidateAward", back_populates="candidate", cascade="all, delete-orphan")
+    profile_tokens = relationship("ProfileToken", back_populates="candidate", cascade="all, delete-orphan")
 
 
 class InterviewHistoryEntry(Base):

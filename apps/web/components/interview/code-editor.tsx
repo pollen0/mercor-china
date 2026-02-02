@@ -12,7 +12,7 @@ const Editor = dynamic(() => import('@monaco-editor/react'), {
   loading: () => (
     <div className="flex-1 flex items-center justify-center bg-slate-900">
       <div className="text-center">
-        <Spinner size="lg" className="mx-auto mb-3 border-slate-500 border-t-brand-500" />
+        <Spinner size="lg" className="mx-auto mb-3 border-gray-300 border-t-teal-500" />
         <p className="text-sm text-slate-400">Loading editor...</p>
       </div>
     </div>
@@ -54,7 +54,7 @@ export function CodeEditor({ challenge, onSubmit, isSubmitting, isPractice = fal
             onClick={() => setActiveTab('description')}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === 'description'
-                ? 'bg-slate-700/50 text-white border-b-2 border-emerald-500'
+                ? 'bg-slate-700/50 text-white border-b-2 border-teal-500'
                 : 'text-slate-400 hover:text-white hover:bg-slate-700/30'
             }`}
           >
@@ -64,7 +64,7 @@ export function CodeEditor({ challenge, onSubmit, isSubmitting, isPractice = fal
             onClick={() => setActiveTab('tests')}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === 'tests'
-                ? 'bg-slate-700/50 text-white border-b-2 border-emerald-500'
+                ? 'bg-slate-700/50 text-white border-b-2 border-teal-500'
                 : 'text-slate-400 hover:text-white hover:bg-slate-700/30'
             }`}
           >
@@ -181,8 +181,8 @@ export function CodeEditor({ challenge, onSubmit, isSubmitting, isPractice = fal
             disabled={isSubmitting || !code.trim()}
             className={`w-full py-3 font-semibold ${
               isPractice
-                ? 'bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50'
-                : 'bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50'
+                ? 'bg-teal-500 hover:bg-teal-600 disabled:bg-teal-500/50'
+                : 'bg-teal-600 hover:bg-teal-700 disabled:bg-teal-600/50'
             }`}
           >
             {isSubmitting ? (
@@ -222,7 +222,7 @@ function TestCaseCard({ test, index }: { test: TestCase; index: number }) {
       <div className="space-y-2 text-sm">
         <div>
           <span className="text-slate-400">Input: </span>
-          <code className="bg-slate-900 px-2 py-0.5 rounded text-emerald-400 font-mono">
+          <code className="bg-slate-900 px-2 py-0.5 rounded text-green-400 font-mono">
             {test.input}
           </code>
         </div>

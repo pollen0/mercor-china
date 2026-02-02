@@ -7,21 +7,21 @@ export default function CandidateDashboardLoading() {
   return (
     <PageWrapper>
       {/* Navbar skeleton */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-warm-100 z-50">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 z-50">
         <Container className="h-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-warm-200 rounded-lg animate-pulse" />
-            <div className="w-24 h-4 bg-warm-200 rounded animate-pulse" />
+            <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
+            <div className="w-24 h-4 bg-gray-200 rounded animate-pulse" />
           </div>
-          <div className="w-20 h-8 bg-warm-200 rounded-lg animate-pulse" />
+          <div className="w-20 h-8 bg-gray-200 rounded-lg animate-pulse" />
         </Container>
       </div>
 
       <Container className="py-8 pt-24">
         {/* Welcome section skeleton */}
         <div className="mb-10">
-          <div className="h-8 w-48 bg-warm-200 rounded-lg animate-pulse mb-2" />
-          <div className="h-4 w-64 bg-warm-100 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse mb-2" />
+          <div className="h-4 w-64 bg-gray-100 rounded animate-pulse" />
         </div>
 
         <SkeletonDashboard />

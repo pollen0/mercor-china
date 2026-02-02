@@ -81,8 +81,8 @@ export function PermissionCheck({ onPermissionGranted }: PermissionCheckProps) {
     switch (status) {
       case 'granted':
         return (
-          <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-            <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -109,8 +109,8 @@ export function PermissionCheck({ onPermissionGranted }: PermissionCheckProps) {
   return (
     <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
       <div className="text-center mb-8">
-        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mb-6">
-          <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mx-auto w-16 h-16 bg-gradient-to-br from-teal-100 to-teal-50 rounded-full flex items-center justify-center mb-6">
+          <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
         </div>
@@ -176,7 +176,7 @@ export function PermissionCheck({ onPermissionGranted }: PermissionCheckProps) {
 
       {!allGranted && (
         <Button
-          className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-base font-medium"
+          className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-base font-medium"
           onClick={requestPermissions}
           disabled={isRequesting}
         >
@@ -198,7 +198,7 @@ export function PermissionCheck({ onPermissionGranted }: PermissionCheckProps) {
 
       {allGranted && (
         <Button
-          className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-base font-medium"
+          className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-base font-medium"
           onClick={onPermissionGranted}
         >
           <span className="flex items-center gap-2">

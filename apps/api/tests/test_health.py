@@ -31,4 +31,4 @@ class TestHealthEndpoint:
         data = response.json()
         assert data["status"] == "healthy"
         assert data["database"] == "healthy"
-        assert data["service"] == "zhipin-ai-api"
+        assert data["service"] == "pathway-api"

@@ -183,7 +183,7 @@ export function VideoRecorder({
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
             <div className="text-center">
-              <div className="w-8 h-8 border-2 border-slate-700 border-t-emerald-500 rounded-full animate-spin mx-auto mb-3" />
+              <div className="w-8 h-8 border-2 border-slate-700 border-t-teal-500 rounded-full animate-spin mx-auto mb-3" />
               <div className="text-slate-400 text-sm">Loading camera...</div>
             </div>
           </div>
@@ -279,7 +279,7 @@ export function VideoRecorder({
             <Button
               size="lg"
               onClick={confirmRecording}
-              className="bg-emerald-600 hover:bg-emerald-700 min-h-[52px] text-base font-medium px-6"
+              className="bg-teal-600 hover:bg-teal-700 min-h-[52px] text-base font-medium px-6"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

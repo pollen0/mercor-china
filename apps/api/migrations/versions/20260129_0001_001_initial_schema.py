@@ -4,7 +4,7 @@ Revision ID: 001
 Revises:
 Create Date: 2026-01-29
 
-This migration represents the initial database schema for ZhiMian.
+This migration represents the initial database schema for Pathway.
 All tables that existed before Alembic was introduced are captured here.
 """
 from typing import Sequence, Union

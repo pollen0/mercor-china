@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ZhiMian 智面 - AI-Powered Recruiting Platform',
-  description: 'AI-powered recruiting platform with video interviews, AI scoring, and employer dashboard. Built for New Energy/EV and Sales verticals in China.',
-  keywords: ['AI interview', 'recruiting', 'hiring', 'China', 'New Energy', 'EV', 'Sales', '智能面试', '招聘'],
+  title: 'Pathway - Show Your Growth, Land Your First Job',
+  description: 'The career platform for college students. Interview monthly to show your progress, connect your GitHub, and get matched with top employers.',
+  keywords: ['college jobs', 'entry level', 'software engineer', 'data analyst', 'first job', 'career platform', 'student careers'],
 }
 
 export const viewport: Viewport = {
@@ -13,8 +13,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FAFAFA' },
-    { media: '(prefers-color-scheme: dark)', color: '#0F0F0F' },
+    { media: '(prefers-color-scheme: light)', color: '#6366F1' },
+    { media: '(prefers-color-scheme: dark)', color: '#4F46E5' },
   ],
 }
 
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         {children}
       </body>

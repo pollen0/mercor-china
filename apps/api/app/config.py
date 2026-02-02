@@ -21,20 +21,27 @@ class Settings(BaseSettings):
     r2_account_id: str = ""
     r2_access_key_id: str = ""
     r2_secret_access_key: str = ""
-    r2_bucket_name: str = "zhipin-videos"
+    r2_bucket_name: str = "pathway-videos"
     r2_endpoint_url: Optional[str] = None  # Will be constructed from account_id
 
-    # DeepSeek API (for LLM scoring)
+    # DeepSeek API (legacy fallback)
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
 
-    # WeChat OAuth
-    wechat_app_id: str = ""
-    wechat_app_secret: str = ""
+    # Claude API (primary - faster and more accurate)
+    anthropic_api_key: str = ""  # Set via ANTHROPIC_API_KEY env var
+    claude_model: str = "claude-sonnet-4-20250514"  # Fast and accurate
+
+    # Admin authentication
+    admin_password: str = ""  # Set via ADMIN_PASSWORD env var - REQUIRED for admin access
+
+    # GitHub OAuth
+    github_client_id: str = ""
+    github_client_secret: str = ""
 
     # Email (Resend)
     resend_api_key: str = ""
-    email_from: str = "ZhiMian <noreply@zhimian.ai>"
+    email_from: str = "Pathway <noreply@pathway.careers>"
 
     # Frontend URL (for email links)
     frontend_url: str = "http://localhost:3000"

@@ -5,6 +5,7 @@ Uses synchronous functions compatible with FastAPI's BackgroundTasks.
 import asyncio
 import json
 import logging
+from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from typing import Optional
@@ -15,7 +16,7 @@ from .email import email_service
 from .matching import matching_service
 from .code_execution import code_execution_service
 
-logger = logging.getLogger("zhimian.tasks")
+logger = logging.getLogger("pathway.tasks")
 
 
 def _run_async(coro):
@@ -136,8 +137,19 @@ def process_interview_response(
                     "culture_fit": score_result.culture_fit,
                 }
             }, ensure_ascii=False)
+            # Store scoring version for future re-scoring capability
+            response.scoring_algorithm_version = getattr(score_result, 'algorithm_version', '1.0.0')
+            response.scored_at = datetime.utcnow()
+            response.raw_score_data = {
+                "question": question_text,
+                "transcript": transcript[:2000] if transcript else None,  # Truncate for storage
+                "job_title": job_title,
+                "job_requirements": job_requirements,
+                "vertical": getattr(score_result, 'vertical', None),
+            }
             db.commit()
-            logger.info(f"Successfully processed response {response_id}, score: {score_result.overall}")
+            logger.info(f"Successfully processed response {response_id}, score: {score_result.overall}, "
+                       f"version: {response.scoring_algorithm_version}")
         except Exception as e:
             logger.error(f"Scoring failed for {response_id}: {e}")
             response.ai_analysis = json.dumps({"error": str(e)}, ensure_ascii=False)
@@ -396,18 +408,50 @@ def _process_vertical_interview_completion(session, db):
 
     # Update profile with score
     interview_score = session.total_score or 5.0
+    now = datetime.utcnow()
+
     profile.interview_score = interview_score
     profile.status = VerticalProfileStatus.COMPLETED
-    profile.completed_at = datetime.utcnow()
-    profile.last_attempt_at = datetime.utcnow()
-    profile.attempt_count = (profile.attempt_count or 0) + 1
+    profile.completed_at = now
+
+    # Update monthly interview tracking
+    profile.last_interview_at = now
+    profile.total_interviews = (profile.total_interviews or 0) + 1
+    # Set next eligible date (30 days from now for monthly interviews)
+    from datetime import timedelta
+    profile.next_eligible_at = now + timedelta(days=30)
+
+    # Keep backward compatibility with older column names
+    if hasattr(profile, 'last_attempt_at'):
+        profile.last_attempt_at = now
+    if hasattr(profile, 'attempt_count'):
+        profile.attempt_count = (profile.attempt_count or 0) + 1
 
     # Update best score if this is better
     if profile.best_score is None or interview_score > profile.best_score:
         profile.best_score = interview_score
 
     db.commit()
-    logger.info(f"Updated vertical profile {profile.id} with score {interview_score}")
+    logger.info(f"Updated vertical profile {profile.id} with score {interview_score}, "
+               f"total_interviews: {profile.total_interviews}, next_eligible: {profile.next_eligible_at}")
+
+    # Update question scores for progressive question tracking
+    try:
+        from .progressive_questions import update_question_scores
+
+        # Get individual response scores to update question history
+        responses = session.responses if hasattr(session, 'responses') else []
+        question_scores = {}
+        for i, resp in enumerate(responses):
+            if resp.ai_score is not None:
+                question_scores[i] = resp.ai_score
+
+        if question_scores:
+            update_question_scores(db, session.id, question_scores)
+            logger.info(f"Updated {len(question_scores)} question scores for session {session.id}")
+    except Exception as e:
+        logger.error(f"Failed to update question scores: {e}")
+        # Non-critical, continue with match processing
 
     # Find all active jobs matching this vertical
     matching_jobs = db.query(Job).filter(
@@ -567,7 +611,7 @@ def process_coding_response(
                         problem_description=problem_desc,
                         code=code,
                         test_results=exec_result.test_results,
-                        language="zh"
+                        language="en"
                     )
                 )
                 score_result = feedback["score_result"]
@@ -597,7 +641,7 @@ def process_coding_response(
                         problem_description=problem_desc,
                         code=code,
                         test_results=exec_result.test_results,
-                        language="zh"
+                        language="en"
                     )
                 )
 

@@ -1,5 +1,5 @@
 """
-Alembic migration environment for ZhiMian.
+Alembic migration environment for Pathway.
 
 This file configures the migration environment to use
 the application's database settings and models.

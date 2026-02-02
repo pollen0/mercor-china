@@ -167,16 +167,16 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
   if (result && result.success) {
     return (
       <div className="space-y-6">
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-emerald-800">Resume Uploaded Successfully</h3>
-              <p className="text-sm text-emerald-600 mt-1">{result.message}</p>
+              <h3 className="font-semibold text-green-800">Resume Uploaded Successfully</h3>
+              <p className="text-sm text-green-600 mt-1">{result.message}</p>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
                   {result.parsedData.skills.slice(0, 10).map((skill, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-sm border border-emerald-200"
+                      className="px-3 py-1 bg-teal-50 text-teal-700 rounded-full text-sm border border-teal-200"
                     >
                       {skill}
                     </span>
@@ -260,7 +260,7 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
           {onSkip && (
             <Button
               onClick={onSkip}
-              className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+              className="flex-1 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600"
             >
               Continue
             </Button>
@@ -280,8 +280,8 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
         className={`
           border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
           ${isDragging
-            ? 'border-emerald-500 bg-emerald-50'
-            : 'border-gray-300 hover:border-emerald-400 hover:bg-gray-50'
+            ? 'border-teal-500 bg-teal-50'
+            : 'border-gray-300 hover:border-teal-400 hover:bg-gray-50'
           }
           ${isUploading ? 'pointer-events-none opacity-60' : ''}
         `}
@@ -297,7 +297,7 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
 
         {isUploading ? (
           <div className="space-y-3">
-            <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto" />
+            <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto" />
             <p className="text-gray-600">{uploadProgress}</p>
           </div>
         ) : (

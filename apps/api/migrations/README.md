@@ -1,6 +1,6 @@
 # Database Migrations
 
-This directory contains Alembic database migrations for ZhiMian.
+This directory contains Alembic database migrations for Pathway.
 
 ## Quick Commands
 

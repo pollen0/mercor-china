@@ -6,62 +6,14 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { candidateRegistrationSchema, targetRoleOptions, type CandidateRegistrationInput } from '@/lib/validations/candidate'
+import { candidateRegistrationSchema, targetRoleOptions, universityOptions, graduationYearOptions, type CandidateRegistrationInput } from '@/lib/validations/candidate'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 type FormErrors = Partial<Record<keyof CandidateRegistrationInput, string>>
 
-function WeChatButton() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleWeChatLogin = async () => {
-    setError('')
-    setIsLoading(true)
-
-    try {
-      const response = await fetch(`${API_URL}/api/candidates/auth/wechat/url`)
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.detail || '微信登录暂不可用')
-      }
-
-      const data = await response.json()
-
-      // Store state for CSRF validation
-      sessionStorage.setItem('wechat_oauth_state', data.state)
-
-      // Redirect to WeChat authorization page
-      window.location.href = data.auth_url
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'WeChat login failed')
-      setIsLoading(false)
-    }
-  }
-
-  return (
-    <div>
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full border-[#07C160] text-[#07C160] hover:bg-[#07C160]/10"
-        onClick={handleWeChatLogin}
-        disabled={isLoading}
-      >
-        <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.27-.027-.407-.032zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/>
-        </svg>
-        {isLoading ? '正在跳转...' : '使用微信快速注册'}
-      </Button>
-      {error && (
-        <p className="mt-2 text-sm text-error text-center">{error}</p>
-      )}
-    </div>
-  )
-}
+// GitHub signup removed - we need school/graduation info that GitHub can't provide
+// GitHub can be connected after registration on the dashboard
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -70,6 +22,9 @@ export default function RegisterPage() {
     email: '',
     phone: '',
     password: '',
+    university: '',
+    graduationYear: undefined,
+    major: '',
     targetRoles: [],
   })
   const [errors, setErrors] = useState<FormErrors>({})
@@ -152,78 +107,59 @@ export default function RegisterPage() {
 
   if (submitStatus === 'success') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-0 shadow-soft-lg">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-success-light rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <CardTitle className="text-success">Registration Successful!</CardTitle>
-            <CardDescription>
-              Next step: Upload your resume to get personalized interview questions.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Link href="/">
-              <Button variant="outline">Back to Home</Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <main className="min-h-screen bg-white flex items-center justify-center p-6">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-6 h-6 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">You're in</h1>
+          <p className="text-gray-400 text-sm mb-8">
+            Next: upload your resume for personalized questions.
+          </p>
+          <Link href="/">
+            <Button variant="ghost" className="text-gray-500">Back to Home</Button>
+          </Link>
+        </div>
       </main>
     )
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white flex items-center justify-center p-4">
-      <Card className="w-full max-w-md border-0 shadow-soft-lg">
-        <CardHeader className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2 justify-center mb-4 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-brand group-hover:shadow-brand-lg transition-shadow">
-              <span className="text-white font-bold">智</span>
-            </div>
-            <span className="text-xl font-semibold text-warm-900">ZhiMian 智面</span>
+    <main className="min-h-screen bg-white flex items-center justify-center p-6">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-block text-xl font-semibold text-gray-900 mb-6 hover:text-gray-600 transition-colors">
+            Pathway
           </Link>
-          <CardTitle>Candidate Registration</CardTitle>
-          <CardDescription>
-            Fill in your details to start your AI-powered job search
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* WeChat Registration Button */}
-          <WeChatButton />
-
-          <div className="relative my-5">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-warm-200" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-warm-500">或填写表单注册</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Full Name <span className="text-error">*</span>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Create account</h1>
+          <p className="text-gray-400 text-sm">
+            Start your journey
+          </p>
+        </div>
+        <div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-gray-600 text-sm">
+                Full Name
               </Label>
               <Input
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Enter your full name"
-                className={errors.name ? 'border-error focus-visible:ring-error' : ''}
+                placeholder="Your name"
+                className={`border-gray-200 focus:border-gray-400 focus:ring-0 ${errors.name ? 'border-red-300' : ''}`}
               />
               {errors.name && (
-                <p className="text-sm text-error">{errors.name}</p>
+                <p className="text-xs text-red-500">{errors.name}</p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">
-                Email <span className="text-error">*</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-gray-600 text-sm">
+                Email
               </Label>
               <Input
                 id="email"
@@ -231,34 +167,34 @@ export default function RegisterPage() {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="example@email.com"
-                className={errors.email ? 'border-error focus-visible:ring-error' : ''}
+                placeholder="you@university.edu"
+                className={`border-gray-200 focus:border-gray-400 focus:ring-0 ${errors.email ? 'border-red-300' : ''}`}
               />
               {errors.email && (
-                <p className="text-sm text-error">{errors.email}</p>
+                <p className="text-xs text-red-500">{errors.email}</p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">
-                Phone Number <span className="text-error">*</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="phone" className="text-gray-600 text-sm">
+                Phone
               </Label>
               <Input
                 id="phone"
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                placeholder="Enter your phone number"
-                className={errors.phone ? 'border-error focus-visible:ring-error' : ''}
+                placeholder="(555) 123-4567"
+                className={`border-gray-200 focus:border-gray-400 focus:ring-0 ${errors.phone ? 'border-red-300' : ''}`}
               />
               {errors.phone && (
-                <p className="text-sm text-error">{errors.phone}</p>
+                <p className="text-xs text-red-500">{errors.phone}</p>
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">
-                Password <span className="text-error">*</span>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-gray-600 text-sm">
+                Password
               </Label>
               <Input
                 id="password"
@@ -266,26 +202,86 @@ export default function RegisterPage() {
                 type="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="At least 8 characters with letters and numbers"
-                className={errors.password ? 'border-error focus-visible:ring-error' : ''}
+                placeholder="At least 8 characters"
+                className={`border-gray-200 focus:border-gray-400 focus:ring-0 ${errors.password ? 'border-red-300' : ''}`}
               />
               {errors.password && (
-                <p className="text-sm text-error">{errors.password}</p>
+                <p className="text-xs text-red-500">{errors.password}</p>
               )}
             </div>
 
-            <div className="space-y-3">
-              <Label>Target Roles (select multiple)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="university" className="text-gray-600 text-sm">
+                University
+              </Label>
+              <select
+                id="university"
+                value={formData.university}
+                onChange={(e) => {
+                  setFormData(prev => ({ ...prev, university: e.target.value }))
+                  if (errors.university) {
+                    setErrors(prev => ({ ...prev, university: undefined }))
+                  }
+                }}
+                className={`w-full h-11 px-3 rounded-lg border bg-white text-sm focus:outline-none focus:border-gray-400 ${
+                  errors.university ? 'border-red-300' : 'border-gray-200'
+                }`}
+              >
+                <option value="">Select university</option>
+                {universityOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {errors.university && (
+                <p className="text-xs text-red-500">{errors.university}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="graduationYear" className="text-gray-600 text-sm">Grad Year</Label>
+                <select
+                  id="graduationYear"
+                  value={formData.graduationYear?.toString() || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, graduationYear: e.target.value ? parseInt(e.target.value) : undefined }))}
+                  className="w-full h-11 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:border-gray-400"
+                >
+                  <option value="">Year</option>
+                  {graduationYearOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="major" className="text-gray-600 text-sm">Major</Label>
+                <Input
+                  id="major"
+                  name="major"
+                  value={formData.major || ''}
+                  onChange={handleInputChange}
+                  placeholder="CS"
+                  className="border-gray-200 focus:border-gray-400 focus:ring-0"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-600 text-sm">Target Roles</Label>
               <div className="flex flex-wrap gap-2">
                 {targetRoleOptions.map(option => (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => handleRoleToggle(option.value)}
-                    className={`px-4 py-2 text-sm rounded-full border-2 transition-all duration-200 font-medium ${
+                    className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                       formData.targetRoles.includes(option.value)
-                        ? 'bg-brand-500 text-white border-brand-500 shadow-brand'
-                        : 'bg-white text-warm-700 border-warm-200 hover:border-brand-300 hover:text-brand-700'
+                        ? 'bg-gray-900 text-white border-gray-900'
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
                     }`}
                   >
                     {option.label}
@@ -295,42 +291,36 @@ export default function RegisterPage() {
             </div>
 
             {submitStatus === 'error' && (
-              <div className="p-4 bg-error-light border border-error/20 rounded-xl">
-                <p className="text-sm text-error-dark">{errorMessage}</p>
-              </div>
+              <p className="text-sm text-red-500">{errorMessage}</p>
             )}
 
-            <p className="text-xs text-warm-500 text-center">
+            <div className="pt-2">
+              <Button
+                type="submit"
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full h-11"
+                disabled={isSubmitting}
+                loading={isSubmitting}
+              >
+                {isSubmitting ? 'Creating...' : 'Create Account'}
+              </Button>
+            </div>
+
+            <p className="text-xs text-gray-400 text-center">
               By registering, you agree to our{' '}
-              <Link href="/privacy" className="text-brand-600 hover:underline">
+              <Link href="/privacy" className="text-gray-500 hover:text-gray-900">
                 Privacy Policy
               </Link>
-              {' '}/ 注册即表示您同意我们的
-              <Link href="/privacy" className="text-brand-600 hover:underline">
-                隐私政策
-              </Link>
             </p>
-
-            <Button
-              type="submit"
-              variant="brand"
-              className="w-full"
-              disabled={isSubmitting}
-              loading={isSubmitting}
-            >
-              {isSubmitting ? 'Submitting...' : 'Register Now'}
-            </Button>
-
           </form>
 
-          <p className="mt-6 text-center text-sm text-warm-500">
+          <p className="mt-8 text-center text-sm text-gray-400">
             Already have an account?{' '}
-            <Link href="/candidate/login" className="text-brand-600 hover:text-brand-700 font-medium">
+            <Link href="/candidate/login" className="text-gray-900 hover:text-gray-600">
               Sign in
             </Link>
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </main>
   )
 }

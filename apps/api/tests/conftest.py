@@ -193,14 +193,13 @@ def test_questions(db_session):
     """Create default test questions."""
     questions = []
     for i, q_data in enumerate([
-        {"text": "Tell me about yourself", "text_zh": "请介绍一下你自己", "category": "introduction"},
-        {"text": "Why this role?", "text_zh": "为什么对这个职位感兴趣?", "category": "motivation"},
-        {"text": "Describe a challenge", "text_zh": "描述一个你遇到的挑战", "category": "behavioral"},
+        {"text": "Tell me about yourself", "category": "introduction"},
+        {"text": "Why are you interested in this role?", "category": "motivation"},
+        {"text": "Describe a challenge you've faced", "category": "behavioral"},
     ]):
         question = InterviewQuestion(
             id=generate_test_id("q"),
             text=q_data["text"],
-            text_zh=q_data["text_zh"],
             category=q_data["category"],
             order=i,
             is_default=True,

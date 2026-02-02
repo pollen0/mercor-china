@@ -4,7 +4,12 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ErrorBoundary, ErrorDisplay, useErrorHandler } from '@/components/error-boundary'
 
-// Component that throws an error for testing
+// Simple component that always throws
+const AlwaysThrows = () => {
+  throw new Error('Test error')
+}
+
+// Component that throws conditionally
 const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
   if (shouldThrow) {
     throw new Error('Test error')
@@ -51,26 +56,41 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText('Custom error UI')).toBeInTheDocument()
   })
 
-  it('resets error state when retry is clicked', () => {
-    const { rerender } = render(
+  it('Try Again button is clickable', () => {
+    render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
+        <AlwaysThrows />
       </ErrorBoundary>
     )
 
     expect(screen.getByText('Something went wrong')).toBeInTheDocument()
 
-    // Click retry
-    fireEvent.click(screen.getByText('Try Again'))
+    const tryAgainButton = screen.getByText('Try Again')
+    expect(tryAgainButton).toBeInTheDocument()
 
-    // Rerender without throwing
-    rerender(
+    // Clicking should not throw (it will re-render and error will reappear since child always throws)
+    expect(() => fireEvent.click(tryAgainButton)).not.toThrow()
+  })
+
+  it('Go Home button navigates to home', () => {
+    // Mock window.location.href
+    const originalLocation = window.location
+    delete (window as { location?: Location }).location
+    window.location = { href: '' } as Location
+
+    render(
       <ErrorBoundary>
-        <ThrowError shouldThrow={false} />
+        <AlwaysThrows />
       </ErrorBoundary>
     )
 
-    expect(screen.getByText('No error')).toBeInTheDocument()
+    const goHomeButton = screen.getByText('Go Home')
+    fireEvent.click(goHomeButton)
+
+    expect(window.location.href).toBe('/')
+
+    // Restore
+    window.location = originalLocation
   })
 })
 

@@ -65,8 +65,8 @@ function InterviewStartContent() {
 
     if (!phone.trim()) {
       errors.phone = 'Phone number is required'
-    } else if (!/^1[3-9]\d{9}$/.test(phone)) {
-      errors.phone = 'Please enter a valid Chinese mobile number'
+    } else if (!/^[\d\s\-\+\(\)]{10,}$/.test(phone.replace(/\s/g, ''))) {
+      errors.phone = 'Please enter a valid phone number'
     }
 
     setFormErrors(errors)
@@ -101,7 +101,7 @@ function InterviewStartContent() {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500">Validating invite link...</p>
         </div>
       </main>
@@ -140,10 +140,12 @@ function InterviewStartContent() {
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">智</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
             </div>
-            <span className="font-semibold text-gray-900">ZhiMian 智面</span>
+            <span className="font-semibold text-gray-900">Pathway</span>
           </Link>
         </div>
       </header>
@@ -153,22 +155,22 @@ function InterviewStartContent() {
           {/* Left side - Job info */}
           <div className="lg:col-span-2">
             <div className="sticky top-8">
-              <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl p-6 text-white mb-6">
+              <div className="bg-gradient-to-br from-teal-600 to-teal-600 rounded-2xl p-6 text-white mb-6">
                 <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <h2 className="text-xl font-semibold mb-1">{validation.jobTitle}</h2>
-                <p className="text-emerald-100">{validation.companyName}</p>
+                <p className="text-teal-100">{validation.companyName}</p>
               </div>
 
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Interview Details</h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                     </div>
@@ -178,8 +180,8 @@ function InterviewStartContent() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -189,8 +191,8 @@ function InterviewStartContent() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
                     </div>
@@ -261,13 +263,12 @@ function InterviewStartContent() {
                       setPhone(e.target.value)
                       if (formErrors.phone) setFormErrors({ ...formErrors, phone: '' })
                     }}
-                    placeholder="13800138000"
+                    placeholder="(555) 123-4567"
                     className={`mt-2 h-12 ${formErrors.phone ? 'border-red-500 focus:ring-red-500' : ''}`}
                   />
                   {formErrors.phone && (
                     <p className="text-sm text-red-500 mt-1">{formErrors.phone}</p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">Enter your Chinese mobile number</p>
                 </div>
 
                 {error && (
@@ -279,7 +280,7 @@ function InterviewStartContent() {
                 <div className="pt-4">
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-base font-medium"
+                    className="w-full h-12 bg-teal-600 hover:bg-teal-700 text-base font-medium"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
@@ -316,7 +317,7 @@ export default function InterviewStartPage() {
     <Suspense fallback={
       <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500">Loading...</p>
         </div>
       </main>

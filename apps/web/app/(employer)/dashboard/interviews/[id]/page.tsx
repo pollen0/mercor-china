@@ -70,7 +70,7 @@ export default function InterviewDetailPage() {
           communication: data.scores.communication,
           problemSolving: data.scores.problem_solving,
           domainKnowledge: data.scores.domain_knowledge,
-          motivation: data.scores.motivation,
+          growthMindset: data.scores.growth_mindset,
           cultureFit: data.scores.culture_fit,
           overall: 0,
           analysis: data.analysis || '',
@@ -98,7 +98,7 @@ export default function InterviewDetailPage() {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500">Loading interview...</p>
         </div>
       </main>
@@ -135,10 +135,12 @@ export default function InterviewDetailPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">智</span>
+              <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
               </div>
-              <span className="font-semibold text-gray-900">ZhiMian</span>
+              <span className="font-semibold text-gray-900">Pathway</span>
             </Link>
             <span className="text-gray-300">/</span>
             <Link href="/dashboard/interviews" className="text-gray-500 hover:text-gray-900">
@@ -158,8 +160,8 @@ export default function InterviewDetailPage() {
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
             <div className="flex items-center gap-5">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-                <span className="text-emerald-700 font-bold text-3xl">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-100 to-teal-100 flex items-center justify-center">
+                <span className="text-teal-700 font-bold text-3xl">
                   {(interview.candidateName || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -185,7 +187,7 @@ export default function InterviewDetailPage() {
                 <Button
                   onClick={() => handleStatusUpdate('SHORTLISTED')}
                   disabled={isUpdating}
-                  className="bg-emerald-600 hover:bg-emerald-700"
+                  className="bg-teal-600 hover:bg-teal-700"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -195,7 +197,7 @@ export default function InterviewDetailPage() {
                 <Button
                   variant="outline"
                   onClick={() => setShowContactModal(true)}
-                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                  className="text-teal-600 border-teal-200 hover:bg-teal-50"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -222,7 +224,7 @@ export default function InterviewDetailPage() {
         {summaryData && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               AI Summary
@@ -239,9 +241,9 @@ export default function InterviewDetailPage() {
                   <span
                     className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
                       summaryData.recommendation === 'strong_yes'
-                        ? 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-teal-100 text-teal-700'
                         : summaryData.recommendation === 'yes'
-                        ? 'bg-emerald-50 text-emerald-600'
+                        ? 'bg-teal-50 text-teal-600'
                         : summaryData.recommendation === 'maybe'
                         ? 'bg-amber-100 text-amber-700'
                         : 'bg-red-100 text-red-700'
@@ -254,8 +256,8 @@ export default function InterviewDetailPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 {summaryData.overall_strengths?.length > 0 && (
-                  <div className="bg-emerald-50 rounded-xl p-5">
-                    <h4 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2">
+                  <div className="bg-teal-50 rounded-xl p-5">
+                    <h4 className="font-semibold text-teal-900 mb-3 flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
@@ -263,8 +265,8 @@ export default function InterviewDetailPage() {
                     </h4>
                     <ul className="space-y-2">
                       {summaryData.overall_strengths.map((s: string, i: number) => (
-                        <li key={i} className="text-emerald-800 text-sm flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
+                        <li key={i} className="text-teal-800 text-sm flex items-start gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-2 flex-shrink-0" />
                           {s}
                         </li>
                       ))}
@@ -304,7 +306,7 @@ export default function InterviewDetailPage() {
 
             return (
               <div key={response.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4">
+                <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-4">
                   <h3 className="text-white font-semibold">
                     Question {index + 1}: {response.questionText}
                   </h3>
@@ -343,8 +345,8 @@ export default function InterviewDetailPage() {
                                 <div className="font-semibold text-gray-900">{scoreDetails.domainKnowledge}/10</div>
                               </div>
                               <div className="bg-gray-50 rounded-lg p-2">
-                                <span className="text-gray-500">Motivation</span>
-                                <div className="font-semibold text-gray-900">{scoreDetails.motivation}/10</div>
+                                <span className="text-gray-500">Growth Mindset</span>
+                                <div className="font-semibold text-gray-900">{scoreDetails.growthMindset}/10</div>
                               </div>
                               <div className="bg-gray-50 rounded-lg p-2 col-span-2">
                                 <span className="text-gray-500">Culture Fit</span>
@@ -356,8 +358,8 @@ export default function InterviewDetailPage() {
                       )}
 
                       {scoreDetails?.analysis && (
-                        <div className="bg-emerald-50 rounded-xl p-4">
-                          <p className="text-emerald-800 text-sm leading-relaxed">{scoreDetails.analysis}</p>
+                        <div className="bg-teal-50 rounded-xl p-4">
+                          <p className="text-teal-800 text-sm leading-relaxed">{scoreDetails.analysis}</p>
                         </div>
                       )}
 

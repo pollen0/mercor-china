@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-logger = logging.getLogger("zhimian.code_execution")
+logger = logging.getLogger("pathway.code_execution")
 
 PISTON_URL = "https://emkc.org/api/v2/piston"
 

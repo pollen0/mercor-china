@@ -156,7 +156,7 @@ export default function InterviewsListPage() {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500">Loading interviews...</p>
         </div>
       </main>
@@ -170,10 +170,12 @@ export default function InterviewsListPage() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">智</span>
+              <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
               </div>
-              <span className="font-semibold text-gray-900">ZhiMian</span>
+              <span className="font-semibold text-gray-900">Pathway</span>
             </Link>
             <span className="text-gray-300">/</span>
             <span className="text-gray-600">Interviews</span>
@@ -222,7 +224,7 @@ export default function InterviewsListPage() {
               <select
                 value={selectedJob}
                 onChange={(e) => setSelectedJob(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               >
                 <option value="">All Jobs</option>
                 {jobs.map((job) => (
@@ -240,7 +242,7 @@ export default function InterviewsListPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               >
                 <option value="">All Statuses</option>
                 <option value="PENDING">Pending</option>
@@ -261,14 +263,14 @@ export default function InterviewsListPage() {
                 value={minScore}
                 onChange={(e) => setMinScore(e.target.value)}
                 placeholder="0-10"
-                className="focus:ring-emerald-500 focus:border-emerald-500"
+                className="focus:ring-teal-500 focus:border-teal-500"
               />
             </div>
 
             <div className="flex items-end gap-2">
               <Button
                 onClick={handleFilter}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-teal-600 hover:bg-teal-700"
               >
                 Apply Filters
               </Button>
@@ -281,15 +283,15 @@ export default function InterviewsListPage() {
 
         {/* Bulk Action Toolbar */}
         {selectedIds.size > 0 && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <span className="font-medium text-emerald-800">
+              <span className="font-medium text-teal-800">
                 {selectedIds.size} interview{selectedIds.size > 1 ? 's' : ''} selected
               </span>
               <Button
                 onClick={() => handleBulkAction('shortlist')}
                 disabled={isBulkActionLoading}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-teal-600 hover:bg-teal-700"
                 size="sm"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,7 +316,7 @@ export default function InterviewsListPage() {
               onClick={() => setSelectedIds(new Set())}
               variant="ghost"
               size="sm"
-              className="text-emerald-700"
+              className="text-teal-700"
             >
               Clear Selection
             </Button>
@@ -324,9 +326,9 @@ export default function InterviewsListPage() {
         {/* Bulk Action Result */}
         {bulkActionResult && (
           <div className={`rounded-xl p-4 mb-6 flex items-center justify-between ${
-            bulkActionResult.success ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'
+            bulkActionResult.success ? 'bg-teal-50 border border-teal-200' : 'bg-red-50 border border-red-200'
           }`}>
-            <span className={bulkActionResult.success ? 'text-emerald-800' : 'text-red-800'}>
+            <span className={bulkActionResult.success ? 'text-teal-800' : 'text-red-800'}>
               {bulkActionResult.message}
             </span>
             <Button onClick={clearBulkResult} variant="ghost" size="sm">
@@ -358,7 +360,7 @@ export default function InterviewsListPage() {
                 type="checkbox"
                 checked={selectedIds.size === interviews.length && interviews.length > 0}
                 onChange={toggleSelectAll}
-                className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
               />
               <span className="text-sm text-gray-600">Select all</span>
             </div>
@@ -369,8 +371,8 @@ export default function InterviewsListPage() {
                 key={interview.id}
                 className={`bg-white rounded-xl border p-5 transition-all ${
                   selectedIds.has(interview.id)
-                    ? 'border-emerald-400 bg-emerald-50/30 shadow-sm'
-                    : 'border-gray-200 hover:border-emerald-300 hover:shadow-md'
+                    ? 'border-teal-400 bg-teal-50/30 shadow-sm'
+                    : 'border-gray-200 hover:border-teal-300 hover:shadow-md'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -383,14 +385,14 @@ export default function InterviewsListPage() {
                         toggleSelect(interview.id)
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      className="w-5 h-5 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
                     />
                     <div
                       className="flex items-center gap-4 cursor-pointer"
                       onClick={() => router.push(`/dashboard/interviews/${interview.id}`)}
                     >
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-                        <span className="text-emerald-700 font-semibold text-lg">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-100 to-teal-50 flex items-center justify-center">
+                        <span className="text-teal-700 font-semibold text-lg">
                           {(interview.candidateName || 'U').charAt(0).toUpperCase()}
                         </span>
                       </div>
@@ -413,7 +415,7 @@ export default function InterviewsListPage() {
                     <span
                       className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
                         interview.status === 'COMPLETED'
-                          ? 'bg-emerald-100 text-emerald-700'
+                          ? 'bg-teal-100 text-teal-700'
                           : interview.status === 'IN_PROGRESS'
                           ? 'bg-amber-100 text-amber-700'
                           : 'bg-gray-100 text-gray-700'
@@ -426,7 +428,7 @@ export default function InterviewsListPage() {
                     {/* Score */}
                     {interview.totalScore && (
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-emerald-600">
+                        <div className="text-2xl font-bold text-teal-600">
                           {interview.totalScore.toFixed(1)}
                         </div>
                         <div className="text-xs text-gray-500">Score</div>

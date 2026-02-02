@@ -61,7 +61,7 @@ export default function InterviewCompletePage() {
     return (
       <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-500">Loading results...</p>
         </div>
       </main>
@@ -96,10 +96,10 @@ export default function InterviewCompletePage() {
         <header className="bg-white border-b border-gray-100">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">智</span>
+              <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
               </div>
-              <span className="font-semibold text-gray-900">ZhiMian 智面</span>
+              <span className="font-semibold text-gray-900">Pathway</span>
             </Link>
           </div>
         </header>
@@ -107,8 +107,8 @@ export default function InterviewCompletePage() {
         <div className="flex items-center justify-center p-4 min-h-[calc(100vh-65px)]">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
             <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-6">
-                <div className="w-8 h-8 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+              <div className="mx-auto w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mb-6">
+                <div className="w-8 h-8 border-2 border-teal-200 border-t-teal-600 rounded-full animate-spin" />
               </div>
               <h1 className="text-xl font-semibold text-gray-900 mb-2">Processing Your Interview</h1>
               <p className="text-gray-500">
@@ -124,7 +124,7 @@ export default function InterviewCompletePage() {
                 >
                   <span className="text-sm font-medium text-gray-700">Question {index + 1}</span>
                   {response.transcription ? (
-                    <div className="flex items-center gap-2 text-emerald-600">
+                    <div className="flex items-center gap-2 text-teal-600">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
@@ -158,10 +158,10 @@ export default function InterviewCompletePage() {
       <header className="bg-white border-b border-gray-100">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">智</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-teal-600 to-teal-500 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
             </div>
-            <span className="font-semibold text-gray-900">ZhiMian 智面</span>
+            <span className="font-semibold text-gray-900">Pathway</span>
           </Link>
         </div>
       </header>
@@ -169,14 +169,14 @@ export default function InterviewCompletePage() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           {/* Success Header */}
-          <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-8 text-center text-white">
+          <div className="bg-gradient-to-br from-teal-600 to-teal-600 p-8 text-center text-white">
             <div className="mx-auto w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <h1 className="text-2xl font-semibold mb-2">Interview Complete!</h1>
-            <p className="text-emerald-100">
+            <p className="text-teal-100">
               Thank you for completing your interview. Your responses have been analyzed.
             </p>
           </div>
@@ -187,8 +187,8 @@ export default function InterviewCompletePage() {
               <div className="flex justify-center">
                 <div className="text-center">
                   <div className="relative">
-                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 border-4 border-emerald-200 flex items-center justify-center">
-                      <span className="text-4xl font-bold text-emerald-600">
+                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-teal-50 to-teal-50 border-4 border-teal-200 flex items-center justify-center">
+                      <span className="text-4xl font-bold text-teal-600">
                         {results.totalScore.toFixed(1)}
                       </span>
                     </div>
@@ -200,22 +200,22 @@ export default function InterviewCompletePage() {
 
             {/* AI Summary */}
             {results?.aiSummary && (
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5">
-                <h3 className="font-semibold text-emerald-900 mb-2 flex items-center gap-2">
+              <div className="bg-gradient-to-br from-teal-50 to-teal-50 rounded-xl p-5">
+                <h3 className="font-semibold text-teal-900 mb-2 flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                   AI Summary
                 </h3>
-                <p className="text-emerald-800 text-sm leading-relaxed">{results.aiSummary}</p>
+                <p className="text-teal-800 text-sm leading-relaxed">{results.aiSummary}</p>
               </div>
             )}
 
             {/* Strengths & Concerns */}
             <div className="grid md:grid-cols-2 gap-4">
               {results?.overallStrengths && results.overallStrengths.length > 0 && (
-                <div className="bg-emerald-50 rounded-xl p-5">
-                  <h4 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2">
+                <div className="bg-teal-50 rounded-xl p-5">
+                  <h4 className="font-semibold text-teal-900 mb-3 flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -223,8 +223,8 @@ export default function InterviewCompletePage() {
                   </h4>
                   <ul className="space-y-2">
                     {results.overallStrengths.map((strength, i) => (
-                      <li key={i} className="flex items-start gap-2 text-emerald-800">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
+                      <li key={i} className="flex items-start gap-2 text-teal-800">
+                        <div className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-2 flex-shrink-0" />
                         <span className="text-sm">{strength}</span>
                       </li>
                     ))}

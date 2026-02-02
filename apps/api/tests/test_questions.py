@@ -89,7 +89,6 @@ class TestCreateQuestion:
         """Test creating a custom question."""
         response = client.post("/api/questions/", json={
             "text": "What is your biggest achievement?",
-            "text_zh": "你最大的成就是什么？",
             "category": "behavioral",
             "order": 10,
             "job_id": test_job.id,
@@ -136,7 +135,6 @@ class TestUpdateQuestion:
         question = InterviewQuestion(
             id=f"q{uuid.uuid4().hex[:24]}",
             text="Original text",
-            text_zh="原始文本",
             category="test",
             order=1,
             is_default=False,
@@ -147,13 +145,11 @@ class TestUpdateQuestion:
 
         response = client.put(f"/api/questions/{question.id}", json={
             "text": "Updated text",
-            "text_zh": "更新后的文本",
         })
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["text"] == "Updated text"
-        assert data["text_zh"] == "更新后的文本"
 
     def test_update_default_question_fails(self, client, test_questions):
         """Test that updating default questions fails."""

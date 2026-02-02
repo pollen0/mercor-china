@@ -7,7 +7,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from .config import settings
 from .database import init_db
-from .routers import health, candidates, questions, interviews, employers, auth, admin
+from .routers import health, candidates, questions, interviews, employers, auth, admin, courses, activities, public
 from .utils.rate_limit import limiter, rate_limit_exceeded_handler
 
 # Configure logging
@@ -40,12 +40,14 @@ def validate_required_env_vars():
         raise RuntimeError(error_msg)
 
     # Warn about optional but recommended vars
-    if not settings.deepseek_api_key:
-        logger.warning("DEEPSEEK_API_KEY not set - AI features will be disabled")
+    if not settings.anthropic_api_key and not settings.deepseek_api_key:
+        logger.warning("Neither ANTHROPIC_API_KEY nor DEEPSEEK_API_KEY set - AI features will be disabled")
     if not settings.r2_account_id:
         logger.warning("R2_ACCOUNT_ID not set - video storage will fail")
     if not settings.resend_api_key:
         logger.warning("RESEND_API_KEY not set - emails will be mocked")
+    if not settings.admin_password:
+        logger.warning("ADMIN_PASSWORD not set - admin endpoints will be inaccessible")
 
 
 @asynccontextmanager
@@ -101,6 +103,15 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 # Admin panel
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
+# Courses & Transcripts
+app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
+
+# Activities, Clubs & Awards
+app.include_router(activities.router, prefix="/api/activities", tags=["activities"])
+
+# Public endpoints (no auth required)
+app.include_router(public.router, prefix="/api/public", tags=["public"])
+
 
 @app.get("/")
 async def root():
@@ -113,5 +124,7 @@ async def root():
             "questions": "/api/questions",
             "interviews": "/api/interviews",
             "employers": "/api/employers",
+            "courses": "/api/courses",
+            "activities": "/api/activities",
         }
     }

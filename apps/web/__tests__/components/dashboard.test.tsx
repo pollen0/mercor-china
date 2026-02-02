@@ -27,11 +27,11 @@ describe('ScoreCard', () => {
     expect(scoreElement).toHaveClass('text-green-700')
   })
 
-  it('applies yellow color for medium scores (50-69%)', () => {
+  it('applies amber color for medium scores (50-69%)', () => {
     render(<ScoreCard score={5.5} label="Score" />) // 55% of maxScore 10
 
     const scoreElement = screen.getByText('5.5')
-    expect(scoreElement).toHaveClass('text-yellow-700')
+    expect(scoreElement).toHaveClass('text-amber-700')
   })
 
   it('applies red color for low scores (< 50%)', () => {

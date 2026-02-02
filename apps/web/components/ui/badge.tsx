@@ -7,14 +7,14 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-brand-100 text-brand-700',
-        success: 'bg-success-light text-success-dark',
-        warning: 'bg-warning-light text-warning-dark',
-        error: 'bg-error-light text-error-dark',
-        info: 'bg-info-light text-info-dark',
-        neutral: 'bg-warm-100 text-warm-700',
-        outline: 'border border-warm-300 text-warm-600 bg-transparent',
-        brand: 'bg-brand-500 text-white',
+        default: 'bg-teal-100 text-teal-700',
+        success: 'bg-green-100 text-green-700',
+        warning: 'bg-amber-100 text-amber-700',
+        error: 'bg-red-100 text-red-700',
+        info: 'bg-blue-100 text-blue-700',
+        neutral: 'bg-gray-100 text-gray-700',
+        outline: 'border border-gray-300 text-gray-600 bg-transparent',
+        brand: 'bg-gradient-to-r from-teal-600 to-teal-500 text-white',
       },
       size: {
         default: 'px-3 py-1 text-xs',

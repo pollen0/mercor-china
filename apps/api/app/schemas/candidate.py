@@ -247,6 +247,33 @@ class CandidateWithToken(BaseModel):
     token_type: str = "bearer"
 
 
+# Sharing preferences schemas (GTM)
+class SharingPreferences(BaseModel):
+    """Student's preferences for profile sharing with employers."""
+    company_stages: list[str] = []  # ["seed", "series_a", "series_b", "series_c_plus"]
+    locations: list[str] = []  # ["remote", "sf", "nyc", "seattle", "austin", etc.]
+    industries: list[str] = []  # ["fintech", "climate", "ai", "healthcare", etc.]
+    email_digest: bool = True  # Receive weekly digest of companies who viewed profile
+
+
+class SharingPreferencesUpdate(BaseModel):
+    """Request to update sharing preferences."""
+    opted_in_to_sharing: Optional[bool] = None
+    company_stages: Optional[list[str]] = None
+    locations: Optional[list[str]] = None
+    industries: Optional[list[str]] = None
+    email_digest: Optional[bool] = None
+
+
+class SharingPreferencesResponse(BaseModel):
+    """Response with student's current sharing preferences."""
+    opted_in_to_sharing: bool
+    preferences: Optional[SharingPreferences] = None
+
+    class Config:
+        from_attributes = True
+
+
 # Interview progress schemas
 class InterviewProgressEntry(BaseModel):
     """A single interview attempt in history."""

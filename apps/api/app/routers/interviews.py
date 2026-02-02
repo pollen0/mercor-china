@@ -89,7 +89,7 @@ async def start_interview(
     # If job_id provided, verify job exists
     job = None
     job_title = "General Interview" if not data.is_practice else "Practice Interview"
-    company_name = "ZhiMian"
+    company_name = "Pathway"
 
     if data.job_id:
         job = db.query(Job).filter(Job.id == data.job_id).first()
@@ -204,22 +204,92 @@ async def start_interview(
             coding_challenge_id=q.coding_challenge_id,
         ))
 
-    # Generate personalized questions if candidate has a resume
+    # Generate ADAPTIVE personalized questions using ALL available candidate data
+    # Priority: Resume + GitHub + Transcript for comprehensive personalization
     personalized_questions = []
-    if candidate.resume_parsed_data and not data.is_practice:
+    has_adaptive_data = (
+        candidate.resume_parsed_data or
+        candidate.github_data or
+        candidate.courses
+    )
+
+    if has_adaptive_data and not data.is_practice:
         try:
             from ..services.resume import resume_service
             from ..schemas.candidate import ParsedResume
+            from ..models.course import CandidateTranscript
 
-            parsed_resume = ParsedResume(**candidate.resume_parsed_data)
+            # Build comprehensive candidate context for adaptive questions
+            candidate_context = {
+                "name": candidate.name,
+                "university": candidate.university,
+                "major": candidate.major,
+                "majors": candidate.majors,  # Double majors
+                "graduation_year": candidate.graduation_year,
+                "gpa": candidate.gpa,
+            }
+
+            # Add resume data if available
+            parsed_resume = None
+            if candidate.resume_parsed_data:
+                parsed_resume = ParsedResume(**candidate.resume_parsed_data)
+                candidate_context["resume"] = {
+                    "skills": parsed_resume.skills,
+                    "experiences": [
+                        {"title": exp.title, "company": exp.company, "highlights": exp.highlights[:2]}
+                        for exp in (parsed_resume.experiences or [])[:3]
+                    ],
+                    "projects": [
+                        {"name": proj.name, "technologies": proj.technologies}
+                        for proj in (parsed_resume.projects or [])[:3]
+                    ],
+                }
+
+            # Add GitHub data if available (NEW - makes interviews adaptive to coding experience)
+            if candidate.github_data:
+                github = candidate.github_data
+                candidate_context["github"] = {
+                    "username": candidate.github_username,
+                    "top_languages": list(github.get("languages", {}).keys())[:5],
+                    "total_repos": len(github.get("repos", [])),
+                    "top_repos": [
+                        {"name": r.get("name"), "language": r.get("language"), "stars": r.get("stars", 0)}
+                        for r in sorted(github.get("repos", []), key=lambda x: x.get("stars", 0), reverse=True)[:3]
+                    ],
+                    "contributions": github.get("totalContributions", 0),
+                }
+
+            # Add transcript/courses data if available (NEW - makes interviews adaptive to coursework)
+            transcript = db.query(CandidateTranscript).filter(
+                CandidateTranscript.candidate_id == candidate.id
+            ).first()
+
+            if transcript and transcript.parsed_courses:
+                # Get top/hardest courses for context
+                hard_courses = [
+                    c for c in transcript.parsed_courses
+                    if c.get("grade") in ("A+", "A", "A-") and c.get("code")
+                ][:5]
+                candidate_context["transcript"] = {
+                    "gpa": transcript.cumulative_gpa,
+                    "technical_gpa": transcript.major_gpa,
+                    "transcript_score": transcript.transcript_score,
+                    "top_courses": [c.get("code") for c in hard_courses],
+                    "total_units": transcript.total_units,
+                }
+            elif candidate.courses:
+                candidate_context["courses"] = candidate.courses[:10]
+
             job_title_for_questions = job.title if job else None
             job_requirements = job.requirements if job else None
 
-            personalized_questions = await resume_service.generate_personalized_questions(
+            # Generate adaptive questions using full context
+            personalized_questions = await resume_service.generate_adaptive_questions(
+                candidate_context=candidate_context,
                 parsed_resume=parsed_resume,
                 job_title=job_title_for_questions,
                 job_requirements=job_requirements,
-                num_questions=3,  # Generate 3 personalized questions
+                num_questions=3,
             )
 
             # Add personalized questions to the list
@@ -233,9 +303,11 @@ async def start_interview(
                     coding_challenge_id=None,
                 ))
 
-            logger.info(f"Generated {len(personalized_questions)} personalized questions for candidate {candidate.id}")
+            logger.info(f"Generated {len(personalized_questions)} ADAPTIVE questions for candidate {candidate.id} "
+                       f"(resume: {bool(candidate.resume_parsed_data)}, github: {bool(candidate.github_data)}, "
+                       f"transcript: {bool(transcript)})")
         except Exception as e:
-            logger.error(f"Failed to generate personalized questions: {e}")
+            logger.error(f"Failed to generate adaptive questions: {e}")
             # Fall back to remaining base questions
             for i, q in enumerate(base_questions[2:], start=len(question_list)):
                 question_list.append(QuestionInfo(
@@ -270,12 +342,15 @@ async def start_interview(
 
 # ==================== VERTICAL INTERVIEW (TALENT POOL) ENDPOINTS ====================
 
-# Technical roles that require coding challenges
-TECHNICAL_ROLES = {'battery_engineer', 'embedded_software', 'autonomous_driving', 'supply_chain'}
+# Technical roles that require coding challenges (US college market)
+TECHNICAL_ROLES = {
+    'software_engineer', 'frontend_engineer', 'backend_engineer',
+    'fullstack_engineer', 'mobile_engineer', 'devops_engineer',
+    'data_engineer', 'ml_engineer'
+}
 
-# Max retakes and cooldown
-MAX_RETAKE_ATTEMPTS = 3
-RETAKE_COOLDOWN_HOURS = 24
+# Monthly interview cooldown (30 days between interviews per vertical)
+MONTHLY_COOLDOWN_DAYS = 30
 
 
 @router.post("/start-vertical", response_model=InterviewStartResponse)
@@ -334,18 +409,37 @@ async def start_vertical_interview(
             ).first()
 
             if existing_session and existing_session.status == InterviewStatus.IN_PROGRESS:
-                # Get questions for this session
-                questions = get_questions_for_role(vertical.value, role_type.value)
+                # Retrieve the questions that were already recorded for this session
+                from ..models.employer import CandidateQuestionHistory
+
+                recorded_questions = db.query(CandidateQuestionHistory).filter(
+                    CandidateQuestionHistory.interview_session_id == existing_session.id,
+                    CandidateQuestionHistory.candidate_id == data.candidate_id
+                ).order_by(CandidateQuestionHistory.asked_at).all()
+
                 question_list = []
-                for i, q in enumerate(questions):
+                for i, qh in enumerate(recorded_questions):
                     question_list.append(QuestionInfo(
                         index=i,
-                        text=q["text"],
-                        text_zh=q.get("text_zh"),
-                        category=q.get("category"),
+                        text=qh.question_text,
+                        text_zh=None,  # Recorded questions may not have translations
+                        category=qh.category,
                         question_type="video",
                         coding_challenge_id=None,
                     ))
+
+                # If no recorded questions found, fall back to static questions
+                if not question_list:
+                    questions = get_questions_for_role(vertical.value, role_type.value)
+                    for i, q in enumerate(questions):
+                        question_list.append(QuestionInfo(
+                            index=i,
+                            text=q["text"],
+                            text_zh=q.get("text_zh"),
+                            category=q.get("category"),
+                            question_type="video",
+                            coding_challenge_id=None,
+                        ))
 
                 # Add coding challenge for technical roles
                 if role_type.value in TECHNICAL_ROLES:
@@ -364,28 +458,75 @@ async def start_vertical_interview(
                     session_id=existing_session.id,
                     questions=question_list,
                     job_title=f"{vertical.value.replace('_', ' ').title()} - {role_type.value.replace('_', ' ').title()}",
-                    company_name="ZhiMian Talent Pool",
+                    company_name="Pathway Talent Pool",
                     is_practice=False,
                 )
 
-        # Check retake eligibility
+        # Check monthly interview eligibility (30-day cooldown)
         if profile.status == VerticalProfileStatus.COMPLETED:
-            if profile.attempt_count >= MAX_RETAKE_ATTEMPTS:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Maximum retry attempts reached ({MAX_RETAKE_ATTEMPTS} attempts)"
-                )
-
-            if profile.last_attempt_at:
-                cooldown_end = profile.last_attempt_at + timedelta(hours=RETAKE_COOLDOWN_HOURS)
+            last_interview = profile.last_interview_at or profile.last_attempt_at
+            if last_interview:
+                cooldown_end = last_interview + timedelta(days=MONTHLY_COOLDOWN_DAYS)
                 if datetime.utcnow() < cooldown_end:
+                    days_remaining = (cooldown_end - datetime.utcnow()).days + 1
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Please wait {RETAKE_COOLDOWN_HOURS} hours before retrying. Next available: {cooldown_end.isoformat()}"
+                        detail=f"You can interview again in {days_remaining} days. Next available: {cooldown_end.strftime('%B %d, %Y')}"
                     )
 
-    # Get questions for this vertical/role
-    questions = get_questions_for_role(vertical.value, role_type.value)
+    # Import progressive question system
+    from ..services.progressive_questions import (
+        get_candidate_interview_history,
+        generate_progressive_questions,
+        record_questions_asked,
+    )
+
+    # Get candidate's interview history (previous topics, scores, weak areas)
+    interview_history = get_candidate_interview_history(db, candidate.id, vertical)
+
+    logger.info(f"Candidate interview history: interviews={interview_history['interview_count']}, "
+               f"best_score={interview_history.get('best_score')}, "
+               f"topics_asked={len(interview_history.get('topics_asked', []))}, "
+               f"weak_areas={interview_history.get('weak_areas', [])}")
+
+    # Generate PROGRESSIVE personalized questions using AI
+    # This considers: resume, GitHub, transcript, AND past interview performance
+    progressive_questions = []
+
+    try:
+        # Use AI to generate questions that:
+        # 1. Avoid topics already asked in previous interviews
+        # 2. Push difficulty based on past performance
+        # 3. Probe deeper into weak areas to test improvement
+        # 4. Personalize based on candidate's profile data
+        progressive_questions = await generate_progressive_questions(
+            db=db,
+            candidate=candidate,
+            vertical=vertical,
+            role_type=role_type,
+            num_questions=5,  # All 5 questions are AI-generated
+        )
+
+        logger.info(f"Generated {len(progressive_questions)} PROGRESSIVE questions - "
+                   f"candidate: {candidate.id}, vertical: {vertical.value}, "
+                   f"interview_count: {interview_history['interview_count']}, "
+                   f"recommended_difficulty: {interview_history.get('recommended_difficulty', 1)}, "
+                   f"avoiding_topics: {interview_history.get('topics_asked', [])}")
+
+    except Exception as e:
+        logger.error(f"Failed to generate progressive questions: {e}")
+        # Fallback to static questions from templates
+        from ..schemas.question import get_questions_for_role
+        base_questions = get_questions_for_role(vertical.value, role_type.value)
+        progressive_questions = [
+            {
+                "text": q["text"],
+                "text_zh": q.get("text_zh"),
+                "category": q.get("category"),
+                "topic": q.get("question_key", "general"),
+            }
+            for q in base_questions[:5]
+        ]
 
     # Create new interview session
     session = InterviewSession(
@@ -411,7 +552,7 @@ async def start_vertical_interview(
             role_type=role_type,
             interview_session_id=session.id,
             status=VerticalProfileStatus.IN_PROGRESS,
-            attempt_count=0,
+            total_interviews=0,
         )
         db.add(profile)
     else:
@@ -423,17 +564,30 @@ async def start_vertical_interview(
     db.commit()
     db.refresh(session)
 
-    # Build question list
+    # Build question list from progressive AI-generated questions
     question_list = []
-    for i, q in enumerate(questions):
-        question_list.append(QuestionInfo(
-            index=i,
-            text=q["text"],
-            text_zh=q.get("text_zh"),
-            category=q.get("category"),
-            question_type="video",
-            coding_challenge_id=None,
-        ))
+
+    for i, q in enumerate(progressive_questions):
+        # Handle both dict format (from AI) and object format (fallback)
+        if isinstance(q, dict):
+            question_list.append(QuestionInfo(
+                index=i,
+                text=q.get("text", ""),
+                text_zh=q.get("text_zh"),
+                category=q.get("category"),
+                question_type="video",
+                coding_challenge_id=None,
+            ))
+        else:
+            # Object with attributes (from legacy format)
+            question_list.append(QuestionInfo(
+                index=i,
+                text=getattr(q, 'text', str(q)),
+                text_zh=getattr(q, 'text_zh', None),
+                category=getattr(q, 'category', None),
+                question_type="video",
+                coding_challenge_id=None,
+            ))
 
     # Add coding challenge for technical roles
     if role_type.value in TECHNICAL_ROLES:
@@ -448,11 +602,25 @@ async def start_vertical_interview(
                 coding_challenge_id=coding_challenge.id,
             ))
 
+    # Record the questions asked to prevent future repetition
+    try:
+        record_questions_asked(
+            db=db,
+            candidate_id=candidate.id,
+            session_id=session.id,
+            questions=progressive_questions,
+            vertical=vertical,
+        )
+        logger.info(f"Recorded {len(progressive_questions)} questions for candidate {candidate.id}")
+    except Exception as e:
+        logger.error(f"Failed to record questions: {e}")
+        # Non-critical, continue even if recording fails
+
     return InterviewStartResponse(
         session_id=session.id,
         questions=question_list,
         job_title=f"{vertical.value.replace('_', ' ').title()} - {role_type.value.replace('_', ' ').title()}",
-        company_name="ZhiMian Talent Pool",
+        company_name="Pathway Talent Pool",
         is_practice=False,
     )
 
@@ -538,7 +706,7 @@ async def get_interview(
         candidate_name=session.candidate.name,
         job_id=session.job_id,
         job_title=session.job.title if session.job else "Practice Interview",
-        company_name=session.job.employer.company_name if session.job else "ZhiMian",
+        company_name=session.job.employer.company_name if session.job else "Pathway",
         responses=sorted(responses, key=lambda x: x.question_index),
     )
 
@@ -689,12 +857,15 @@ async def submit_response(
 
     # Queue background processing
     from ..config import settings
+    # For vertical interviews, there may not be a specific job
+    job_title = session.job.title if session.job else (session.vertical.value.title() if session.vertical else "General Interview")
+    job_requirements = (session.job.requirements or []) if session.job else []
     background_tasks.add_task(
         process_interview_response,
         response_id=response.id,
         video_key=storage_key,
-        job_title=session.job.title,
-        job_requirements=session.job.requirements or [],
+        job_title=job_title,
+        job_requirements=job_requirements,
         db_url=settings.database_url,
         question_text=question.text_zh or question.text,
     )

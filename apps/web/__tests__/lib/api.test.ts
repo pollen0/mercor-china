@@ -24,7 +24,7 @@ describe('ApiError', () => {
 describe('candidateApi', () => {
   beforeEach(() => {
     mockFetch.mockClear()
-    localStorage.getItem = jest.fn()
+    ;(localStorage.getItem as jest.Mock).mockClear()
   })
 
   describe('register', () => {
@@ -94,7 +94,7 @@ describe('candidateApi', () => {
 describe('employerApi', () => {
   beforeEach(() => {
     mockFetch.mockClear()
-    localStorage.getItem = jest.fn()
+    ;(localStorage.getItem as jest.Mock).mockClear()
   })
 
   describe('register', () => {
@@ -196,7 +196,7 @@ describe('employerApi', () => {
 describe('interviewApi', () => {
   beforeEach(() => {
     mockFetch.mockClear()
-    localStorage.getItem = jest.fn()
+    ;(localStorage.getItem as jest.Mock).mockClear()
   })
 
   describe('start', () => {
@@ -218,6 +218,7 @@ describe('interviewApi', () => {
       expect(body).toEqual({
         candidate_id: 'c123',
         job_id: 'j123',
+        is_practice: false,
       })
     })
   })
@@ -282,7 +283,7 @@ describe('interviewApi', () => {
 describe('inviteApi', () => {
   beforeEach(() => {
     mockFetch.mockClear()
-    localStorage.getItem = jest.fn()
+    ;(localStorage.getItem as jest.Mock).mockClear()
   })
 
   describe('validate', () => {
@@ -354,10 +355,242 @@ describe('inviteApi', () => {
   })
 })
 
+describe('GitHub OAuth (candidateApi)', () => {
+  beforeEach(() => {
+    mockFetch.mockClear()
+    ;(localStorage.getItem as jest.Mock).mockClear()
+  })
+
+  describe('getGitHubAuthUrl', () => {
+    it('fetches GitHub OAuth URL', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          authUrl: 'https://github.com/login/oauth/authorize?client_id=xxx',
+          state: 'abc123',
+        }),
+      })
+
+      const result = await candidateApi.getGitHubAuthUrl()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/candidates/auth/github/url'),
+        expect.any(Object)
+      )
+      expect(result.authUrl).toContain('github.com')
+      expect(result.state).toBe('abc123')
+    })
+
+    it('includes state parameter when provided', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ authUrl: 'https://github.com/...', state: 'custom-state' }),
+      })
+
+      await candidateApi.getGitHubAuthUrl('custom-state')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('state=custom-state'),
+        expect.any(Object)
+      )
+    })
+  })
+
+  describe('connectGitHub', () => {
+    it('exchanges code for GitHub connection', async () => {
+      ;(localStorage.getItem as jest.Mock).mockReturnValue('test-token')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          message: 'GitHub connected',
+          github_username: 'testuser',
+          github_data: {
+            username: 'testuser',
+            avatar_url: 'https://github.com/avatar.jpg',
+            profile_url: 'https://github.com/testuser',
+            public_repos: 10,
+            followers: 5,
+            following: 3,
+            repos: [{ name: 'repo1', description: 'Test', language: 'TypeScript', stars: 5, forks: 1, url: 'https://github.com/testuser/repo1', updated_at: '2024-01-01' }],
+            languages: { TypeScript: 1000, Python: 500 },
+            total_contributions: 100,
+          },
+        }),
+      })
+
+      const result = await candidateApi.connectGitHub('auth-code', 'state')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/candidates/auth/github/callback'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('auth-code'),
+        })
+      )
+      expect(result.success).toBe(true)
+      expect(result.githubUsername).toBe('testuser')
+      expect(result.githubData.repos).toHaveLength(1)
+      expect(result.githubData.languages).toHaveProperty('TypeScript', 1000)
+    })
+  })
+
+  describe('disconnectGitHub', () => {
+    it('disconnects GitHub account', async () => {
+      ;(localStorage.getItem as jest.Mock).mockReturnValue('test-token')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ success: true, message: 'GitHub disconnected' }),
+      })
+
+      const result = await candidateApi.disconnectGitHub()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/candidates/me/github'),
+        expect.objectContaining({ method: 'DELETE' })
+      )
+      expect(result.success).toBe(true)
+    })
+  })
+
+  describe('getGitHubInfo', () => {
+    it('returns GitHub data when connected', async () => {
+      ;(localStorage.getItem as jest.Mock).mockReturnValue('test-token')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          connected: true,
+          username: 'testuser',
+          avatar_url: 'https://github.com/avatar.jpg',
+          profile_url: 'https://github.com/testuser',
+          public_repos: 10,
+          followers: 5,
+          following: 3,
+          repos: [],
+          languages: {},
+          total_contributions: 50,
+          connected_at: '2024-01-01T00:00:00Z',
+        }),
+      })
+
+      const result = await candidateApi.getGitHubInfo()
+
+      expect(result).not.toBeNull()
+      expect(result?.username).toBe('testuser')
+      expect(result?.publicRepos).toBe(10)
+    })
+
+    it('returns null when not connected', async () => {
+      ;(localStorage.getItem as jest.Mock).mockReturnValue('test-token')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ connected: false }),
+      })
+
+      const result = await candidateApi.getGitHubInfo()
+
+      expect(result).toBeNull()
+    })
+
+    it('returns null on error', async () => {
+      ;(localStorage.getItem as jest.Mock).mockReturnValue('test-token')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({ detail: 'Unauthorized' }),
+      })
+
+      const result = await candidateApi.getGitHubInfo()
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('refreshGitHubData', () => {
+    it('refreshes GitHub profile data', async () => {
+      ;(localStorage.getItem as jest.Mock).mockReturnValue('test-token')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          success: true,
+          message: 'GitHub data refreshed',
+          github_data: {
+            username: 'testuser',
+            profile_url: 'https://github.com/testuser',
+            public_repos: 15,
+            followers: 10,
+            following: 5,
+            repos: [],
+            languages: { JavaScript: 2000 },
+            total_contributions: 200,
+          },
+        }),
+      })
+
+      const result = await candidateApi.refreshGitHubData()
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/candidates/me/github/refresh'),
+        expect.objectContaining({ method: 'POST' })
+      )
+      expect(result.publicRepos).toBe(15)
+      expect(result.totalContributions).toBe(200)
+    })
+  })
+})
+
+describe('Education (candidateApi)', () => {
+  beforeEach(() => {
+    mockFetch.mockClear()
+    ;(localStorage.getItem as jest.Mock).mockClear()
+  })
+
+  describe('updateEducation', () => {
+    it('updates education info', async () => {
+      ;(localStorage.getItem as jest.Mock).mockReturnValue('test-token')
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          id: 'c123',
+          name: 'Test User',
+          university: 'Stanford',
+          major: 'Computer Science',
+          graduationYear: 2025,
+          gpa: 3.8,
+          courses: ['CS101', 'CS201'],
+        }),
+      })
+
+      const result = await candidateApi.updateEducation({
+        university: 'Stanford',
+        major: 'Computer Science',
+        graduationYear: 2025,
+        gpa: 3.8,
+        courses: ['CS101', 'CS201'],
+      })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/candidates/me'),
+        expect.objectContaining({
+          method: 'PATCH',
+          body: expect.stringContaining('graduation_year'),
+        })
+      )
+    })
+  })
+})
+
 describe('API Error Handling', () => {
   beforeEach(() => {
     mockFetch.mockClear()
-    localStorage.getItem = jest.fn()
+    ;(localStorage.getItem as jest.Mock).mockClear()
   })
 
   it('throws ApiError on non-ok response', async () => {

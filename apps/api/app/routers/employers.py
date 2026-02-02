@@ -43,7 +43,9 @@ from ..services.storage import storage_service
 from ..services.cache import cache_service
 from ..services.matching import matching_service
 from ..utils.rate_limit import limiter, RateLimits
+import logging
 
+logger = logging.getLogger("pathway.employers")
 router = APIRouter()
 
 
@@ -347,7 +349,7 @@ def auto_match_job_with_talent_pool(job_id: str, db_url: str):
     db = SessionLocal()
 
     import logging
-    logger = logging.getLogger("zhimian.employers")
+    logger = logging.getLogger("pathway.employers")
 
     try:
         job = db.query(Job).filter(Job.id == job_id).first()
@@ -1202,22 +1204,49 @@ async def get_all_top_candidates(
 from pydantic import Field as PydanticField
 
 
+class CompletionStatus(PydanticBaseModel):
+    """Status indicators for what the candidate has completed."""
+    resume_uploaded: bool = False
+    github_connected: bool = False
+    interview_completed: bool = False
+    education_filled: bool = False
+
+
+class ScoreBreakdown(PydanticBaseModel):
+    """Score breakdown by category."""
+    communication: Optional[float] = None
+    problem_solving: Optional[float] = None
+    domain_knowledge: Optional[float] = None
+    motivation: Optional[float] = None
+    culture_fit: Optional[float] = None
+    # Profile-based scores (when no interview)
+    technical_skills: Optional[float] = None
+    experience_quality: Optional[float] = None
+    education: Optional[float] = None
+    github_activity: Optional[float] = None
+
+
 class TalentPoolCandidate(PydanticBaseModel):
     """Candidate info for talent pool browsing."""
-    profile_id: str
+    profile_id: Optional[str] = None  # May be None for candidates without vertical profile
     candidate_id: str
     candidate_name: str
     candidate_email: str
-    vertical: str
-    role_type: str
+    vertical: Optional[str] = None  # May be None for candidates without vertical profile
+    role_type: Optional[str] = None
     interview_score: Optional[float] = None
     best_score: Optional[float] = None
-    status: str
+    profile_score: Optional[float] = None  # Score based on resume/GitHub (pre-interview)
+    status: str  # COMPLETED, IN_PROGRESS, PENDING, or PROFILE_ONLY
     completed_at: Optional[datetime] = None
     # Resume data
     skills: list[str] = []
     experience_summary: Optional[str] = None
     location: Optional[str] = None
+    # Completion indicators
+    completion_status: CompletionStatus = CompletionStatus()
+    # Score breakdown
+    score_breakdown: Optional[ScoreBreakdown] = None
 
     class Config:
         from_attributes = True
@@ -1235,33 +1264,40 @@ async def browse_talent_pool(
     role_type: Optional[str] = None,
     min_score: float = 0.0,
     search: Optional[str] = None,
+    include_incomplete: bool = True,  # Include candidates with profile data but no completed interview
     limit: int = 20,
     offset: int = 0,
     employer: Employer = Depends(get_current_employer),
     db: Session = Depends(get_db)
 ):
     """
-    Browse the talent pool - candidates who have completed vertical interviews.
+    Browse the talent pool - candidates with profile data (resume, GitHub, education).
+
+    Now includes candidates who have uploaded profile data even before completing interviews.
+    Shows completion status indicators and profile-based scores.
 
     Filter by vertical, role type, minimum score, and search keywords.
     Search matches against skills, company names, and job titles in resume.
-    Returns candidate profiles with interview scores and resume data.
+    Returns candidate profiles with interview scores, profile scores, and completion status.
     """
-    from sqlalchemy import or_, cast, String
+    from sqlalchemy import or_, cast, String, case
     from sqlalchemy.dialects.postgresql import JSONB
+    from ..services.scoring import scoring_service
 
-    # Build query for completed vertical profiles
-    query = db.query(CandidateVerticalProfile).join(
+    candidates_result = []
+
+    # Part 1: Get candidates with completed vertical profiles
+    completed_query = db.query(CandidateVerticalProfile).join(
         Candidate, CandidateVerticalProfile.candidate_id == Candidate.id
     ).filter(
         CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
     )
 
-    # Apply filters
+    # Apply vertical filter
     if vertical:
         try:
             vertical_enum = Vertical(vertical)
-            query = query.filter(CandidateVerticalProfile.vertical == vertical_enum)
+            completed_query = completed_query.filter(CandidateVerticalProfile.vertical == vertical_enum)
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -1271,40 +1307,37 @@ async def browse_talent_pool(
     if role_type:
         try:
             role_type_enum = RoleType(role_type)
-            query = query.filter(CandidateVerticalProfile.role_type == role_type_enum)
+            completed_query = completed_query.filter(CandidateVerticalProfile.role_type == role_type_enum)
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid role type: {role_type}"
             )
 
-    # Filter by minimum score (use best_score)
+    # Filter by minimum score
     if min_score > 0:
-        query = query.filter(CandidateVerticalProfile.best_score >= min_score)
+        completed_query = completed_query.filter(CandidateVerticalProfile.best_score >= min_score)
 
-    # Full-text search on resume data
+    # Full-text search
     if search and search.strip():
         search_term = f"%{search.strip().lower()}%"
-        # Search in candidate name and resume JSON fields
-        query = query.filter(
+        completed_query = completed_query.filter(
             or_(
                 func.lower(Candidate.name).like(search_term),
                 func.lower(cast(Candidate.resume_parsed_data, String)).like(search_term),
             )
         )
 
-    # Get total count
-    total = query.count()
-
-    # Get profiles sorted by best score
-    profiles = query.order_by(
+    completed_profiles = completed_query.order_by(
         CandidateVerticalProfile.best_score.desc().nulls_last()
-    ).offset(offset).limit(limit).all()
+    ).all()
 
-    # Build response
-    candidates = []
-    for profile in profiles:
+    # Track candidate IDs we've already added
+    added_candidate_ids = set()
+
+    for profile in completed_profiles:
         candidate = profile.candidate
+        added_candidate_ids.add(candidate.id)
 
         # Extract resume data
         skills = []
@@ -1313,16 +1346,55 @@ async def browse_talent_pool(
 
         if candidate.resume_parsed_data:
             parsed = candidate.resume_parsed_data
-            skills = parsed.get("skills", [])[:10]  # Limit to 10 skills
+            skills = parsed.get("skills", [])[:10]
             location = parsed.get("location")
-
-            # Build experience summary
             experiences = parsed.get("experience", [])
             if experiences:
                 latest = experiences[0]
                 experience_summary = f"{latest.get('title', '')} at {latest.get('company', '')}"
 
-        candidates.append(TalentPoolCandidate(
+        # Build completion status
+        completion_status = CompletionStatus(
+            resume_uploaded=candidate.resume_url is not None,
+            github_connected=candidate.github_username is not None,
+            interview_completed=True,  # They have a completed profile
+            education_filled=candidate.university is not None or candidate.major is not None,
+        )
+
+        # Build score breakdown from interview data
+        score_breakdown = None
+        if profile.interview_session_id:
+            session = db.query(InterviewSession).filter(
+                InterviewSession.id == profile.interview_session_id
+            ).first()
+            if session and session.responses:
+                # Aggregate scores from responses
+                from ..models.interview import InterviewResponse
+                responses = db.query(InterviewResponse).filter(
+                    InterviewResponse.session_id == session.id
+                ).all()
+                if responses:
+                    avg_scores = {"communication": [], "problem_solving": [], "domain_knowledge": [], "motivation": [], "culture_fit": []}
+                    for resp in responses:
+                        if resp.ai_analysis:
+                            try:
+                                analysis = json.loads(resp.ai_analysis) if isinstance(resp.ai_analysis, str) else resp.ai_analysis
+                                scores = analysis.get("scores", {})
+                                for dim in avg_scores:
+                                    if dim in scores:
+                                        avg_scores[dim].append(scores[dim] / 10 if scores[dim] > 10 else scores[dim])
+                            except (json.JSONDecodeError, TypeError):
+                                pass
+
+                    score_breakdown = ScoreBreakdown(
+                        communication=round(sum(avg_scores["communication"]) / len(avg_scores["communication"]), 2) if avg_scores["communication"] else None,
+                        problem_solving=round(sum(avg_scores["problem_solving"]) / len(avg_scores["problem_solving"]), 2) if avg_scores["problem_solving"] else None,
+                        domain_knowledge=round(sum(avg_scores["domain_knowledge"]) / len(avg_scores["domain_knowledge"]), 2) if avg_scores["domain_knowledge"] else None,
+                        motivation=round(sum(avg_scores["motivation"]) / len(avg_scores["motivation"]), 2) if avg_scores["motivation"] else None,
+                        culture_fit=round(sum(avg_scores["culture_fit"]) / len(avg_scores["culture_fit"]), 2) if avg_scores["culture_fit"] else None,
+                    )
+
+        candidates_result.append(TalentPoolCandidate(
             profile_id=profile.id,
             candidate_id=candidate.id,
             candidate_name=candidate.name,
@@ -1331,14 +1403,351 @@ async def browse_talent_pool(
             role_type=profile.role_type.value,
             interview_score=profile.interview_score,
             best_score=profile.best_score,
-            status=profile.status.value,
+            profile_score=None,  # Will be set from profile scoring
+            status="completed",
             completed_at=profile.completed_at,
             skills=skills,
             experience_summary=experience_summary,
             location=location,
+            completion_status=completion_status,
+            score_breakdown=score_breakdown,
         ))
 
-    return TalentPoolResponse(candidates=candidates, total=total)
+    # Part 2: Get candidates with profile data but no completed interview
+    if include_incomplete:
+        # Query candidates who have uploaded resume OR connected GitHub
+        # but don't have a completed vertical profile yet
+        profile_only_query = db.query(Candidate).filter(
+            or_(
+                Candidate.resume_url.isnot(None),
+                Candidate.github_username.isnot(None),
+            )
+        )
+
+        # Only apply notin_ filter if we have candidates to exclude
+        # (empty notin_ can cause issues with some databases)
+        if added_candidate_ids:
+            profile_only_query = profile_only_query.filter(
+                Candidate.id.notin_(added_candidate_ids)
+            )
+
+        # Apply search filter
+        if search and search.strip():
+            search_term = f"%{search.strip().lower()}%"
+            profile_only_query = profile_only_query.filter(
+                or_(
+                    func.lower(Candidate.name).like(search_term),
+                    func.lower(cast(Candidate.resume_parsed_data, String)).like(search_term),
+                )
+            )
+
+        profile_only_candidates = profile_only_query.order_by(
+            Candidate.created_at.desc()
+        ).all()
+
+        for candidate in profile_only_candidates:
+            # Check if they have any vertical profile (even if not completed)
+            existing_profile = db.query(CandidateVerticalProfile).filter(
+                CandidateVerticalProfile.candidate_id == candidate.id
+            ).first()
+
+            # Apply vertical filter if specified
+            if vertical and existing_profile:
+                try:
+                    vertical_enum = Vertical(vertical)
+                    if existing_profile.vertical != vertical_enum:
+                        continue
+                except ValueError:
+                    pass
+
+            # Extract resume data
+            skills = []
+            experience_summary = None
+            location = None
+
+            if candidate.resume_parsed_data:
+                parsed = candidate.resume_parsed_data
+                skills = parsed.get("skills", [])[:10]
+                location = parsed.get("location")
+                experiences = parsed.get("experience", [])
+                if experiences:
+                    latest = experiences[0]
+                    experience_summary = f"{latest.get('title', '')} at {latest.get('company', '')}"
+
+            # Build completion status
+            completion_status = CompletionStatus(
+                resume_uploaded=candidate.resume_url is not None,
+                github_connected=candidate.github_username is not None,
+                interview_completed=False,
+                education_filled=candidate.university is not None or candidate.major is not None,
+            )
+
+            # Determine status
+            status_str = "profile_only"
+            if existing_profile:
+                status_str = existing_profile.status.value if existing_profile.status else "pending"
+
+            # Build profile-based score breakdown
+            profile_score = None
+            score_breakdown = None
+
+            # Simple heuristic profile score (async scoring would be called separately)
+            if candidate.resume_parsed_data or candidate.github_data:
+                # Basic profile score calculation
+                base_score = 5.0
+                tech_skills = 5.0
+                exp_quality = 5.0
+                edu_score = 5.0
+                github_score = 5.0
+
+                if candidate.resume_parsed_data:
+                    parsed = candidate.resume_parsed_data
+                    skill_count = len(parsed.get("skills", []))
+                    tech_skills = min(5.0 + skill_count * 0.3, 9.0)
+                    exp_count = len(parsed.get("experience", []))
+                    exp_quality = min(5.0 + exp_count * 1.0, 8.5)
+
+                if candidate.gpa:
+                    edu_score = min(5.0 + (candidate.gpa - 3.0) * 2, 9.5)
+
+                if candidate.github_data:
+                    repos = candidate.github_data.get("repos", [])
+                    contributions = candidate.github_data.get("totalContributions", 0)
+                    github_score = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
+
+                # Weighted average
+                profile_score = round((tech_skills * 0.3 + exp_quality * 0.25 + edu_score * 0.25 + github_score * 0.2), 2)
+
+                score_breakdown = ScoreBreakdown(
+                    technical_skills=round(tech_skills, 2),
+                    experience_quality=round(exp_quality, 2),
+                    education=round(edu_score, 2),
+                    github_activity=round(github_score, 2),
+                )
+
+            # Skip if min_score filter and profile_score is below
+            if min_score > 0 and (profile_score is None or profile_score < min_score):
+                continue
+
+            candidates_result.append(TalentPoolCandidate(
+                profile_id=existing_profile.id if existing_profile else None,
+                candidate_id=candidate.id,
+                candidate_name=candidate.name,
+                candidate_email=candidate.email,
+                vertical=existing_profile.vertical.value if existing_profile else None,
+                role_type=existing_profile.role_type.value if existing_profile else None,
+                interview_score=None,
+                best_score=None,
+                profile_score=profile_score,
+                status=status_str,
+                completed_at=None,
+                skills=skills,
+                experience_summary=experience_summary,
+                location=location,
+                completion_status=completion_status,
+                score_breakdown=score_breakdown,
+            ))
+
+    # Sort all candidates: completed interviews first (by best_score), then profile-only (by profile_score)
+    def sort_key(c):
+        if c.status == "completed":
+            return (0, -(c.best_score or 0))
+        else:
+            return (1, -(c.profile_score or 0))
+
+    candidates_result.sort(key=sort_key)
+
+    # Apply pagination
+    total = len(candidates_result)
+    paginated = candidates_result[offset:offset + limit]
+
+    return TalentPoolResponse(candidates=paginated, total=total)
+
+
+@router.get("/talent-pool/candidate/{candidate_id}")
+async def get_talent_candidate_detail(
+    candidate_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed view of a talent pool candidate by candidate ID.
+    Works for candidates with or without completed interviews.
+    Includes full resume data, GitHub data, education, and any interview details.
+    """
+    from ..models.interview import InterviewResponse
+    from ..services.scoring import scoring_service
+
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    # Check if they have any vertical profile
+    profile = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.candidate_id == candidate_id
+    ).order_by(CandidateVerticalProfile.best_score.desc().nulls_last()).first()
+
+    # Build completion status
+    completion_status = {
+        "resume_uploaded": candidate.resume_url is not None,
+        "github_connected": candidate.github_username is not None,
+        "interview_completed": profile is not None and profile.status == VerticalProfileStatus.COMPLETED,
+        "education_filled": candidate.university is not None or candidate.major is not None,
+    }
+
+    # Get interview session details if available
+    interview_data = None
+    if profile and profile.interview_session_id:
+        session = db.query(InterviewSession).filter(
+            InterviewSession.id == profile.interview_session_id
+        ).first()
+        if session:
+            responses = db.query(InterviewResponse).filter(
+                InterviewResponse.session_id == session.id
+            ).order_by(InterviewResponse.question_index).all()
+
+            interview_responses = []
+            for resp in responses:
+                video_url = None
+                if resp.video_url:
+                    video_url = storage_service.get_signed_url(resp.video_url)
+
+                score_dimensions = None
+                if resp.ai_analysis:
+                    try:
+                        analysis_data = json.loads(resp.ai_analysis) if isinstance(resp.ai_analysis, str) else resp.ai_analysis
+                        if "scores" in analysis_data:
+                            scores = analysis_data["scores"]
+                            score_dimensions = {
+                                "communication": scores.get("communication", 0),
+                                "problem_solving": scores.get("problem_solving", 0),
+                                "domain_knowledge": scores.get("domain_knowledge", 0),
+                                "motivation": scores.get("motivation", 0),
+                                "culture_fit": scores.get("culture_fit", 0),
+                            }
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+                interview_responses.append({
+                    "id": resp.id,
+                    "question_index": resp.question_index,
+                    "question_text": resp.question_text,
+                    "question_type": resp.question_type,
+                    "video_url": video_url,
+                    "transcription": resp.transcription,
+                    "ai_score": resp.ai_score,
+                    "ai_analysis": resp.ai_analysis,
+                    "score_dimensions": score_dimensions,
+                    "duration_seconds": resp.duration_seconds,
+                    "created_at": resp.created_at.isoformat() if resp.created_at else None,
+                    "code_solution": resp.code_solution if resp.question_type == "coding" else None,
+                    "test_results": resp.test_results if resp.question_type == "coding" else None,
+                })
+
+            interview_data = {
+                "session_id": session.id,
+                "total_score": session.total_score,
+                "ai_summary": session.ai_summary,
+                "completed_at": session.completed_at.isoformat() if session.completed_at else None,
+                "responses": interview_responses,
+            }
+
+    # Calculate profile score if no interview
+    profile_score_data = None
+    if not (profile and profile.status == VerticalProfileStatus.COMPLETED):
+        # Build education data
+        education_data = {}
+        if candidate.university:
+            education_data["university"] = candidate.university
+        if candidate.major:
+            education_data["major"] = candidate.major
+        if candidate.gpa:
+            education_data["gpa"] = candidate.gpa
+        if candidate.graduation_year:
+            education_data["graduation_year"] = candidate.graduation_year
+        if candidate.courses:
+            education_data["courses"] = candidate.courses
+
+        # Get profile score (use heuristic for now, async scoring would be called separately)
+        if candidate.resume_parsed_data or candidate.github_data or education_data:
+            base_score = 5.0
+            breakdown = {}
+
+            if candidate.resume_parsed_data:
+                parsed = candidate.resume_parsed_data
+                skill_count = len(parsed.get("skills", []))
+                breakdown["technical_skills"] = min(5.0 + skill_count * 0.3, 9.0)
+                exp_count = len(parsed.get("experience", []))
+                breakdown["experience_quality"] = min(5.0 + exp_count * 1.0, 8.5)
+
+            if candidate.gpa:
+                breakdown["education"] = min(5.0 + (candidate.gpa - 3.0) * 2, 9.5)
+
+            if candidate.github_data:
+                repos = candidate.github_data.get("repos", [])
+                contributions = candidate.github_data.get("totalContributions", 0)
+                breakdown["github_activity"] = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
+
+            # Calculate weighted average
+            weights = {"technical_skills": 0.3, "experience_quality": 0.25, "education": 0.25, "github_activity": 0.2}
+            total_weight = sum(weights[k] for k in breakdown if k in weights)
+            if total_weight > 0:
+                profile_score = sum(breakdown.get(k, 5.0) * weights.get(k, 0) for k in weights) / total_weight
+                profile_score_data = {
+                    "score": round(profile_score, 2),
+                    "breakdown": {k: round(v, 2) for k, v in breakdown.items()},
+                }
+
+    # Get current status with this employer (if any match exists)
+    employer_status = None
+    for job in employer.jobs:
+        match = db.query(Match).filter(
+            Match.candidate_id == candidate.id,
+            Match.job_id == job.id
+        ).first()
+        if match:
+            employer_status = {
+                "match_id": match.id,
+                "job_id": job.id,
+                "job_title": job.title,
+                "status": match.status.value,
+            }
+            break
+
+    return {
+        "profile": {
+            "id": profile.id if profile else None,
+            "vertical": profile.vertical.value if profile else None,
+            "role_type": profile.role_type.value if profile else None,
+            "interview_score": profile.interview_score if profile else None,
+            "best_score": profile.best_score if profile else None,
+            "attempt_count": profile.attempt_count if profile else 0,
+            "completed_at": profile.completed_at.isoformat() if profile and profile.completed_at else None,
+            "status": profile.status.value if profile else "no_profile",
+        },
+        "candidate": {
+            "id": candidate.id,
+            "name": candidate.name,
+            "email": candidate.email,
+            "phone": candidate.phone,
+            "university": candidate.university,
+            "major": candidate.major,
+            "graduation_year": candidate.graduation_year,
+            "gpa": candidate.gpa,
+            "resume_url": candidate.resume_url,
+            "resume_data": candidate.resume_parsed_data,
+            "github_username": candidate.github_username,
+            "github_data": candidate.github_data,
+        },
+        "completion_status": completion_status,
+        "profile_score": profile_score_data,
+        "interview": interview_data,
+        "employer_status": employer_status,
+    }
 
 
 @router.get("/talent-pool/{profile_id}")
@@ -1350,15 +1759,21 @@ async def get_talent_profile_detail(
     """
     Get detailed view of a talent pool candidate profile.
     Includes full resume data, interview details, and video playback URLs.
+    Now also works for candidates without completed interviews.
     """
     from ..models.interview import InterviewResponse
 
+    # Try to find by profile_id first
     profile = db.query(CandidateVerticalProfile).filter(
-        CandidateVerticalProfile.id == profile_id,
-        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
+        CandidateVerticalProfile.id == profile_id
     ).first()
 
+    # If not found by profile_id, check if it's a candidate_id
     if not profile:
+        candidate = db.query(Candidate).filter(Candidate.id == profile_id).first()
+        if candidate:
+            # Redirect to the candidate detail endpoint
+            return await get_talent_candidate_detail(profile_id, employer, db)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Candidate profile not found"
@@ -1449,7 +1864,7 @@ async def get_talent_profile_detail(
             "role_type": profile.role_type.value,
             "interview_score": profile.interview_score,
             "best_score": profile.best_score,
-            "attempt_count": profile.attempt_count,
+            "total_interviews": profile.total_interviews,
             "completed_at": profile.completed_at.isoformat() if profile.completed_at else None,
         },
         "candidate": {
@@ -1669,4 +2084,113 @@ async def contact_talent_pool_candidate(
         "message_id": message.id,
         "email_sent": email_sent,
         "candidate_email": candidate.email if email_sent else None,
+    }
+
+
+# ============================================================================
+# PROFILE SHARING (GTM)
+# ============================================================================
+
+@router.post("/talent-pool/{candidate_id}/generate-link")
+async def generate_candidate_profile_link(
+    candidate_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a shareable magic link for a candidate's profile.
+    Link expires in 7 days and tracks view count.
+
+    Employers can share this link with team members or other stakeholders
+    without requiring them to create accounts.
+    """
+    from ..models.profile_token import ProfileToken
+    from datetime import timedelta
+    import secrets
+
+    # Verify candidate exists and opted in to sharing
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    if not candidate.opted_in_to_sharing:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This candidate has not opted in to profile sharing"
+        )
+
+    # Generate secure random token
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(days=7)
+
+    # Create profile token
+    profile_token = ProfileToken(
+        id=generate_cuid("pt"),
+        token=token,
+        candidate_id=candidate_id,
+        created_by_id=employer.id,
+        created_by_type="employer",
+        expires_at=expires_at,
+    )
+
+    db.add(profile_token)
+    db.commit()
+    db.refresh(profile_token)
+
+    logger.info(f"Profile link generated: candidate={candidate_id}, employer={employer.id}, token={profile_token.id}")
+
+    return {
+        "success": True,
+        "token": token,
+        "candidate_id": candidate_id,
+        "expires_at": expires_at.isoformat(),
+        "share_url": f"/talent/{candidate_id}?token={token}",  # Frontend will prepend base URL
+    }
+
+
+@router.get("/talent-pool/{candidate_id}/profile-links")
+async def get_candidate_profile_links(
+    candidate_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Get all profile links generated by this employer for a candidate.
+    Shows active and expired links with usage stats.
+    """
+    from ..models.profile_token import ProfileToken
+
+    # Verify candidate exists
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    # Get all tokens created by this employer for this candidate
+    tokens = db.query(ProfileToken).filter(
+        ProfileToken.candidate_id == candidate_id,
+        ProfileToken.created_by_id == employer.id
+    ).order_by(ProfileToken.created_at.desc()).all()
+
+    return {
+        "candidate_id": candidate_id,
+        "candidate_name": candidate.name,
+        "links": [
+            {
+                "id": t.id,
+                "token": t.token,
+                "share_url": f"/talent/{candidate_id}?token={t.token}",
+                "expires_at": t.expires_at.isoformat(),
+                "is_expired": t.expires_at < datetime.utcnow(),
+                "view_count": t.view_count,
+                "last_viewed_at": t.last_viewed_at.isoformat() if t.last_viewed_at else None,
+                "created_at": t.created_at.isoformat(),
+            }
+            for t in tokens
+        ],
     }

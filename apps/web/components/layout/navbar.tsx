@@ -20,14 +20,11 @@ interface NavbarProps {
   className?: string
 }
 
-// Default Logo Component
+// Default Logo Component - Simple text mark
 function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2.5 group">
-      <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-brand group-hover:shadow-brand-lg transition-shadow">
-        <span className="text-white font-bold text-sm">智</span>
-      </div>
-      <span className="font-semibold text-warm-900 text-lg">ZhiMian 智面</span>
+    <Link href="/" className="font-semibold text-stone-900 text-lg tracking-tight hover:text-stone-600 transition-colors duration-300">
+      Pathway
     </Link>
   )
 }
@@ -44,17 +41,17 @@ function MobileMenuButton({
     <button
       type="button"
       onClick={onClick}
-      className="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+      className="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors duration-300"
       aria-expanded={isOpen}
     >
       <span className="sr-only">{isOpen ? 'Close menu' : 'Open menu'}</span>
       {isOpen ? (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
         </svg>
       ) : (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       )}
     </button>
@@ -84,19 +81,20 @@ export function Navbar({
   const items = navItems ?? defaultNavItems
 
   // Default right content based on variant
+  // Landing page is student-focused, so nav buttons go to student auth
   const defaultRightContent = variant === 'default' ? (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       <Link
         href="/candidate/login"
-        className="text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors px-3 py-2"
+        className="text-sm text-stone-500 hover:text-stone-900 transition-colors duration-300 px-3 py-2"
       >
-        Candidate Login
+        Log in
       </Link>
       <Link
-        href="/login"
-        className="text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors px-3 py-2"
+        href="/register"
+        className="text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 px-5 py-2 rounded-full transition-all duration-300 hover:scale-[1.02]"
       >
-        Employer Login
+        Sign Up
       </Link>
     </div>
   ) : null
@@ -106,12 +104,12 @@ export function Navbar({
   return (
     <nav
       className={cn(
-        'fixed top-0 left-0 right-0 z-fixed bg-white/80 backdrop-blur-md border-b border-warm-100',
+        'fixed top-0 left-0 right-0 z-50 bg-stone-50/80 backdrop-blur-md border-b border-stone-100',
         className
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-5xl mx-auto px-6">
+        <div className="flex justify-between items-center h-14">
           {/* Logo */}
           {logo ?? <Logo />}
 
@@ -125,10 +123,10 @@ export function Navbar({
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                      'px-3 py-2 text-sm rounded-lg transition-colors',
                       isActive
-                        ? 'text-brand-600 bg-brand-50'
-                        : 'text-warm-600 hover:text-warm-900 hover:bg-warm-100'
+                        ? 'text-gray-900 font-medium'
+                        : 'text-gray-500 hover:text-gray-900'
                     )}
                   >
                     {item.label}
@@ -152,7 +150,7 @@ export function Navbar({
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-warm-100 animate-slide-down">
+          <div className="md:hidden py-4 border-t border-gray-100 animate-fade-in">
             {items.length > 0 && (
               <div className="space-y-1 mb-4">
                 {items.map((item) => {
@@ -162,10 +160,10 @@ export function Navbar({
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        'block px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                        'block px-4 py-2 text-sm rounded-lg transition-colors',
                         isActive
-                          ? 'text-brand-600 bg-brand-50'
-                          : 'text-warm-600 hover:text-warm-900 hover:bg-warm-100'
+                          ? 'text-gray-900 font-medium'
+                          : 'text-gray-500 hover:text-gray-900'
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
@@ -196,13 +194,13 @@ export function DashboardNavbar({ companyName, onLogout }: DashboardNavbarProps)
       rightContent={
         <div className="flex items-center gap-3">
           {companyName && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-warm-100 rounded-lg">
-              <div className="w-6 h-6 bg-gradient-to-br from-warm-600 to-warm-700 rounded-md flex items-center justify-center">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-stone-100 rounded-full">
+              <div className="w-5 h-5 bg-teal-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-medium text-xs">
                   {companyName.charAt(0)}
                 </span>
               </div>
-              <span className="text-sm font-medium text-warm-700">{companyName}</span>
+              <span className="text-sm text-stone-600">{companyName}</span>
             </div>
           )}
           {onLogout && (
@@ -210,10 +208,45 @@ export function DashboardNavbar({ companyName, onLogout }: DashboardNavbarProps)
               variant="ghost"
               size="sm"
               onClick={onLogout}
-              className="text-warm-500 hover:text-warm-700"
+              className="text-stone-400 hover:text-stone-900"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </Button>
+          )}
+        </div>
+      }
+    />
+  )
+}
+
+// Admin Navbar - No employer navigation, just logo + admin indicator + logout
+interface AdminNavbarProps {
+  onLogout?: () => void
+}
+
+export function AdminNavbar({ onLogout }: AdminNavbarProps) {
+  return (
+    <Navbar
+      navItems={[]} // No navigation items for admin
+      rightContent={
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-teal-50 rounded-full">
+            <div className="w-5 h-5 bg-teal-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-medium text-xs">A</span>
+            </div>
+            <span className="text-sm text-teal-700 font-medium">Admin</span>
+          </div>
+          {onLogout && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onLogout}
+              className="text-stone-400 hover:text-stone-900"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </Button>
           )}

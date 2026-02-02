@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, ForeignKey, ARRAY, Text, Enum
+from sqlalchemy import Column, String, DateTime, Integer, Boolean, ForeignKey, ARRAY, Text, Enum, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -6,36 +6,36 @@ from ..database import Base
 
 
 class Vertical(str, enum.Enum):
-    """Career verticals for student job seekers."""
-    ENGINEERING = "engineering"  # Software Engineering, DevOps, etc.
-    DATA = "data"  # Data Science, Analytics, ML
-    BUSINESS = "business"  # Product, Marketing, Finance
+    """Career verticals for student job seekers - based on actual new grad job market."""
+    SOFTWARE_ENGINEERING = "software_engineering"  # SWE, Embedded, QA - most common
+    DATA = "data"  # Data Science, Analytics, ML, Data Engineering
+    PRODUCT = "product"  # Product Management
     DESIGN = "design"  # UX/UI, Product Design
+    FINANCE = "finance"  # Investment Banking, Finance Analyst
 
 
 class RoleType(str, enum.Enum):
     """Specific entry-level role types within each vertical."""
-    # Engineering Vertical
-    SOFTWARE_ENGINEER = "software_engineer"
-    BACKEND_ENGINEER = "backend_engineer"
-    FRONTEND_ENGINEER = "frontend_engineer"
-    FULLSTACK_ENGINEER = "fullstack_engineer"
-    DEVOPS_ENGINEER = "devops_engineer"
+    # Software Engineering Vertical (most common titles from 2026 job boards)
+    SOFTWARE_ENGINEER = "software_engineer"  # Software Engineer I, Associate SWE
+    EMBEDDED_ENGINEER = "embedded_engineer"  # Embedded Software Engineer
+    QA_ENGINEER = "qa_engineer"  # Software Quality Engineer
     # Data Vertical
     DATA_ANALYST = "data_analyst"
     DATA_SCIENTIST = "data_scientist"
     ML_ENGINEER = "ml_engineer"
     DATA_ENGINEER = "data_engineer"
-    # Business Vertical
+    # Product Vertical
     PRODUCT_MANAGER = "product_manager"
-    BUSINESS_ANALYST = "business_analyst"
-    MARKETING_ASSOCIATE = "marketing_associate"
-    FINANCE_ANALYST = "finance_analyst"
-    CONSULTANT = "consultant"
+    ASSOCIATE_PM = "associate_pm"
     # Design Vertical
     UX_DESIGNER = "ux_designer"
     UI_DESIGNER = "ui_designer"
     PRODUCT_DESIGNER = "product_designer"
+    # Finance Vertical (Investment Banking & Finance)
+    IB_ANALYST = "ib_analyst"  # Investment Banking Analyst
+    FINANCE_ANALYST = "finance_analyst"
+    EQUITY_RESEARCH = "equity_research"
 
 
 class Employer(Base):
@@ -46,7 +46,7 @@ class Employer(Base):
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     logo = Column(String, nullable=True)
-    industry = Column(String, nullable=True)  # 'new_energy', 'sales', 'tech', etc.
+    industry = Column(String, nullable=True)  # 'tech', 'finance', 'healthcare', etc.
     company_size = Column(String, nullable=True)  # 'startup', 'smb', 'enterprise'
     # Email verification
     is_verified = Column(Boolean, default=False)
@@ -66,9 +66,9 @@ class Job(Base):
     id = Column(String, primary_key=True)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    vertical = Column(Enum(Vertical), nullable=True)  # 'new_energy' or 'sales'
+    vertical = Column(Enum(Vertical), nullable=True)  # engineering, data, business, design
     role_type = Column(Enum(RoleType), nullable=True)  # Specific role within vertical
-    requirements = Column(ARRAY(String), default=[])
+    requirements = Column(ARRAY(String), nullable=True)  # No default for SQLite compatibility
     location = Column(String, nullable=True)
     salary_min = Column(Integer, nullable=True)
     salary_max = Column(Integer, nullable=True)
@@ -100,12 +100,40 @@ class InterviewQuestion(Base):
     # Question type: "video" (default) or "coding"
     question_type = Column(String, default="video")
 
+    # Progressive difficulty system
+    difficulty_level = Column(Integer, default=1)  # 1=foundational, 2=intermediate, 3=advanced
+    vertical = Column(Enum(Vertical), nullable=True)  # Which vertical this question belongs to
+    skill_tags = Column(ARRAY(String), nullable=True)  # e.g., ["system_design", "algorithms"]
+    question_key = Column(String, nullable=True)  # Unique key for deduplication, e.g., "swe_l1_intro"
+
     job_id = Column(String, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=True)
     job = relationship("Job", back_populates="interview_questions")
 
     # Coding challenge reference (for question_type="coding")
     coding_challenge_id = Column(String, ForeignKey("coding_challenges.id", ondelete="SET NULL"), nullable=True)
     coding_challenge = relationship("CodingChallenge", back_populates="questions")
+
+
+class CandidateQuestionHistory(Base):
+    """Tracks which questions have been asked to each candidate to avoid repetition."""
+    __tablename__ = "candidate_question_history"
+
+    id = Column(String, primary_key=True)
+    candidate_id = Column(String, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
+    question_key = Column(String, nullable=False)  # The unique question identifier
+    question_text = Column(Text, nullable=False)  # Store the actual question text
+    vertical = Column(Enum(Vertical), nullable=True)
+    difficulty_level = Column(Integer, default=1)
+    category = Column(String, nullable=True)
+
+    # Performance on this question
+    score = Column(Float, nullable=True)  # 0-10 score received
+    interview_session_id = Column(String, ForeignKey("interview_sessions.id", ondelete="SET NULL"), nullable=True)
+
+    asked_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    candidate = relationship("Candidate", backref="question_history")
 
 
 class InviteToken(Base):

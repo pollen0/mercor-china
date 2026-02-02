@@ -18,6 +18,16 @@ logger = logging.getLogger("pathway.auth")
 router = APIRouter()
 
 
+def is_token_expired(expires_at) -> bool:
+    """Check if a verification token is expired, handling timezone-naive datetimes."""
+    if not expires_at:
+        return False
+    # Make timezone-aware if needed
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    return expires_at < datetime.now(timezone.utc)
+
+
 # Schemas
 class VerifyEmailRequest(BaseModel):
     token: str
@@ -134,7 +144,7 @@ async def verify_email(
                 detail="Invalid or expired verification link"
             )
 
-        if user.email_verification_expires_at and user.email_verification_expires_at < datetime.now(timezone.utc):
+        if is_token_expired(user.email_verification_expires_at):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Verification link has expired. Please request a new one."
@@ -163,7 +173,7 @@ async def verify_email(
                 detail="Invalid or expired verification link"
             )
 
-        if user.email_verification_expires_at and user.email_verification_expires_at < datetime.now(timezone.utc):
+        if is_token_expired(user.email_verification_expires_at):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Verification link has expired. Please request a new one."

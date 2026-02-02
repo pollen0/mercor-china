@@ -65,11 +65,11 @@ class ResponseSubmitResult(BaseModel):
 
 
 class ScoreDetails(BaseModel):
-    communication: float  # 沟通能力
-    problem_solving: float  # 解决问题能力
-    domain_knowledge: float  # 专业知识
-    motivation: float  # 动机
-    culture_fit: float  # 文化契合度
+    communication: float  # Communication skills
+    problem_solving: float  # Problem solving ability
+    domain_knowledge: float  # Technical knowledge
+    motivation: float  # Growth mindset
+    culture_fit: float  # Culture fit
     overall: float
     analysis: str
     strengths: list[str]
@@ -236,8 +236,8 @@ class FollowupQuestionInfo(BaseModel):
 class VerticalInterviewStart(BaseModel):
     """Request to start a vertical interview for talent pool."""
     candidate_id: str
-    vertical: str  # 'new_energy' or 'sales'
-    role_type: str  # e.g., 'battery_engineer', 'sales_rep'
+    vertical: str  # 'engineering', 'data', 'business', or 'design'
+    role_type: str  # e.g., 'software_engineer', 'data_analyst', 'product_manager'
 
 
 class VerticalProfileResponse(BaseModel):

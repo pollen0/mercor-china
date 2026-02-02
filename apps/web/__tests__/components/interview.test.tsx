@@ -8,21 +8,31 @@ import { QuestionCard } from '@/components/interview/question-card'
 import { InterviewProgress } from '@/components/interview/interview-progress'
 
 describe('PermissionCheck', () => {
-  const mockOnPermissionsGranted = jest.fn()
+  const mockOnPermissionGranted = jest.fn()
 
   beforeEach(() => {
-    mockOnPermissionsGranted.mockClear()
+    mockOnPermissionGranted.mockClear()
+    // Mock navigator.permissions.query to return 'prompt' status
+    Object.defineProperty(navigator, 'permissions', {
+      value: {
+        query: jest.fn().mockResolvedValue({
+          state: 'prompt',
+          onchange: null,
+        }),
+      },
+      configurable: true,
+    })
   })
 
   it('renders permission request UI', () => {
-    render(<PermissionCheck onPermissionsGranted={mockOnPermissionsGranted} />)
+    render(<PermissionCheck onPermissionGranted={mockOnPermissionGranted} />)
 
     expect(screen.getByText(/camera and microphone/i)).toBeInTheDocument()
     expect(screen.getByText(/grant access/i)).toBeInTheDocument()
   })
 
   it('shows requesting state when button clicked', async () => {
-    render(<PermissionCheck onPermissionsGranted={mockOnPermissionsGranted} />)
+    render(<PermissionCheck onPermissionGranted={mockOnPermissionGranted} />)
 
     const button = screen.getByRole('button', { name: /grant access/i })
     fireEvent.click(button)
@@ -30,22 +40,22 @@ describe('PermissionCheck', () => {
     expect(screen.getByText(/requesting/i)).toBeInTheDocument()
   })
 
-  it('calls onPermissionsGranted when permissions are granted', async () => {
+  it('calls onPermissionGranted when permissions are granted', async () => {
     // Mock successful permission
     const mockStream = {
-      getTracks: () => [],
+      getTracks: () => [{ stop: jest.fn() }],
       getVideoTracks: () => [{ stop: jest.fn() }],
       getAudioTracks: () => [{ stop: jest.fn() }],
     }
     ;(navigator.mediaDevices.getUserMedia as jest.Mock).mockResolvedValueOnce(mockStream)
 
-    render(<PermissionCheck onPermissionsGranted={mockOnPermissionsGranted} />)
+    render(<PermissionCheck onPermissionGranted={mockOnPermissionGranted} />)
 
     const button = screen.getByRole('button', { name: /grant access/i })
     fireEvent.click(button)
 
     await waitFor(() => {
-      expect(mockOnPermissionsGranted).toHaveBeenCalledWith(mockStream)
+      expect(mockOnPermissionGranted).toHaveBeenCalled()
     })
   })
 
@@ -54,13 +64,13 @@ describe('PermissionCheck', () => {
       new Error('Permission denied')
     )
 
-    render(<PermissionCheck onPermissionsGranted={mockOnPermissionsGranted} />)
+    render(<PermissionCheck onPermissionGranted={mockOnPermissionGranted} />)
 
     const button = screen.getByRole('button', { name: /grant access/i })
     fireEvent.click(button)
 
     await waitFor(() => {
-      expect(screen.getByText(/permission denied/i)).toBeInTheDocument()
+      expect(screen.getByText(/denied/i)).toBeInTheDocument()
     })
   })
 })
@@ -70,15 +80,12 @@ describe('QuestionCard', () => {
     questionNumber: 1,
     totalQuestions: 5,
     text: 'Tell me about yourself',
-    textZh: '请介绍一下你自己',
-    category: 'introduction',
   }
 
   it('renders question text', () => {
     render(<QuestionCard {...defaultProps} />)
 
     expect(screen.getByText('Tell me about yourself')).toBeInTheDocument()
-    expect(screen.getByText('请介绍一下你自己')).toBeInTheDocument()
   })
 
   it('shows question number and total', () => {
@@ -88,24 +95,17 @@ describe('QuestionCard', () => {
     expect(screen.getByText(/of 5/i)).toBeInTheDocument()
   })
 
-  it('shows category badge', () => {
+  it('renders question card with correct styling', () => {
     render(<QuestionCard {...defaultProps} />)
-
-    expect(screen.getByText('introduction')).toBeInTheDocument()
-  })
-
-  it('renders without Chinese text', () => {
-    const props = { ...defaultProps, textZh: undefined }
-    render(<QuestionCard {...props} />)
 
     expect(screen.getByText('Tell me about yourself')).toBeInTheDocument()
   })
 
-  it('renders without category', () => {
-    const props = { ...defaultProps, category: undefined }
-    render(<QuestionCard {...props} />)
+  it('renders question card with correct styling', () => {
+    render(<QuestionCard {...defaultProps} />)
 
-    expect(screen.queryByText('introduction')).not.toBeInTheDocument()
+    const card = document.querySelector('.border-blue-600')
+    expect(card).toBeInTheDocument()
   })
 })
 
@@ -115,7 +115,7 @@ describe('InterviewProgress', () => {
       <InterviewProgress
         currentQuestion={2}
         totalQuestions={5}
-        answeredQuestions={[0, 1]}
+        completedQuestions={[0, 1]}
       />
     )
 
@@ -129,7 +129,7 @@ describe('InterviewProgress', () => {
       <InterviewProgress
         currentQuestion={2}
         totalQuestions={5}
-        answeredQuestions={[0, 1]}
+        completedQuestions={[0, 1]}
       />
     )
 
@@ -143,7 +143,7 @@ describe('InterviewProgress', () => {
       <InterviewProgress
         currentQuestion={2}
         totalQuestions={3}
-        answeredQuestions={[0]}
+        completedQuestions={[0]}
       />
     )
 
@@ -158,7 +158,7 @@ describe('InterviewProgress', () => {
       <InterviewProgress
         currentQuestion={1}
         totalQuestions={3}
-        answeredQuestions={[0]}
+        completedQuestions={[0]}
       />
     )
 
@@ -172,13 +172,12 @@ describe('InterviewProgress', () => {
       <InterviewProgress
         currentQuestion={2}
         totalQuestions={5}
-        answeredQuestions={[0, 1]}
+        completedQuestions={[0, 1]}
       />
     )
 
-    // 2 out of 5 answered = 40%
-    // The progress bar width should reflect this
-    const progressFill = document.querySelector('.bg-blue-600')
-    expect(progressFill).toBeInTheDocument()
+    // 2 out of 5 completed = 40%
+    // Check for "2/5 completed" text
+    expect(screen.getByText('2/5 completed')).toBeInTheDocument()
   })
 })

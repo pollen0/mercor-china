@@ -13,7 +13,7 @@ export function Spinner({ className, size = 'md' }: { className?: string; size?:
   return (
     <div
       className={cn(
-        'animate-spin rounded-full border-brand-500 border-t-transparent',
+        'animate-spin rounded-full border-teal-500 border-t-transparent',
         sizeClasses[size],
         className
       )}
@@ -24,10 +24,10 @@ export function Spinner({ className, size = 'md' }: { className?: string; size?:
 // Full page loading
 export function PageLoading({ message = 'Loading...' }: { message?: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-warm-50">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
         <Spinner size="lg" className="mx-auto mb-4" />
-        <p className="text-warm-600">{message}</p>
+        <p className="text-gray-600">{message}</p>
       </div>
     </div>
   )
@@ -36,7 +36,7 @@ export function PageLoading({ message = 'Loading...' }: { message?: string }) {
 // Skeleton components
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div className={cn('animate-pulse bg-warm-200 rounded-lg', className)} />
+    <div className={cn('animate-pulse bg-gray-200 rounded-lg', className)} />
   )
 }
 
@@ -72,7 +72,7 @@ export function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
   return (
     <div className="space-y-3">
       {/* Header */}
-      <div className="flex gap-4 p-3 bg-warm-50 rounded-xl">
+      <div className="flex gap-4 p-3 bg-gray-50 rounded-xl">
         {Array.from({ length: cols }).map((_, i) => (
           <Skeleton key={i} className="h-4 flex-1" />
         ))}

@@ -11,11 +11,11 @@ const buttonVariants = cva(
         default:
           'bg-primary text-primary-foreground hover:bg-primary/90 shadow-soft hover:shadow-soft-md',
         brand:
-          'bg-brand-500 text-white hover:bg-brand-600 shadow-brand hover:shadow-brand-lg hover:scale-[1.02]',
+          'bg-teal-600 text-white hover:bg-teal-700 shadow-lg hover:shadow-xl hover:scale-[1.02]',
         destructive:
-          'bg-error text-white hover:bg-error-dark',
+          'bg-red-500 text-white hover:bg-red-600',
         outline:
-          'border border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-brand-300',
+          'border border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-teal-300',
         secondary:
           'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost:
@@ -23,7 +23,7 @@ const buttonVariants = cva(
         link:
           'text-primary underline-offset-4 hover:underline',
         soft:
-          'bg-brand-50 text-brand-700 hover:bg-brand-100',
+          'bg-teal-50 text-teal-700 hover:bg-teal-100',
       },
       size: {
         default: 'h-11 px-5 py-2.5',

@@ -45,7 +45,7 @@ export function BulkActionToolbar({
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600">
-            <span className="font-semibold text-emerald-600">{selectedCount}</span> interview{selectedCount > 1 ? 's' : ''} selected
+            <span className="font-semibold text-teal-600">{selectedCount}</span> interview{selectedCount > 1 ? 's' : ''} selected
           </span>
           <button
             onClick={onClearSelection}
@@ -80,7 +80,7 @@ export function BulkActionToolbar({
           <Button
             onClick={handleShortlist}
             disabled={isLoading || actionInProgress !== null}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-teal-600 hover:bg-teal-700"
           >
             {actionInProgress === 'shortlist' ? (
               <span className="flex items-center gap-2">

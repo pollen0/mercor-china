@@ -1,5 +1,19 @@
 import { z } from 'zod'
 
+// Beta universities - expand as we onboard more schools
+export const universityOptions = [
+  { value: 'uc_berkeley', label: 'UC Berkeley' },
+  { value: 'uiuc', label: 'University of Illinois Urbana-Champaign' },
+] as const
+
+export const graduationYearOptions = [
+  { value: 2025, label: '2025' },
+  { value: 2026, label: '2026' },
+  { value: 2027, label: '2027' },
+  { value: 2028, label: '2028' },
+  { value: 2029, label: '2029' },
+] as const
+
 export const candidateRegistrationSchema = z.object({
   name: z
     .string()
@@ -17,6 +31,18 @@ export const candidateRegistrationSchema = z.object({
     .min(8, 'Password must be at least 8 characters')
     .regex(/[0-9]/, 'Password must contain at least one number')
     .regex(/[a-zA-Z]/, 'Password must contain at least one letter'),
+  university: z
+    .string()
+    .min(1, 'Please select your university'),
+  graduationYear: z
+    .number()
+    .min(2024, 'Invalid graduation year')
+    .max(2030, 'Invalid graduation year')
+    .optional(),
+  major: z
+    .string()
+    .max(100, 'Major name is too long')
+    .optional(),
   targetRoles: z
     .array(z.string())
     .optional()

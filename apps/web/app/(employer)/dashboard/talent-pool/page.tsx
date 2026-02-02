@@ -9,36 +9,71 @@ import { DashboardNavbar } from '@/components/layout/navbar'
 import { Container, PageWrapper } from '@/components/layout/container'
 import { talentPoolApi, employerApi, type TalentPoolCandidate, type Vertical, type RoleType } from '@/lib/api'
 
-// Vertical and role configurations
+// 2026 simplified verticals based on job market
 const VERTICALS = [
-  { value: 'new_energy', label: 'New Energy / EV', labelZh: '新能源 / 电动汽车' },
-  { value: 'sales', label: 'Sales / BD', labelZh: '销售 / 商务拓展' },
+  { value: 'software_engineering', label: 'Software Engineering' },
+  { value: 'data', label: 'Data & Analytics' },
+  { value: 'product', label: 'Product Management' },
+  { value: 'design', label: 'Design' },
+  { value: 'finance', label: 'Finance & IB' },
 ]
 
-const ROLES_BY_VERTICAL: Record<string, Array<{ value: string; label: string; labelZh: string }>> = {
-  new_energy: [
-    { value: 'battery_engineer', label: 'Battery Engineer', labelZh: '电池工程师' },
-    { value: 'embedded_software', label: 'Embedded Software', labelZh: '嵌入式软件' },
-    { value: 'autonomous_driving', label: 'Autonomous Driving', labelZh: '自动驾驶' },
-    { value: 'supply_chain', label: 'Supply Chain', labelZh: '供应链' },
-    { value: 'ev_sales', label: 'EV Sales', labelZh: '新能源销售' },
+const ROLES_BY_VERTICAL: Record<string, Array<{ value: string; label: string }>> = {
+  software_engineering: [
+    { value: 'software_engineer', label: 'Software Engineer' },
+    { value: 'embedded_engineer', label: 'Embedded Engineer' },
+    { value: 'qa_engineer', label: 'QA Engineer' },
   ],
-  sales: [
-    { value: 'sales_rep', label: 'Sales Rep', labelZh: '销售代表' },
-    { value: 'bd_manager', label: 'BD Manager', labelZh: '商务拓展' },
-    { value: 'account_manager', label: 'Account Manager', labelZh: '客户经理' },
+  data: [
+    { value: 'data_analyst', label: 'Data Analyst' },
+    { value: 'data_scientist', label: 'Data Scientist' },
+    { value: 'ml_engineer', label: 'ML Engineer' },
+    { value: 'data_engineer', label: 'Data Engineer' },
+  ],
+  product: [
+    { value: 'product_manager', label: 'Product Manager' },
+    { value: 'associate_pm', label: 'Associate PM' },
+  ],
+  design: [
+    { value: 'ux_designer', label: 'UX Designer' },
+    { value: 'ui_designer', label: 'UI Designer' },
+    { value: 'product_designer', label: 'Product Designer' },
+  ],
+  finance: [
+    { value: 'ib_analyst', label: 'IB Analyst' },
+    { value: 'finance_analyst', label: 'Finance Analyst' },
+    { value: 'equity_research', label: 'Equity Research' },
   ],
 }
 
 const ROLE_NAMES: Record<string, string> = {
-  battery_engineer: '电池工程师',
-  embedded_software: '嵌入式软件',
-  autonomous_driving: '自动驾驶',
-  supply_chain: '供应链',
-  ev_sales: '新能源销售',
-  sales_rep: '销售代表',
-  bd_manager: '商务拓展',
-  account_manager: '客户经理',
+  // Software Engineering
+  software_engineer: 'Software Engineer',
+  embedded_engineer: 'Embedded Engineer',
+  qa_engineer: 'QA Engineer',
+  // Legacy engineering roles
+  frontend_engineer: 'Frontend Engineer',
+  backend_engineer: 'Backend Engineer',
+  fullstack_engineer: 'Full Stack Engineer',
+  mobile_engineer: 'Mobile Engineer',
+  devops_engineer: 'DevOps Engineer',
+  // Data
+  data_analyst: 'Data Analyst',
+  data_scientist: 'Data Scientist',
+  ml_engineer: 'ML Engineer',
+  data_engineer: 'Data Engineer',
+  // Product
+  product_manager: 'Product Manager',
+  associate_pm: 'Associate PM',
+  business_analyst: 'Business Analyst',
+  // Design
+  ux_designer: 'UX Designer',
+  ui_designer: 'UI Designer',
+  product_designer: 'Product Designer',
+  // Finance
+  ib_analyst: 'IB Analyst',
+  finance_analyst: 'Finance Analyst',
+  equity_research: 'Equity Research',
 }
 
 export default function TalentPoolPage() {
@@ -117,9 +152,10 @@ export default function TalentPoolPage() {
   const openContactModal = (candidate: TalentPoolCandidate) => {
     setContactCandidate(candidate)
     setContactSubject(`Interview Opportunity at ${companyName}`)
+    const roleDisplay = candidate.roleType ? (ROLE_NAMES[candidate.roleType] || candidate.roleType) : 'open'
     setContactMessage(`Dear ${candidate.candidateName},
 
-We reviewed your profile on ZhiMian and were impressed by your qualifications for ${ROLE_NAMES[candidate.roleType] || candidate.roleType} positions.
+We reviewed your profile on Pathway and were impressed by your qualifications for ${roleDisplay} positions.
 
 We would like to discuss a potential opportunity with you. Would you be available for a conversation?
 
@@ -133,7 +169,9 @@ ${companyName}`)
 
     setIsSending(true)
     try {
-      await talentPoolApi.contactCandidate(contactCandidate.profileId, {
+      // Use profileId if available, otherwise use candidateId
+      const contactId = contactCandidate.profileId || contactCandidate.candidateId
+      await talentPoolApi.contactCandidate(contactId, {
         subject: contactSubject,
         body: contactMessage,
         messageType: 'interview_invite',
@@ -176,8 +214,8 @@ ${companyName}`)
 
       <Container className="py-8 pt-24">
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-warm-900">Talent Pool</h1>
-          <p className="text-warm-500">Browse candidates who have completed vertical interviews</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Talent Pool</h1>
+          <p className="text-gray-500">Browse candidates with their resumes, GitHub profiles, and interview scores</p>
         </div>
 
         {/* Search and Filters */}
@@ -192,9 +230,9 @@ ${companyName}`)
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     placeholder="Search by name, skills, company, keywords..."
-                    className="w-full px-4 py-2 pl-10 border border-warm-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                    className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
@@ -207,18 +245,18 @@ ${companyName}`)
             <div className="flex flex-wrap gap-4 items-end">
               {/* Vertical Filter */}
               <div className="w-48">
-                <label className="block text-sm font-medium text-warm-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Industry Vertical
                 </label>
                 <select
                   value={selectedVertical}
                   onChange={(e) => handleVerticalChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 >
                   <option value="">All Verticals</option>
                   {VERTICALS.map((v) => (
                     <option key={v.value} value={v.value}>
-                      {v.labelZh}
+                      {v.label}
                     </option>
                   ))}
                 </select>
@@ -226,19 +264,19 @@ ${companyName}`)
 
               {/* Role Filter */}
               <div className="w-48">
-                <label className="block text-sm font-medium text-warm-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Role Type
                 </label>
                 <select
                   value={selectedRole}
                   onChange={(e) => handleRoleChange(e.target.value)}
                   disabled={!selectedVertical}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 disabled:bg-warm-50"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-gray-50"
                 >
                   <option value="">All Roles</option>
                   {availableRoles.map((r) => (
                     <option key={r.value} value={r.value}>
-                      {r.labelZh}
+                      {r.label}
                     </option>
                   ))}
                 </select>
@@ -246,13 +284,13 @@ ${companyName}`)
 
               {/* Min Score Filter */}
               <div className="w-40">
-                <label className="block text-sm font-medium text-warm-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Min Score
                 </label>
                 <select
                   value={minScore}
                   onChange={(e) => handleMinScoreChange(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 >
                   <option value={0}>Any Score</option>
                   <option value={5}>5+ / 10</option>
@@ -282,8 +320,8 @@ ${companyName}`)
             {/* Active Search Tag */}
             {searchQuery && (
               <div className="mt-3 flex items-center gap-2">
-                <span className="text-sm text-warm-600">Searching:</span>
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-brand-100 text-brand-700 rounded-full text-sm">
+                <span className="text-sm text-gray-600">Searching:</span>
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
                   "{searchQuery}"
                   <button
                     onClick={() => {
@@ -291,7 +329,7 @@ ${companyName}`)
                       setSearchQuery('')
                       setCurrentPage(1)
                     }}
-                    className="ml-1 hover:text-brand-900"
+                    className="ml-1 hover:text-teal-900"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -305,7 +343,7 @@ ${companyName}`)
 
         {/* Results Count */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-warm-600">
+          <p className="text-sm text-gray-600">
             {total} candidate{total !== 1 ? 's' : ''} found
           </p>
         </div>
@@ -313,103 +351,142 @@ ${companyName}`)
         {/* Candidates Grid */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="w-12 h-12 border-2 border-warm-200 border-t-brand-500 rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin"></div>
           </div>
         ) : candidates.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <div className="w-16 h-16 bg-warm-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-warm-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-warm-900 mb-2">No candidates found</h3>
-              <p className="text-warm-500">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No candidates found</h3>
+              <p className="text-gray-500">
                 Try adjusting your filters or check back later for new candidates.
               </p>
             </CardContent>
           </Card>
         ) : (
           <>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              {candidates.map((candidate) => (
-                <Card key={candidate.profileId} className="hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{candidate.candidateName}</CardTitle>
-                        <CardDescription>{candidate.candidateEmail}</CardDescription>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-brand-600">
-                          {candidate.bestScore?.toFixed(1)}
+            {/* Row-based candidate list */}
+            <Card className="mb-6">
+              <div className="divide-y divide-gray-100">
+                {candidates.map((candidate) => {
+                  // Determine the score to display (interview > profile)
+                  const displayScore = candidate.bestScore ?? candidate.profileScore
+                  const isProfileOnly = candidate.status === 'profile_only' || candidate.status === 'pending'
+                  const linkId = candidate.profileId || candidate.candidateId
+
+                  return (
+                    <div
+                      key={linkId}
+                      className="p-4 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Avatar */}
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg font-semibold text-white">
+                            {(candidate.candidateName || 'U').charAt(0).toUpperCase()}
+                          </span>
                         </div>
-                        <div className="text-xs text-warm-500">/ 10</div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {/* Vertical & Role */}
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 text-xs font-medium rounded-md bg-warm-100 text-warm-700">
-                          {VERTICALS.find(v => v.value === candidate.vertical)?.labelZh || candidate.vertical}
-                        </span>
-                        <span className="text-xs text-warm-500">
-                          {ROLE_NAMES[candidate.roleType] || candidate.roleType}
-                        </span>
-                      </div>
 
-                      {/* Location */}
-                      {candidate.location && (
-                        <p className="text-sm text-warm-500">{candidate.location}</p>
-                      )}
+                        {/* Main Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-gray-900 truncate">{candidate.candidateName}</h3>
+                            {/* Completion Status Badges */}
+                            {candidate.completionStatus?.interviewCompleted && (
+                              <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Interview
+                              </span>
+                            )}
+                            {candidate.completionStatus?.resumeUploaded && (
+                              <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">Resume</span>
+                            )}
+                            {candidate.completionStatus?.githubConnected && (
+                              <span className="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">GitHub</span>
+                            )}
+                            {!candidate.completionStatus?.interviewCompleted && (
+                              <span className="px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full">No Interview</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500 truncate">{candidate.candidateEmail}</p>
+                          <div className="flex items-center gap-3 mt-1">
+                            {candidate.vertical && (
+                              <span className="text-xs text-gray-600">
+                                {VERTICALS.find(v => v.value === candidate.vertical)?.label || candidate.vertical}
+                              </span>
+                            )}
+                            {candidate.roleType && (
+                              <span className="text-xs text-gray-500">
+                                {ROLE_NAMES[candidate.roleType] || candidate.roleType}
+                              </span>
+                            )}
+                            {candidate.location && (
+                              <span className="text-xs text-gray-400">{candidate.location}</span>
+                            )}
+                          </div>
+                        </div>
 
-                      {/* Experience */}
-                      {candidate.experienceSummary && (
-                        <p className="text-sm text-warm-500 truncate">{candidate.experienceSummary}</p>
-                      )}
-
-                      {/* Skills */}
-                      {candidate.skills.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {candidate.skills.slice(0, 4).map((skill, i) => (
+                        {/* Skills */}
+                        <div className="hidden md:flex flex-wrap gap-1 max-w-xs">
+                          {candidate.skills.slice(0, 3).map((skill, i) => (
                             <span
                               key={i}
-                              className="px-2 py-0.5 text-xs bg-warm-100 text-warm-600 rounded"
+                              className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded"
                             >
                               {skill}
                             </span>
                           ))}
-                          {candidate.skills.length > 4 && (
-                            <span className="px-2 py-0.5 text-xs text-warm-400">
-                              +{candidate.skills.length - 4}
-                            </span>
+                          {candidate.skills.length > 3 && (
+                            <span className="text-xs text-gray-400">+{candidate.skills.length - 3}</span>
                           )}
                         </div>
-                      )}
 
-                      {/* Actions */}
-                      <div className="flex gap-2 pt-2 border-t border-warm-100">
-                        <Link href={`/dashboard/talent-pool/${candidate.profileId}`} className="flex-1">
-                          <Button variant="outline" size="sm" className="w-full">
-                            View Profile
+                        {/* Score */}
+                        <div className="text-center w-20 flex-shrink-0">
+                          {displayScore ? (
+                            <>
+                              <div className={`text-xl font-bold ${isProfileOnly ? 'text-blue-600' : 'text-teal-600'}`}>
+                                {displayScore.toFixed(1)}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                {isProfileOnly ? 'profile' : 'score'}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-xs text-gray-400">No score</div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 flex-shrink-0">
+                          <Link href={`/dashboard/talent-pool/${linkId}`}>
+                            <Button variant="outline" size="sm">
+                              View
+                            </Button>
+                          </Link>
+                          <Button
+                            size="sm"
+                            variant="brand"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openContactModal(candidate)
+                            }}
+                          >
+                            Contact
                           </Button>
-                        </Link>
-                        <Button
-                          size="sm"
-                          variant="brand"
-                          className="flex-1"
-                          onClick={() => openContactModal(candidate)}
-                        >
-                          Contact
-                        </Button>
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                  )
+                })}
+              </div>
+            </Card>
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -422,7 +499,7 @@ ${companyName}`)
                 >
                   Previous
                 </Button>
-                <span className="text-sm text-warm-600">
+                <span className="text-sm text-gray-600">
                   Page {currentPage} of {totalPages}
                 </span>
                 <Button
@@ -448,7 +525,7 @@ ${companyName}`)
                 <span>Contact {contactCandidate.candidateName}</span>
                 <button
                   onClick={() => setShowContactModal(false)}
-                  className="text-warm-400 hover:text-warm-600"
+                  className="text-gray-400 hover:text-gray-600"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -461,26 +538,26 @@ ${companyName}`)
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Subject
                 </label>
                 <input
                   type="text"
                   value={contactSubject}
                   onChange={(e) => setContactSubject(e.target.value)}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   placeholder="Email subject..."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Message
                 </label>
                 <textarea
                   value={contactMessage}
                   onChange={(e) => setContactMessage(e.target.value)}
                   rows={8}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 resize-none"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
                   placeholder="Write your message..."
                 />
               </div>
@@ -509,7 +586,7 @@ ${companyName}`)
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-warm-500 text-center">
+              <p className="text-xs text-gray-500 text-center">
                 The candidate will receive this email and their status will be updated to "Contacted"
               </p>
             </CardContent>

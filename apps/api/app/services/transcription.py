@@ -6,7 +6,7 @@ from typing import Optional
 from ..config import settings
 from .storage import storage_service
 
-logger = logging.getLogger("zhimian.transcription")
+logger = logging.getLogger("pathway.transcription")
 
 
 class TranscriptionService:
@@ -16,7 +16,7 @@ class TranscriptionService:
         self.api_key = settings.deepseek_api_key
         self.base_url = settings.deepseek_base_url
 
-    async def transcribe_from_url(self, video_url: str, language: str = "zh") -> str:
+    async def transcribe_from_url(self, video_url: str, language: str = "en") -> str:
         """
         Transcribe audio from a video URL.
 
@@ -41,7 +41,7 @@ class TranscriptionService:
         finally:
             os.unlink(tmp_path)
 
-    async def transcribe_from_key(self, storage_key: str, language: str = "zh") -> str:
+    async def transcribe_from_key(self, storage_key: str, language: str = "en") -> str:
         """
         Transcribe audio from a video stored in R2.
 
@@ -56,7 +56,7 @@ class TranscriptionService:
         signed_url = storage_service.get_signed_url(storage_key)
         return await self.transcribe_from_url(signed_url, language)
 
-    async def transcribe_file(self, file_path: str, language: str = "zh") -> str:
+    async def transcribe_file(self, file_path: str, language: str = "en") -> str:
         """
         Transcribe audio from a local file using DeepSeek ASR.
 
@@ -73,7 +73,7 @@ class TranscriptionService:
         return await self._transcribe_with_deepseek(audio_data, file_path, language)
 
     async def _transcribe_with_deepseek(
-        self, audio_data: bytes, filename: str, language: str = "zh"
+        self, audio_data: bytes, filename: str, language: str = "en"
     ) -> str:
         """
         Transcribe using DeepSeek ASR API (OpenAI Whisper-compatible).
@@ -120,7 +120,7 @@ class TranscriptionService:
             return f"[Transcription error: {str(e)}]"
 
     async def transcribe_bytes(
-        self, data: bytes, filename: str = "audio.webm", language: str = "zh"
+        self, data: bytes, filename: str = "audio.webm", language: str = "en"
     ) -> str:
         """
         Transcribe audio from raw bytes.

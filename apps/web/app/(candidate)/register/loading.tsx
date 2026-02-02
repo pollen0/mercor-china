@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/loading'
 
 export default function RegisterLoading() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white flex items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-b from-teal-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-soft-lg p-8">
         {/* Header */}
         <div className="text-center mb-6">
@@ -13,14 +13,14 @@ export default function RegisterLoading() {
           <Skeleton className="h-4 w-64 mx-auto" />
         </div>
 
-        {/* WeChat button skeleton */}
+        {/* GitHub button skeleton */}
         <Skeleton className="h-12 w-full rounded-xl mb-5" />
 
         {/* Divider */}
         <div className="flex items-center gap-4 my-5">
-          <div className="flex-1 h-px bg-warm-200" />
+          <div className="flex-1 h-px bg-gray-200" />
           <Skeleton className="h-4 w-24" />
-          <div className="flex-1 h-px bg-warm-200" />
+          <div className="flex-1 h-px bg-gray-200" />
         </div>
 
         {/* Form fields */}

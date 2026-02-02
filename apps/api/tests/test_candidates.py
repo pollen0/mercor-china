@@ -80,18 +80,20 @@ class TestCandidateRegistration:
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_register_candidate_chinese_name(self, client):
-        """Test registration with Chinese name."""
+    def test_register_candidate_with_university(self, client):
+        """Test registration with university info."""
         response = client.post("/api/candidates/", json={
-            "name": "张伟",
-            "email": "zhangwei@test.com",
-            "phone": "13812345678",
-            "target_roles": ["软件工程师"],
+            "name": "John Smith",
+            "email": "john.smith@berkeley.edu",
+            "password": "testpass123",
+            "university": "UC Berkeley",
+            "major": "Computer Science",
+            "graduation_year": 2026,
         })
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
-        assert data["name"] == "张伟"
+        assert data["candidate"]["name"] == "John Smith"
 
 
 class TestGetCandidate:

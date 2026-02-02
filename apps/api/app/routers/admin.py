@@ -2,10 +2,11 @@
 Admin panel endpoints for system management.
 """
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List
+from typing import Optional, List, Any, Union
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from pydantic import BaseModel
@@ -24,14 +25,16 @@ from ..models.candidate import CandidateVerticalProfile
 from ..utils.auth import get_current_employer
 from ..config import settings
 
-logger = logging.getLogger("zhimian.admin")
+logger = logging.getLogger("pathway.admin")
 router = APIRouter()
 
-# Admin emails - in production, move this to database or env var
-ADMIN_EMAILS = [
-    "paul@getpasal.com",
-    "admin@zhimian.ai",
-]
+
+def generate_cuid(prefix: str = "") -> str:
+    """Generate a unique ID with optional prefix."""
+    return f"{prefix}{uuid.uuid4().hex[:24]}" if prefix else uuid.uuid4().hex[:24]
+
+
+# Admin password from environment variable
 
 
 # Schemas
@@ -56,10 +59,10 @@ class CandidateAdmin(BaseModel):
     id: str
     name: str
     email: str
-    phone: str
-    email_verified: bool
-    interview_count: int
-    vertical_profile_count: int
+    phone: Optional[str] = None
+    email_verified: bool = False
+    interview_count: int = 0
+    vertical_profile_count: int = 0
     created_at: datetime
 
     class Config:
@@ -94,8 +97,13 @@ class InterviewAdmin(BaseModel):
         from_attributes = True
 
 
-class AdminUserList(BaseModel):
-    users: List[CandidateAdmin] | List[EmployerAdmin]
+class AdminCandidateList(BaseModel):
+    users: List[CandidateAdmin]
+    total: int
+
+
+class AdminEmployerList(BaseModel):
+    users: List[EmployerAdmin]
     total: int
 
 
@@ -105,14 +113,21 @@ class AdminInterviewList(BaseModel):
 
 
 # Helper to check admin access
-def verify_admin(employer: Employer = Depends(get_current_employer)):
-    """Verify that the current user is an admin."""
-    if employer.email not in ADMIN_EMAILS:
+def verify_admin(
+    x_admin_password: str = Header(None, alias="X-Admin-Password"),
+):
+    """Verify admin access via password only - no employer login required."""
+    if not settings.admin_password:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin access not configured. Set ADMIN_PASSWORD environment variable."
+        )
+    if x_admin_password != settings.admin_password:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
+            detail="Admin access required. Invalid or missing admin password."
         )
-    return employer
+    return True
 
 
 # Endpoints
@@ -179,7 +194,7 @@ async def get_admin_stats(
     )
 
 
-@router.get("/candidates", response_model=AdminUserList)
+@router.get("/candidates", response_model=AdminCandidateList)
 async def list_candidates(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -225,10 +240,10 @@ async def list_candidates(
             created_at=c.created_at,
         ))
 
-    return AdminUserList(users=result, total=total)
+    return AdminCandidateList(users=result, total=total)
 
 
-@router.get("/employers", response_model=AdminUserList)
+@router.get("/employers", response_model=AdminEmployerList)
 async def list_employers(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -266,7 +281,7 @@ async def list_employers(
             created_at=e.created_at,
         ))
 
-    return AdminUserList(users=result, total=total)
+    return AdminEmployerList(users=result, total=total)
 
 
 @router.get("/interviews", response_model=AdminInterviewList)
@@ -384,3 +399,101 @@ async def delete_employer(
 
     logger.info(f"Admin {admin.email} deleted employer {employer_id}")
     return {"success": True, "deleted_id": employer_id}
+
+
+# ============================================================================
+# PROFILE LINK GENERATION (GTM)
+# ============================================================================
+
+@router.post("/generate-batch-links")
+async def generate_batch_profile_links(
+    data: dict,
+    admin: Employer = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate shareable profile links for multiple candidates at once.
+    Used for GTM: Admin curates top candidates, generates links, sends to companies.
+
+    Request body:
+    {
+      "candidate_ids": ["c1", "c2", "c3"],
+      "expires_in_days": 7  // optional, defaults to 7
+    }
+
+    Returns array of links for all candidates.
+    """
+    from ..models.profile_token import ProfileToken
+    from datetime import timedelta
+    import secrets
+
+    candidate_ids = data.get("candidate_ids", [])
+    expires_in_days = data.get("expires_in_days", 7)
+
+    if not candidate_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="candidate_ids is required"
+        )
+
+    if len(candidate_ids) > 50:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot generate more than 50 links at once"
+        )
+
+    # Verify all candidates exist and opted in
+    candidates = db.query(Candidate).filter(Candidate.id.in_(candidate_ids)).all()
+    found_ids = {c.id for c in candidates}
+    missing_ids = [cid for cid in candidate_ids if cid not in found_ids]
+
+    if missing_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Candidates not found: {', '.join(missing_ids)}"
+        )
+
+    # Check which candidates haven't opted in
+    not_opted_in = [c.name for c in candidates if not c.opted_in_to_sharing]
+    if not_opted_in:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"These candidates haven't opted in to sharing: {', '.join(not_opted_in)}"
+        )
+
+    # Generate tokens for all candidates
+    results = []
+    expires_at = datetime.utcnow() + timedelta(days=expires_in_days)
+
+    for candidate in candidates:
+        token = secrets.token_urlsafe(32)
+
+        profile_token = ProfileToken(
+            id=generate_cuid("pt"),
+            token=token,
+            candidate_id=candidate.id,
+            created_by_id=admin.id,
+            created_by_type="admin",
+            expires_at=expires_at,
+        )
+
+        db.add(profile_token)
+
+        results.append({
+            "candidate_id": candidate.id,
+            "candidate_name": candidate.name,
+            "token": token,
+            "share_url": f"/talent/{candidate.id}?token={token}",
+            "expires_at": expires_at.isoformat(),
+        })
+
+    db.commit()
+
+    logger.info(f"Admin {admin.email} generated {len(results)} batch profile links")
+
+    return {
+        "success": True,
+        "count": len(results),
+        "expires_in_days": expires_in_days,
+        "links": results,
+    }

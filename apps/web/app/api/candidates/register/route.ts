@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { name, email, phone, password, targetRoles } = result.data
+    const { name, email, phone, password, targetRoles, university, graduationYear, major } = result.data
 
     // Call the FastAPI backend instead of Prisma
     const response = await fetch(`${API_URL}/api/candidates/`, {
@@ -30,6 +30,9 @@ export async function POST(request: Request) {
         phone,
         password,
         target_roles: targetRoles,
+        university,
+        graduation_year: graduationYear,
+        major,
       }),
     })
 

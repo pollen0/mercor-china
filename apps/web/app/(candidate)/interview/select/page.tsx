@@ -4,35 +4,64 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Container, PageWrapper } from '@/components/layout/container'
-import { Logo } from '@/components/layout/navbar'
-import { verticalApi, candidateVerticalApi, type Vertical, type RoleType, type VerticalProfile } from '@/lib/api'
+import { Card, CardContent } from '@/components/ui/card'
+import { verticalApi, candidateVerticalApi, candidateApi, type Vertical, type RoleType, type VerticalProfile } from '@/lib/api'
 
-// Clean vertical config - no emojis
-const VERTICALS = {
-  new_energy: {
-    name: 'New Energy / EV',
-    nameZh: '新能源',
-    description: 'Battery, embedded systems, autonomous driving, EV sales',
-    descriptionZh: '电池、嵌入式系统、自动驾驶、新能源销售',
+// Simplified verticals based on 2026 new grad job market
+const VERTICALS: Record<Vertical, {
+  name: string
+  description: string
+  icon: string
+  roles: { value: RoleType; name: string; technical: boolean }[]
+}> = {
+  software_engineering: {
+    name: 'Software Engineering',
+    description: 'SWE, Embedded, QA - Most common new grad role',
+    icon: '💻',
     roles: [
-      { value: 'battery_engineer', name: 'Battery Engineer', nameZh: '电池工程师', technical: true },
-      { value: 'embedded_software', name: 'Embedded Software', nameZh: '嵌入式软件', technical: true },
-      { value: 'autonomous_driving', name: 'Autonomous Driving', nameZh: '自动驾驶', technical: true },
-      { value: 'supply_chain', name: 'Supply Chain', nameZh: '供应链', technical: true },
-      { value: 'ev_sales', name: 'EV Sales', nameZh: '新能源销售', technical: false },
+      { value: 'software_engineer', name: 'Software Engineer', technical: true },
+      { value: 'embedded_engineer', name: 'Embedded Engineer', technical: true },
+      { value: 'qa_engineer', name: 'QA Engineer', technical: true },
     ],
   },
-  sales: {
-    name: 'Sales / BD',
-    nameZh: '销售',
-    description: 'Sales representatives, business development, account management',
-    descriptionZh: '销售代表、商务拓展、客户管理',
+  data: {
+    name: 'Data',
+    description: 'Data Science, ML, Analytics, Data Engineering',
+    icon: '📊',
     roles: [
-      { value: 'sales_rep', name: 'Sales Representative', nameZh: '销售代表', technical: false },
-      { value: 'bd_manager', name: 'BD Manager', nameZh: '商务拓展', technical: false },
-      { value: 'account_manager', name: 'Account Manager', nameZh: '客户经理', technical: false },
+      { value: 'data_analyst', name: 'Data Analyst', technical: true },
+      { value: 'data_scientist', name: 'Data Scientist', technical: true },
+      { value: 'ml_engineer', name: 'ML Engineer', technical: true },
+      { value: 'data_engineer', name: 'Data Engineer', technical: true },
+    ],
+  },
+  product: {
+    name: 'Product Management',
+    description: 'Product Manager, APM',
+    icon: '📱',
+    roles: [
+      { value: 'product_manager', name: 'Product Manager', technical: false },
+      { value: 'associate_pm', name: 'Associate PM', technical: false },
+    ],
+  },
+  design: {
+    name: 'Design',
+    description: 'UX/UI, Product Design',
+    icon: '🎨',
+    roles: [
+      { value: 'ux_designer', name: 'UX Designer', technical: false },
+      { value: 'ui_designer', name: 'UI Designer', technical: false },
+      { value: 'product_designer', name: 'Product Designer', technical: false },
+    ],
+  },
+  finance: {
+    name: 'Finance',
+    description: 'Investment Banking, Finance Analyst',
+    icon: '💰',
+    roles: [
+      { value: 'ib_analyst', name: 'IB Analyst', technical: false },
+      { value: 'finance_analyst', name: 'Finance Analyst', technical: false },
+      { value: 'equity_research', name: 'Equity Research', technical: false },
     ],
   },
 }
@@ -53,10 +82,14 @@ export default function InterviewSelectPage() {
   const [error, setError] = useState<string | null>(null)
   const [existingProfiles, setExistingProfiles] = useState<VerticalProfile[]>([])
 
+  // Profile completion check
+  const [hasResume, setHasResume] = useState(false)
+  const [profileCheckComplete, setProfileCheckComplete] = useState(false)
+
   useEffect(() => {
     const stored = localStorage.getItem('candidate')
     const token = localStorage.getItem('candidate_token')
-    if (!stored) {
+    if (!stored || !token) {
       router.push('/candidate/login')
       return
     }
@@ -64,18 +97,32 @@ export default function InterviewSelectPage() {
     const candidateData = JSON.parse(stored)
     setCandidate(candidateData)
 
-    const loadProfiles = async () => {
+    const loadData = async () => {
       try {
-        const data = await candidateVerticalApi.getMyVerticals(token || undefined)
-        setExistingProfiles(data.profiles)
+        // Check profile completion and existing interview profiles in parallel
+        const [resumeResult, profilesResult] = await Promise.allSettled([
+          candidateApi.getMyResume(token),
+          candidateVerticalApi.getMyVerticals(token)
+        ])
+
+        // Check if resume exists
+        if (resumeResult.status === 'fulfilled' && resumeResult.value?.parsedData) {
+          setHasResume(true)
+        }
+
+        // Load existing vertical profiles
+        if (profilesResult.status === 'fulfilled') {
+          setExistingProfiles(profilesResult.value.profiles)
+        }
       } catch (err) {
-        console.error('Failed to load profiles:', err)
+        console.error('Failed to load data:', err)
       } finally {
+        setProfileCheckComplete(true)
         setIsLoading(false)
       }
     }
 
-    loadProfiles()
+    loadData()
   }, [router])
 
   const getProfileForVertical = (vertical: Vertical): VerticalProfile | undefined => {
@@ -104,88 +151,143 @@ export default function InterviewSelectPage() {
 
   if (isLoading) {
     return (
-      <PageWrapper className="flex items-center justify-center">
+      <main className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-warm-200 border-t-brand-500 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-warm-500 text-sm">Loading...</p>
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">Loading...</p>
         </div>
-      </PageWrapper>
+      </main>
+    )
+  }
+
+  // Show profile completion requirement if resume not uploaded
+  if (profileCheckComplete && !hasResume) {
+    return (
+      <main className="min-h-screen bg-white">
+        {/* Header */}
+        <header className="border-b border-gray-100">
+          <div className="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
+            <Link href="/" className="text-lg font-semibold text-gray-900">
+              Pathway
+            </Link>
+            <Link href="/candidate/dashboard">
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">Back</Button>
+            </Link>
+          </div>
+        </header>
+
+        <div className="max-w-md mx-auto px-6 py-16">
+          <Card>
+            <CardContent className="pt-8 pb-6 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-amber-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Complete Your Profile First</h2>
+              <p className="text-gray-500 text-sm mb-6">
+                Please upload your resume before starting an interview. This helps us personalize your questions and match you with the right opportunities.
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg text-left">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${hasResume ? 'bg-green-100' : 'bg-gray-200'}`}>
+                    {hasResume ? (
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <span className="text-xs text-gray-500">1</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Upload Resume</p>
+                    <p className="text-xs text-gray-500">Required for personalized interviews</p>
+                  </div>
+                  {!hasResume && (
+                    <span className="text-xs text-amber-600 font-medium">Required</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <Link href="/candidate/dashboard?tab=profile">
+                  <Button className="w-full bg-gray-900 hover:bg-gray-800 text-white">
+                    Go to Profile
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     )
   }
 
   return (
-    <PageWrapper>
-      {/* Clean header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-warm-100 z-50">
-        <Container size="md" className="h-full flex items-center justify-between">
-          <Logo />
-          <Link href="/candidate/dashboard">
-            <Button variant="ghost" size="sm">Back</Button>
+    <main className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="border-b border-gray-100">
+        <div className="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="text-lg font-semibold text-gray-900">
+            Pathway
           </Link>
-        </Container>
+          <Link href="/candidate/dashboard">
+            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">Back</Button>
+          </Link>
+        </div>
       </header>
 
-      <Container size="md" className="pt-24 pb-12">
+      <div className="max-w-2xl mx-auto px-6 py-12">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-2xl font-semibold text-warm-900 mb-2">Start Interview</h1>
-          <p className="text-warm-500">
-            One interview per vertical, matched with all relevant jobs
+        <div className="text-center mb-12">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">Start Interview</h1>
+          <p className="text-gray-400 text-sm">
+            One interview per vertical, visible to all employers
           </p>
         </div>
 
         {/* Step 1: Select Vertical */}
-        <div className="mb-8">
-          <h2 className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-4">1. Select Industry</h2>
-          <div className="grid md:grid-cols-2 gap-4">
+        <div className="mb-10">
+          <p className="text-xs text-gray-400 uppercase tracking-wide mb-4">1. Industry</p>
+          <div className="grid sm:grid-cols-2 gap-3">
             {Object.entries(VERTICALS).map(([key, vertical]) => {
               const profile = getProfileForVertical(key as Vertical)
               const isCompleted = profile?.status === 'completed'
-              const canRetake = profile?.canRetake
+              const canInterview = profile?.canInterview
               const isSelected = selectedVertical === key
+              const isDisabled = isCompleted && !canInterview
 
               return (
-                <Card
+                <button
                   key={key}
-                  className={`cursor-pointer transition-all ${
+                  className={`text-left p-4 border rounded-lg transition-colors ${
                     isSelected
-                      ? 'ring-2 ring-brand-500 border-brand-500'
-                      : 'hover:border-warm-300'
-                  } ${isCompleted && !canRetake ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      ? 'border-gray-900 bg-gray-50'
+                      : isDisabled
+                      ? 'border-gray-100 opacity-50 cursor-not-allowed'
+                      : 'border-gray-100 hover:border-gray-300'
+                  }`}
                   onClick={() => {
-                    if (!isCompleted || canRetake) {
+                    if (!isDisabled) {
                       setSelectedVertical(key as Vertical)
                       setSelectedRole(null)
                     }
                   }}
+                  disabled={isDisabled}
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{vertical.nameZh}</CardTitle>
-                        <CardDescription>{vertical.name}</CardDescription>
-                      </div>
-                      {isCompleted && (
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-brand-600">
-                            {profile.bestScore?.toFixed(1)}/10
-                          </div>
-                          {canRetake && (
-                            <div className="text-xs text-warm-500">Can retake</div>
-                          )}
-                        </div>
-                      )}
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-medium text-gray-900">{vertical.name}</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">{vertical.description}</p>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-warm-500">{vertical.descriptionZh}</p>
-                    {isCompleted && !canRetake && (
-                      <p className="text-xs text-warm-400 mt-2">
-                        Completed ({profile.attemptCount}/3 attempts)
-                      </p>
+                    {isCompleted && (
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                        {profile.bestScore?.toFixed(1)}
+                      </span>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </button>
               )
             })}
           </div>
@@ -193,94 +295,60 @@ export default function InterviewSelectPage() {
 
         {/* Step 2: Select Role */}
         {selectedVertical && (
-          <div className="mb-8">
-            <h2 className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-4">2. Select Role</h2>
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="mb-10">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-4">2. Role</p>
+            <div className="flex flex-wrap gap-2">
               {VERTICALS[selectedVertical].roles.map((role) => (
-                <Card
+                <button
                   key={role.value}
-                  className={`cursor-pointer transition-all ${
+                  className={`px-4 py-2 text-sm rounded-full border transition-colors ${
                     selectedRole === role.value
-                      ? 'ring-2 ring-brand-500 border-brand-500'
-                      : 'hover:border-warm-300'
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
                   }`}
                   onClick={() => setSelectedRole(role.value as RoleType)}
                 >
-                  <CardContent className="py-4">
-                    <div className="font-medium text-warm-900">{role.nameZh}</div>
-                    <div className="text-sm text-warm-500">{role.name}</div>
-                    {role.technical && (
-                      <span className="inline-flex items-center mt-2 px-2 py-0.5 rounded text-xs font-medium bg-warm-100 text-warm-600">
-                        Includes Coding
-                      </span>
-                    )}
-                  </CardContent>
-                </Card>
+                  {role.name}
+                  {role.technical && <span className="ml-1 text-gray-400">*</span>}
+                </button>
               ))}
             </div>
+            <p className="text-xs text-gray-300 mt-3">* Includes coding</p>
           </div>
         )}
 
         {/* Interview Info */}
         {selectedRole && (
-          <div className="mb-8">
-            <Card className="bg-warm-50 border-warm-100">
-              <CardContent className="py-5">
-                <h3 className="font-medium text-warm-900 mb-3 text-sm">Interview Overview</h3>
-                <ul className="space-y-2 text-sm text-warm-600">
-                  <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    5 video questions for your role
-                  </li>
-                  {VERTICALS[selectedVertical!].roles.find(r => r.value === selectedRole)?.technical && (
-                    <li className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      1 coding challenge (Python)
-                    </li>
-                  )}
-                  <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Visible to all employers in this vertical
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Up to 3 attempts, best score shown
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+          <div className="mb-10 py-5 border-t border-gray-100">
+            <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">Overview</p>
+            <ul className="text-sm text-gray-500 space-y-1.5">
+              <li>5 video questions for your role</li>
+              {VERTICALS[selectedVertical!].roles.find(r => r.value === selectedRole)?.technical && (
+                <li>1 coding challenge</li>
+              )}
+              <li>Visible to all employers in this vertical</li>
+              <li>Interview monthly to show your growth</li>
+            </ul>
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="mb-6 p-4 bg-warm-50 border border-warm-200 rounded-xl">
-            <p className="text-warm-700 text-sm">{error}</p>
-          </div>
+          <p className="text-sm text-red-500 mb-6">{error}</p>
         )}
 
         {/* Start Button */}
         <div className="flex justify-center">
           <Button
-            variant="brand"
             size="lg"
-            className="px-10"
+            className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-10"
             disabled={!selectedVertical || !selectedRole || isStarting}
             onClick={startInterview}
-            loading={isStarting}
           >
             {isStarting ? 'Starting...' : 'Start Interview'}
           </Button>
         </div>
-      </Container>
-    </PageWrapper>
+      </div>
+    </main>
   )
 }

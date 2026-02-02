@@ -1,7 +1,6 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { Container } from './container'
 
 interface FooterProps extends React.HTMLAttributes<HTMLElement> {
   variant?: 'minimal' | 'default'
@@ -11,60 +10,53 @@ export function Footer({ variant = 'minimal', className, ...props }: FooterProps
   if (variant === 'minimal') {
     return (
       <footer
-        className={cn('py-8 border-t border-warm-100', className)}
+        className={cn('py-16 border-t border-stone-100 bg-white', className)}
         {...props}
       >
-        <Container>
+        <div className="max-w-5xl mx-auto px-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-brand-500 to-brand-600 rounded-md flex items-center justify-center">
-                <span className="text-white font-bold text-xs">智</span>
-              </div>
-              <span className="font-medium text-warm-900">ZhiMian 智面</span>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-warm-500">
-              <Link href="/privacy" className="hover:text-warm-700 transition-colors">
-                Privacy / 隐私
+            <span className="font-medium text-stone-900">Pathway</span>
+            <div className="flex items-center gap-8 text-sm text-stone-400">
+              <Link href="/privacy" className="hover:text-stone-600 transition-colors duration-300">
+                Privacy
               </Link>
-              <span>&copy; {new Date().getFullYear()} ZhiMian</span>
+              <Link href="/employer/login" className="hover:text-stone-600 transition-colors duration-300">
+                Employers
+              </Link>
+              <span>&copy; {new Date().getFullYear()}</span>
             </div>
           </div>
-        </Container>
+        </div>
       </footer>
     )
   }
 
   return (
     <footer
-      className={cn('py-12 bg-warm-50 border-t border-warm-100', className)}
+      className={cn('py-20 bg-stone-50/50 border-t border-stone-100', className)}
       {...props}
     >
-      <Container>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div className="max-w-5xl mx-auto px-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-brand-500 to-brand-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">智</span>
-              </div>
-              <span className="font-semibold text-warm-900">ZhiMian 智面</span>
-            </div>
-            <p className="text-sm text-warm-600 leading-relaxed">
-              AI-powered recruiting platform for China&apos;s fastest-growing industries.
+            <span className="font-semibold text-stone-900 text-lg">Pathway</span>
+            <p className="mt-4 text-sm text-stone-500 leading-relaxed">
+              The career platform for college students. Show your growth, land your first job.
             </p>
           </div>
 
-          {/* For Candidates */}
+          {/* For Students */}
           <div>
-            <h4 className="font-semibold text-warm-900 mb-4">For Candidates</h4>
-            <ul className="space-y-2 text-sm">
+            <h4 className="font-medium text-stone-900 mb-4 text-sm">For Students</h4>
+            <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/candidate/register" className="text-warm-600 hover:text-brand-600 transition-colors">
-                  Start Interview
+                <Link href="/register" className="text-stone-500 hover:text-stone-900 transition-colors duration-300">
+                  Create Account
                 </Link>
               </li>
               <li>
-                <Link href="/candidate/login" className="text-warm-600 hover:text-brand-600 transition-colors">
+                <Link href="/login" className="text-stone-500 hover:text-stone-900 transition-colors duration-300">
                   Sign In
                 </Link>
               </li>
@@ -73,46 +65,44 @@ export function Footer({ variant = 'minimal', className, ...props }: FooterProps
 
           {/* For Employers */}
           <div>
-            <h4 className="font-semibold text-warm-900 mb-4">For Employers</h4>
-            <ul className="space-y-2 text-sm">
+            <h4 className="font-medium text-stone-900 mb-4 text-sm">For Employers</h4>
+            <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/login" className="text-warm-600 hover:text-brand-600 transition-colors">
+                <Link href="/employer/login" className="text-stone-500 hover:text-stone-900 transition-colors duration-300">
                   Employer Portal
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard/jobs" className="text-warm-600 hover:text-brand-600 transition-colors">
-                  Post a Job
+                <Link href="/employer/dashboard/talent" className="text-stone-500 hover:text-stone-900 transition-colors duration-300">
+                  Browse Talent
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Industries */}
+          {/* Verticals */}
           <div>
-            <h4 className="font-semibold text-warm-900 mb-4">Industries</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <span className="text-warm-600">New Energy / EV</span>
-              </li>
-              <li>
-                <span className="text-warm-600">Sales / BD</span>
-              </li>
+            <h4 className="font-medium text-stone-900 mb-4 text-sm">Verticals</h4>
+            <ul className="space-y-3 text-sm text-stone-500">
+              <li>Engineering</li>
+              <li>Data</li>
+              <li>Business</li>
+              <li>Design</li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-warm-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="text-sm text-warm-500">
-            &copy; {new Date().getFullYear()} ZhiMian. All rights reserved.
+        <div className="mt-16 pt-8 border-t border-stone-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="text-sm text-stone-400">
+            &copy; {new Date().getFullYear()} Pathway
           </div>
           <div className="flex items-center gap-6 text-sm">
-            <Link href="/privacy" className="text-warm-500 hover:text-warm-700 transition-colors">
-              Privacy Policy / 隐私政策
+            <Link href="/privacy" className="text-stone-400 hover:text-stone-600 transition-colors duration-300">
+              Privacy Policy
             </Link>
           </div>
         </div>
-      </Container>
+      </div>
     </footer>
   )
 }

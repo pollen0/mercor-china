@@ -48,32 +48,34 @@ export default function EmployerLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-warm-50 flex">
+    <main className="min-h-screen bg-gray-50 flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:flex-1 lg:flex-col justify-center px-12 bg-gradient-to-br from-brand-500 to-brand-600">
+      <div className="hidden lg:flex lg:flex-1 lg:flex-col justify-center px-12 bg-gradient-to-br from-teal-600 to-teal-500">
         <div className="max-w-md">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">智</span>
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
             </div>
-            <span className="text-white font-semibold text-2xl">ZhiMian 智面</span>
+            <span className="text-white font-semibold text-2xl">Pathway</span>
           </div>
           <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
-            Screen candidates 10x faster with AI
+            Hire top college talent based on growth trajectory
           </h1>
-          <p className="text-brand-100 text-lg leading-relaxed mb-8">
-            Automated 15-minute video interviews with intelligent scoring.
-            Built for New Energy/EV and Sales verticals in China.
+          <p className="text-teal-100 text-lg leading-relaxed mb-8">
+            See how candidates improve over time with monthly AI interviews.
+            Hire students from top universities like UC Berkeley and UIUC.
           </p>
           <div className="space-y-4">
             {[
               'AI-powered 5-dimension scoring',
-              'Vertical-specific interview questions',
-              'Mandarin speech-to-text transcription',
-              'Ranked candidate recommendations',
+              'Track candidate growth over time',
+              'GitHub integration for technical roles',
+              'Filter by university and graduation year',
             ].map((feature, i) => (
               <div key={i} className="flex items-center gap-3 text-white/90">
-                <svg className="w-5 h-5 text-brand-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-teal-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span>{feature}</span>
@@ -88,19 +90,21 @@ export default function EmployerLoginPage() {
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-brand">
-                <span className="text-white font-bold">智</span>
+              <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
               </div>
-              <span className="text-warm-900 font-semibold text-xl">ZhiMian 智面</span>
+              <span className="text-stone-900 font-semibold text-xl">Pathway</span>
             </Link>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-soft-lg border border-warm-100 p-8">
+          <div className="bg-white rounded-3xl shadow-soft-lg border border-gray-100 p-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-warm-900">
+              <h2 className="text-2xl font-bold text-gray-900">
                 {mode === 'login' ? 'Welcome back' : 'Create your account'}
               </h2>
-              <p className="text-warm-500 mt-2">
+              <p className="text-gray-500 mt-2">
                 {mode === 'login'
                   ? 'Sign in to access your employer dashboard'
                   : 'Start screening candidates smarter'}
@@ -110,7 +114,7 @@ export default function EmployerLoginPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {mode === 'register' && (
                 <div>
-                  <Label htmlFor="companyName" className="text-sm font-medium text-warm-700">
+                  <Label htmlFor="companyName" className="text-sm font-medium text-gray-700">
                     Company Name
                   </Label>
                   <Input
@@ -125,7 +129,7 @@ export default function EmployerLoginPage() {
               )}
 
               <div>
-                <Label htmlFor="email" className="text-sm font-medium text-warm-700">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email
                 </Label>
                 <Input
@@ -140,7 +144,7 @@ export default function EmployerLoginPage() {
               </div>
 
               <div>
-                <Label htmlFor="password" className="text-sm font-medium text-warm-700">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                   Password
                 </Label>
                 <Input
@@ -183,7 +187,7 @@ export default function EmployerLoginPage() {
                   setMode(mode === 'login' ? 'register' : 'login')
                   setError(null)
                 }}
-                className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
               >
                 {mode === 'login'
                   ? "Don't have an account? Register"
@@ -192,8 +196,8 @@ export default function EmployerLoginPage() {
             </div>
           </div>
 
-          <p className="mt-8 text-center text-sm text-warm-500">
-            By continuing, you agree to ZhiMian&apos;s Terms of Service and Privacy Policy.
+          <p className="mt-8 text-center text-sm text-gray-500">
+            By continuing, you agree to Pathway&apos;s Terms of Service and Privacy Policy.
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 /**
- * ZhiMian Design Tokens
- * HEYTEA-Inspired Design System
+ * Pathway Design Tokens
+ * Modern Design System for US College Career Platform
  *
  * Design Philosophy:
  * - Generous whitespace (breathing room = premium feel)

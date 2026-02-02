@@ -163,7 +163,7 @@ export function ContactCandidateModal({
                   onClick={() => applyTemplate(template.type)}
                   className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
                     selectedTemplate === template.type
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -193,7 +193,7 @@ export function ContactCandidateModal({
               onChange={(e) => setBody(e.target.value)}
               placeholder="Enter your message..."
               rows={10}
-              className="w-full px-3 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full px-3 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
           </div>
 
@@ -213,7 +213,7 @@ export function ContactCandidateModal({
           <Button
             onClick={handleSend}
             disabled={isSending}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="bg-teal-600 hover:bg-teal-700"
           >
             {isSending ? (
               <span className="flex items-center gap-2">

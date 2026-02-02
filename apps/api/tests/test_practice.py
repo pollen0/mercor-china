@@ -76,7 +76,7 @@ class TestPracticeFeedback:
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "练习模式" in response.json()["detail"]
+        assert "practice" in response.json()["detail"].lower()
 
     def test_get_practice_feedback_session_not_found(self, client):
         """Test practice feedback for nonexistent session."""

@@ -1,5 +1,5 @@
 """
-Redis caching service for ZhiMian.
+Redis caching service for Pathway.
 
 Provides caching for:
 - Dashboard statistics
@@ -15,7 +15,7 @@ from functools import wraps
 import hashlib
 from ..config import settings
 
-logger = logging.getLogger("zhimian.cache")
+logger = logging.getLogger("pathway.cache")
 T = TypeVar('T')
 
 

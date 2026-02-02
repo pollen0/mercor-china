@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .config import settings
 
-logger = logging.getLogger("zhimian.database")
+logger = logging.getLogger("pathway.database")
 
 engine = create_engine(settings.database_url) if settings.database_url else None
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine) if engine else None

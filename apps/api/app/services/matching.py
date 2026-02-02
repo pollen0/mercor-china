@@ -157,8 +157,10 @@ class MatchingService:
             # Check relevance
             # Look for similar job titles or vertical keywords
             vertical_keywords = {
-                'new_energy': ['battery', 'ev', 'electric', 'energy', 'automotive', 'vehicle', 'charging'],
-                'sales': ['sales', 'business development', 'account', 'bd', 'revenue', 'commercial']
+                'engineering': ['software', 'developer', 'engineer', 'programming', 'coding', 'backend', 'frontend', 'fullstack', 'devops'],
+                'data': ['data', 'analytics', 'machine learning', 'ml', 'ai', 'statistics', 'python', 'sql'],
+                'business': ['product', 'marketing', 'finance', 'consulting', 'strategy', 'operations', 'analyst'],
+                'design': ['design', 'ux', 'ui', 'user experience', 'figma', 'prototype', 'visual']
             }
 
             is_relevant = False

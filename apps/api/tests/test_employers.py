@@ -34,7 +34,7 @@ class TestEmployerRegistration:
         })
 
         assert response.status_code == status.HTTP_409_CONFLICT
-        assert "已被注册" in response.json()["detail"]
+        assert "already" in response.json()["detail"].lower() or "exist" in response.json()["detail"].lower()
 
     def test_register_employer_invalid_email(self, client):
         """Test registration with invalid email."""
@@ -71,7 +71,7 @@ class TestEmployerLogin:
         })
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "错误" in response.json()["detail"]
+        assert "invalid" in response.json()["detail"].lower() or "incorrect" in response.json()["detail"].lower()
 
     def test_login_nonexistent_email(self, client):
         """Test login with nonexistent email."""

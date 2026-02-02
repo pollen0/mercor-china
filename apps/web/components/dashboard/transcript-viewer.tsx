@@ -48,7 +48,7 @@ export function TranscriptViewer({ transcript, maxHeight = '200px' }: Transcript
           >
             {isCopied ? (
               <>
-                <svg className="w-4 h-4 mr-1 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 Copied
@@ -101,7 +101,7 @@ export function TranscriptViewer({ transcript, maxHeight = '200px' }: Transcript
       {!isExpanded && transcript.length > 500 && (
         <button
           onClick={() => setIsExpanded(true)}
-          className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+          className="text-teal-600 hover:text-teal-700 text-sm font-medium"
         >
           Show more...
         </button>

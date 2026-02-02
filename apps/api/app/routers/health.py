@@ -17,6 +17,6 @@ async def health_check(db: Session = Depends(get_db)):
     return {
         "status": "healthy" if db_status == "healthy" else "degraded",
         "database": db_status,
-        "service": "zhipin-ai-api",
+        "service": "pathway-api",
         "version": "0.1.0",
     }

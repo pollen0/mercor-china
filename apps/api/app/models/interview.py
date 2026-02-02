@@ -66,6 +66,11 @@ class InterviewResponse(Base):
     duration_seconds = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # Scoring algorithm version tracking (for re-scoring when algorithm improves)
+    scoring_algorithm_version = Column(String, nullable=True)  # e.g., "2.0.0"
+    scored_at = Column(DateTime(timezone=True), nullable=True)  # When this was scored
+    raw_score_data = Column(JSONB, nullable=True)  # Full scoring context for re-scoring
+
     # Follow-up question support
     is_followup = Column(Boolean, default=False)
     parent_response_id = Column(String, ForeignKey("interview_responses.id", ondelete="SET NULL"), nullable=True)

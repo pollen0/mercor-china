@@ -38,7 +38,7 @@ class RateLimits:
     # Auth endpoints - strict to prevent brute force
     AUTH_LOGIN = "5/minute"  # 5 login attempts per minute
     AUTH_REGISTER = "3/minute"  # 3 registration attempts per minute
-    AUTH_WECHAT = "10/minute"  # 10 WeChat auth attempts per minute
+    AUTH_GITHUB = "10/minute"  # 10 GitHub auth attempts per minute
 
     # AI/Resource-intensive endpoints
     AI_SCORING = "10/minute"  # Scoring requests
@@ -73,8 +73,7 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSO
     return JSONResponse(
         status_code=429,
         content={
-            "detail": "请求过于频繁，请稍后再试",
-            "detail_en": "Too many requests, please try again later",
+            "detail": "Too many requests, please try again later",
             "retry_after": retry_after,
         },
         headers={

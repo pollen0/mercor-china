@@ -99,7 +99,7 @@ async def get_current_candidate(
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无效的认证凭据",
+        detail="Invalid authentication credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
@@ -118,7 +118,7 @@ async def get_current_candidate(
     if token_type != "candidate":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要候选人权限",
+            detail="Student authentication required",
         )
 
     candidate = db.query(Candidate).filter(Candidate.id == user_id).first()
@@ -143,7 +143,7 @@ async def get_current_employer(
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无效的认证凭据",
+        detail="Invalid authentication credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
@@ -162,7 +162,7 @@ async def get_current_employer(
     if token_type != "employer":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要雇主权限",
+            detail="Employer authentication required",
         )
 
     employer = db.query(Employer).filter(Employer.id == user_id).first()
@@ -187,7 +187,7 @@ async def get_current_user(
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无效的认证凭据",
+        detail="Invalid authentication credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 

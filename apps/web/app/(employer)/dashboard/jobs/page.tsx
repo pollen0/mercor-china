@@ -9,24 +9,40 @@ import { employerApi, inviteApi, type Job, type InviteTokenResponse } from '@/li
 
 type ViewMode = 'list' | 'create' | 'detail' | 'edit'
 
-// Vertical and Role Type definitions
+// Vertical and Role Type definitions (US College Market)
 const VERTICALS = [
-  { value: 'new_energy', label: 'New Energy / EV', description: 'Battery, embedded, autonomous driving' },
-  { value: 'sales', label: 'Sales / BD', description: 'Sales reps, BD managers, account managers' },
+  { value: 'engineering', label: 'Engineering', description: 'Software, DevOps, Full-stack' },
+  { value: 'data', label: 'Data', description: 'Data Science, ML, Analytics' },
+  { value: 'business', label: 'Business', description: 'Product, Marketing, Finance' },
+  { value: 'design', label: 'Design', description: 'UX/UI, Product Design' },
 ]
 
 const ROLE_TYPES: Record<string, { value: string; label: string }[]> = {
-  new_energy: [
-    { value: 'battery_engineer', label: 'Battery Engineer' },
-    { value: 'embedded_software', label: 'Embedded Software Engineer' },
-    { value: 'autonomous_driving', label: 'Autonomous Driving Engineer' },
-    { value: 'supply_chain', label: 'Supply Chain Manager' },
-    { value: 'ev_sales', label: 'EV Sales' },
+  engineering: [
+    { value: 'software_engineer', label: 'Software Engineer' },
+    { value: 'frontend_engineer', label: 'Frontend Engineer' },
+    { value: 'backend_engineer', label: 'Backend Engineer' },
+    { value: 'fullstack_engineer', label: 'Full-stack Engineer' },
+    { value: 'mobile_engineer', label: 'Mobile Engineer' },
+    { value: 'devops_engineer', label: 'DevOps Engineer' },
   ],
-  sales: [
-    { value: 'sales_rep', label: 'Sales Representative' },
-    { value: 'bd_manager', label: 'BD Manager' },
-    { value: 'account_manager', label: 'Account Manager' },
+  data: [
+    { value: 'data_analyst', label: 'Data Analyst' },
+    { value: 'data_scientist', label: 'Data Scientist' },
+    { value: 'ml_engineer', label: 'ML Engineer' },
+    { value: 'data_engineer', label: 'Data Engineer' },
+  ],
+  business: [
+    { value: 'product_manager', label: 'Product Manager' },
+    { value: 'business_analyst', label: 'Business Analyst' },
+    { value: 'marketing_associate', label: 'Marketing Associate' },
+    { value: 'finance_analyst', label: 'Finance Analyst' },
+    { value: 'consultant', label: 'Consultant' },
+  ],
+  design: [
+    { value: 'ux_designer', label: 'UX Designer' },
+    { value: 'ui_designer', label: 'UI Designer' },
+    { value: 'product_designer', label: 'Product Designer' },
   ],
 }
 
@@ -346,7 +362,7 @@ export default function JobsPage() {
                         {job.isActive ? 'Active' : 'Inactive'}
                       </span>
                       {job.vertical && (
-                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-teal-100 text-teal-700">
                           {getVerticalLabel(job.vertical)}
                         </span>
                       )}
@@ -403,7 +419,7 @@ export default function JobsPage() {
                     onClick={() => handleVerticalChange(v.value)}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
                       formData.vertical === v.value
-                        ? 'border-emerald-500 bg-emerald-50'
+                        ? 'border-teal-500 bg-teal-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -427,7 +443,7 @@ export default function JobsPage() {
                       onClick={() => setFormData({ ...formData, roleType: r.value })}
                       className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                         formData.roleType === r.value
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          ? 'border-teal-500 bg-teal-50 text-teal-700'
                           : 'border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
@@ -444,7 +460,7 @@ export default function JobsPage() {
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g. Senior Battery Engineer"
+                placeholder="e.g. Software Engineer Intern"
                 className="mt-2"
                 required
               />
@@ -457,7 +473,7 @@ export default function JobsPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe the role, responsibilities, and what you're looking for..."
-                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[120px] resize-y"
+                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[120px] resize-y"
                 required
               />
             </div>
@@ -468,8 +484,8 @@ export default function JobsPage() {
                 id="requirements"
                 value={formData.requirements}
                 onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                placeholder="5+ years of battery engineering experience&#10;Experience with lithium-ion cell design&#10;Strong problem-solving skills"
-                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[100px] resize-y font-mono text-sm"
+                placeholder="Currently pursuing CS or related degree&#10;Experience with Python, JavaScript, or similar&#10;Strong problem-solving skills"
+                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px] resize-y font-mono text-sm"
               />
             </div>
 
@@ -480,29 +496,29 @@ export default function JobsPage() {
                   id="location"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="e.g. Shanghai"
+                  placeholder="e.g. San Francisco, CA"
                   className="mt-2"
                 />
               </div>
               <div>
-                <Label htmlFor="salaryMin" className="text-sm font-medium">Min Salary (¥/month)</Label>
+                <Label htmlFor="salaryMin" className="text-sm font-medium">Min Salary ($/year)</Label>
                 <Input
                   id="salaryMin"
                   type="number"
                   value={formData.salaryMin}
                   onChange={(e) => setFormData({ ...formData, salaryMin: e.target.value })}
-                  placeholder="15000"
+                  placeholder="60000"
                   className="mt-2"
                 />
               </div>
               <div>
-                <Label htmlFor="salaryMax" className="text-sm font-medium">Max Salary (¥/month)</Label>
+                <Label htmlFor="salaryMax" className="text-sm font-medium">Max Salary ($/year)</Label>
                 <Input
                   id="salaryMax"
                   type="number"
                   value={formData.salaryMax}
                   onChange={(e) => setFormData({ ...formData, salaryMax: e.target.value })}
-                  placeholder="30000"
+                  placeholder="120000"
                   className="mt-2"
                 />
               </div>
@@ -515,7 +531,7 @@ export default function JobsPage() {
               <Button
                 type="submit"
                 disabled={isSaving || !formData.vertical || !formData.roleType}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-teal-600 hover:bg-teal-700"
               >
                 {isSaving ? 'Creating...' : 'Create Job'}
               </Button>
@@ -534,7 +550,7 @@ export default function JobsPage() {
                 <h2 className="text-xl font-semibold text-gray-900">{selectedJob.title}</h2>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   {selectedJob.vertical && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700">
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-teal-100 text-teal-700">
                       {getVerticalLabel(selectedJob.vertical)}
                     </span>
                   )}
@@ -594,7 +610,7 @@ export default function JobsPage() {
                 <ul className="space-y-1">
                   {selectedJob.requirements.map((req, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                      <svg className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       {req}
@@ -612,7 +628,7 @@ export default function JobsPage() {
                 <h3 className="text-lg font-semibold text-gray-900">Interview Invite Links</h3>
                 <p className="text-sm text-gray-500">Share these links with candidates to start interviews</p>
               </div>
-              <Button onClick={handleCreateInvite} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button onClick={handleCreateInvite} className="bg-teal-600 hover:bg-teal-700">
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
@@ -704,7 +720,7 @@ export default function JobsPage() {
                     onClick={() => handleVerticalChange(v.value)}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
                       formData.vertical === v.value
-                        ? 'border-emerald-500 bg-emerald-50'
+                        ? 'border-teal-500 bg-teal-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -728,7 +744,7 @@ export default function JobsPage() {
                       onClick={() => setFormData({ ...formData, roleType: r.value })}
                       className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                         formData.roleType === r.value
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                          ? 'border-teal-500 bg-teal-50 text-teal-700'
                           : 'border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
@@ -745,7 +761,7 @@ export default function JobsPage() {
                 id="edit-title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g. Senior Battery Engineer"
+                placeholder="e.g. Software Engineer Intern"
                 className="mt-2"
                 required
               />
@@ -758,7 +774,7 @@ export default function JobsPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe the role, responsibilities, and what you're looking for..."
-                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[120px] resize-y"
+                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[120px] resize-y"
                 required
               />
             </div>
@@ -769,8 +785,8 @@ export default function JobsPage() {
                 id="edit-requirements"
                 value={formData.requirements}
                 onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                placeholder="5+ years of battery engineering experience&#10;Experience with lithium-ion cell design&#10;Strong problem-solving skills"
-                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 min-h-[100px] resize-y font-mono text-sm"
+                placeholder="Currently pursuing CS or related degree&#10;Experience with Python, JavaScript, or similar&#10;Strong problem-solving skills"
+                className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px] resize-y font-mono text-sm"
               />
             </div>
 
@@ -781,29 +797,29 @@ export default function JobsPage() {
                   id="edit-location"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="e.g. Shanghai"
+                  placeholder="e.g. San Francisco, CA"
                   className="mt-2"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-salaryMin" className="text-sm font-medium">Min Salary (per month)</Label>
+                <Label htmlFor="edit-salaryMin" className="text-sm font-medium">Min Salary ($/year)</Label>
                 <Input
                   id="edit-salaryMin"
                   type="number"
                   value={formData.salaryMin}
                   onChange={(e) => setFormData({ ...formData, salaryMin: e.target.value })}
-                  placeholder="15000"
+                  placeholder="60000"
                   className="mt-2"
                 />
               </div>
               <div>
-                <Label htmlFor="edit-salaryMax" className="text-sm font-medium">Max Salary (per month)</Label>
+                <Label htmlFor="edit-salaryMax" className="text-sm font-medium">Max Salary ($/year)</Label>
                 <Input
                   id="edit-salaryMax"
                   type="number"
                   value={formData.salaryMax}
                   onChange={(e) => setFormData({ ...formData, salaryMax: e.target.value })}
-                  placeholder="30000"
+                  placeholder="120000"
                   className="mt-2"
                 />
               </div>
@@ -816,7 +832,7 @@ export default function JobsPage() {
               <Button
                 type="submit"
                 disabled={isSaving || !formData.vertical || !formData.roleType}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-teal-600 hover:bg-teal-700"
               >
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
