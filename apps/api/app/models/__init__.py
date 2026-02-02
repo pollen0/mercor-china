@@ -1,6 +1,7 @@
 from .candidate import Candidate, CandidateVerticalProfile, VerticalProfileStatus, InterviewHistoryEntry
 from .employer import Employer, Job, InterviewQuestion, InviteToken, Vertical, RoleType, CandidateQuestionHistory
 from .profile_token import ProfileToken
+from .scheduled_interview import ScheduledInterview, InterviewType, ScheduledInterviewStatus
 from .interview import InterviewSession, InterviewResponse, Match, InterviewStatus, MatchStatus, FollowupQueue, FollowupQueueStatus
 from .message import Message, MessageType
 from .coding_challenge import CodingChallenge
@@ -86,4 +87,8 @@ __all__ = [
     "ScoreCalibration",
     # Profile sharing
     "ProfileToken",
+    # Interview scheduling
+    "ScheduledInterview",
+    "InterviewType",
+    "ScheduledInterviewStatus",
 ]

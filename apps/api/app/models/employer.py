@@ -57,6 +57,11 @@ class Employer(Base):
     password_reset_token = Column(String, nullable=True)
     password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Google Calendar integration
+    google_calendar_token = Column(String, nullable=True)
+    google_calendar_refresh_token = Column(String, nullable=True)
+    google_calendar_connected_at = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

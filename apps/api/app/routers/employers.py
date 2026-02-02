@@ -2426,3 +2426,481 @@ async def get_candidate_profile_links(
             for t in tokens
         ],
     }
+
+
+# ============================================================================
+# INTERVIEW SCHEDULING (Google Calendar Integration)
+# ============================================================================
+
+from ..models.scheduled_interview import ScheduledInterview, InterviewType, ScheduledInterviewStatus
+from ..schemas.scheduled_interview import (
+    ScheduleInterviewRequest,
+    RescheduleInterviewRequest,
+    ScheduledInterviewResponse,
+    ScheduleInterviewSuccessResponse,
+    ScheduledInterviewListResponse,
+    CancelInterviewResponse,
+    RescheduleInterviewResponse,
+)
+from ..services.calendar import calendar_service
+from datetime import timezone as tz
+
+
+def _build_interview_response(interview: ScheduledInterview, db: Session) -> ScheduledInterviewResponse:
+    """Helper to build a ScheduledInterviewResponse from a model."""
+    candidate = db.query(Candidate).filter(Candidate.id == interview.candidate_id).first()
+    job = db.query(Job).filter(Job.id == interview.job_id).first() if interview.job_id else None
+
+    return ScheduledInterviewResponse(
+        id=interview.id,
+        employer_id=interview.employer_id,
+        candidate_id=interview.candidate_id,
+        candidate_name=candidate.name if candidate else None,
+        candidate_email=candidate.email if candidate else None,
+        job_id=interview.job_id,
+        job_title=job.title if job else None,
+        title=interview.title,
+        description=interview.description,
+        interview_type=interview.interview_type.value if interview.interview_type else "other",
+        scheduled_at=interview.scheduled_at,
+        duration_minutes=interview.duration_minutes,
+        timezone=interview.timezone,
+        google_event_id=interview.google_event_id,
+        google_meet_link=interview.google_meet_link,
+        calendar_link=interview.calendar_link,
+        additional_attendees=interview.additional_attendees,
+        status=interview.status.value if interview.status else "pending",
+        employer_notes=interview.employer_notes,
+        rescheduled_to_id=interview.rescheduled_to_id,
+        created_at=interview.created_at,
+        updated_at=interview.updated_at,
+    )
+
+
+@router.post("/talent-pool/{profile_id}/schedule-interview", response_model=ScheduleInterviewSuccessResponse)
+async def schedule_interview_with_candidate(
+    profile_id: str,
+    data: ScheduleInterviewRequest,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Schedule an interview with a candidate from the talent pool.
+    Creates a Google Calendar event with Google Meet link and sends invites.
+
+    Requires the employer to have connected their Google Calendar.
+    """
+    # Check if employer has calendar connected
+    if not employer.google_calendar_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please connect your Google Calendar first to schedule interviews"
+        )
+
+    # Find the candidate - try profile ID first, then candidate ID
+    profile = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.id == profile_id
+    ).first()
+
+    if profile:
+        candidate = profile.candidate
+    else:
+        # Try as candidate ID
+        candidate = db.query(Candidate).filter(Candidate.id == profile_id).first()
+        if not candidate:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Candidate not found"
+            )
+
+    # Verify job belongs to employer if provided
+    job = None
+    if data.job_id:
+        job = db.query(Job).filter(
+            Job.id == data.job_id,
+            Job.employer_id == employer.id
+        ).first()
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Job not found or access denied"
+            )
+
+    # Validate interview type
+    try:
+        interview_type = InterviewType(data.interview_type)
+    except ValueError:
+        interview_type = InterviewType.OTHER
+
+    # Generate title if not provided
+    title = data.title
+    if not title:
+        type_labels = {
+            "phone_screen": "Phone Screen",
+            "technical": "Technical Interview",
+            "behavioral": "Behavioral Interview",
+            "culture_fit": "Culture Fit Interview",
+            "final": "Final Interview",
+            "other": "Interview",
+        }
+        type_label = type_labels.get(data.interview_type, "Interview")
+        title = f"{type_label} with {candidate.name} - {employer.company_name}"
+        if job:
+            title = f"{type_label}: {job.title} - {candidate.name}"
+
+    # Build attendee list
+    attendee_emails = [candidate.email]
+    if data.additional_attendees:
+        attendee_emails.extend(data.additional_attendees)
+
+    # Calculate end time
+    end_time = data.scheduled_at + timedelta(minutes=data.duration_minutes)
+
+    # Build description
+    description = data.description or ""
+    if job:
+        description = f"Position: {job.title}\n\n{description}"
+    description = f"Interview scheduled via Pathway\n\nCandidate: {candidate.name}\nCompany: {employer.company_name}\n\n{description}"
+
+    # Create Google Calendar event with Meet link
+    google_event_id = None
+    google_meet_link = None
+    calendar_link = None
+
+    try:
+        event_result = await calendar_service.create_meeting_event(
+            encrypted_access_token=employer.google_calendar_token,
+            title=title,
+            description=description,
+            start_time=data.scheduled_at,
+            end_time=end_time,
+            attendee_emails=attendee_emails,
+            timezone=data.timezone,
+        )
+        google_event_id = event_result.get("event_id")
+        google_meet_link = event_result.get("hangout_link")
+        calendar_link = event_result.get("html_link")
+    except ValueError as e:
+        # Token might be expired, try refreshing
+        if "Invalid" in str(e) or "401" in str(e):
+            if employer.google_calendar_refresh_token:
+                try:
+                    new_tokens = await calendar_service.refresh_access_token(
+                        employer.google_calendar_refresh_token
+                    )
+                    employer.google_calendar_token = new_tokens["access_token"]
+                    db.commit()
+
+                    # Retry with new token
+                    event_result = await calendar_service.create_meeting_event(
+                        encrypted_access_token=employer.google_calendar_token,
+                        title=title,
+                        description=description,
+                        start_time=data.scheduled_at,
+                        end_time=end_time,
+                        attendee_emails=attendee_emails,
+                        timezone=data.timezone,
+                    )
+                    google_event_id = event_result.get("event_id")
+                    google_meet_link = event_result.get("hangout_link")
+                    calendar_link = event_result.get("html_link")
+                except Exception as refresh_error:
+                    logger.error(f"Failed to refresh token: {refresh_error}")
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Calendar authorization expired. Please reconnect your Google Calendar."
+                    )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Calendar authorization expired. Please reconnect your Google Calendar."
+                )
+        else:
+            logger.error(f"Failed to create calendar event: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to create calendar event: {str(e)}"
+            )
+
+    # Create scheduled interview record
+    scheduled_interview = ScheduledInterview(
+        id=generate_cuid("si"),
+        employer_id=employer.id,
+        candidate_id=candidate.id,
+        job_id=data.job_id,
+        title=title,
+        description=data.description,
+        interview_type=interview_type,
+        scheduled_at=data.scheduled_at,
+        duration_minutes=data.duration_minutes,
+        timezone=data.timezone,
+        google_event_id=google_event_id,
+        google_meet_link=google_meet_link,
+        calendar_link=calendar_link,
+        additional_attendees=data.additional_attendees,
+        status=ScheduledInterviewStatus.PENDING,
+        employer_notes=data.employer_notes,
+    )
+
+    db.add(scheduled_interview)
+    db.commit()
+    db.refresh(scheduled_interview)
+
+    logger.info(f"Interview scheduled: {scheduled_interview.id} for candidate {candidate.id} by employer {employer.id}")
+
+    return ScheduleInterviewSuccessResponse(
+        success=True,
+        interview=_build_interview_response(scheduled_interview, db),
+        google_meet_link=google_meet_link,
+        calendar_link=calendar_link,
+        message="Interview scheduled successfully. Calendar invites have been sent.",
+    )
+
+
+@router.get("/scheduled-interviews", response_model=ScheduledInterviewListResponse)
+async def list_scheduled_interviews(
+    status_filter: Optional[str] = None,
+    job_id: Optional[str] = None,
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
+    limit: int = 50,
+    offset: int = 0,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    List all scheduled interviews for this employer.
+    Can filter by status, job, and date range.
+    """
+    query = db.query(ScheduledInterview).filter(
+        ScheduledInterview.employer_id == employer.id
+    )
+
+    # Apply filters
+    if status_filter:
+        try:
+            status_enum = ScheduledInterviewStatus(status_filter)
+            query = query.filter(ScheduledInterview.status == status_enum)
+        except ValueError:
+            pass  # Ignore invalid status
+
+    if job_id:
+        query = query.filter(ScheduledInterview.job_id == job_id)
+
+    if from_date:
+        query = query.filter(ScheduledInterview.scheduled_at >= from_date)
+
+    if to_date:
+        query = query.filter(ScheduledInterview.scheduled_at <= to_date)
+
+    # Get total count
+    total = query.count()
+
+    # Order by scheduled time (upcoming first)
+    interviews = query.order_by(ScheduledInterview.scheduled_at.desc()).offset(offset).limit(limit).all()
+
+    return ScheduledInterviewListResponse(
+        interviews=[_build_interview_response(i, db) for i in interviews],
+        total=total,
+    )
+
+
+@router.get("/scheduled-interviews/{interview_id}", response_model=ScheduledInterviewResponse)
+async def get_scheduled_interview(
+    interview_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """Get details of a specific scheduled interview."""
+    interview = db.query(ScheduledInterview).filter(
+        ScheduledInterview.id == interview_id,
+        ScheduledInterview.employer_id == employer.id,
+    ).first()
+
+    if not interview:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scheduled interview not found"
+        )
+
+    return _build_interview_response(interview, db)
+
+
+@router.delete("/scheduled-interviews/{interview_id}", response_model=CancelInterviewResponse)
+async def cancel_scheduled_interview(
+    interview_id: str,
+    notify_attendees: bool = True,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Cancel a scheduled interview.
+    Deletes the Google Calendar event and notifies attendees.
+    """
+    interview = db.query(ScheduledInterview).filter(
+        ScheduledInterview.id == interview_id,
+        ScheduledInterview.employer_id == employer.id,
+    ).first()
+
+    if not interview:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scheduled interview not found"
+        )
+
+    if interview.status == ScheduledInterviewStatus.CANCELLED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Interview is already cancelled"
+        )
+
+    # Cancel Google Calendar event if exists
+    if interview.google_event_id and employer.google_calendar_token:
+        try:
+            await calendar_service.cancel_event(
+                encrypted_access_token=employer.google_calendar_token,
+                event_id=interview.google_event_id,
+                send_updates=notify_attendees,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to cancel calendar event: {e}")
+            # Continue with database update even if calendar deletion fails
+
+    # Update status
+    interview.status = ScheduledInterviewStatus.CANCELLED
+    db.commit()
+
+    logger.info(f"Interview cancelled: {interview_id} by employer {employer.id}")
+
+    return CancelInterviewResponse(
+        success=True,
+        message="Interview cancelled successfully",
+        interview_id=interview_id,
+    )
+
+
+@router.post("/scheduled-interviews/{interview_id}/reschedule", response_model=RescheduleInterviewResponse)
+async def reschedule_interview(
+    interview_id: str,
+    data: RescheduleInterviewRequest,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Reschedule an existing interview.
+    Creates a new calendar event, cancels the old one, and links them.
+    """
+    old_interview = db.query(ScheduledInterview).filter(
+        ScheduledInterview.id == interview_id,
+        ScheduledInterview.employer_id == employer.id,
+    ).first()
+
+    if not old_interview:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scheduled interview not found"
+        )
+
+    if old_interview.status in [ScheduledInterviewStatus.CANCELLED, ScheduledInterviewStatus.COMPLETED]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot reschedule a {old_interview.status.value} interview"
+        )
+
+    # Check calendar connection
+    if not employer.google_calendar_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please connect your Google Calendar to reschedule"
+        )
+
+    # Get candidate
+    candidate = db.query(Candidate).filter(Candidate.id == old_interview.candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    # Use new values or fall back to old ones
+    duration = data.duration_minutes or old_interview.duration_minutes
+    timezone_str = data.timezone or old_interview.timezone
+    end_time = data.scheduled_at + timedelta(minutes=duration)
+
+    # Build attendee list
+    attendee_emails = [candidate.email]
+    if old_interview.additional_attendees:
+        attendee_emails.extend(old_interview.additional_attendees)
+
+    # Update description with reschedule reason
+    description = old_interview.description or ""
+    if data.reason:
+        description = f"[RESCHEDULED]\nReason: {data.reason}\n\n{description}"
+
+    # Create new calendar event
+    try:
+        event_result = await calendar_service.create_meeting_event(
+            encrypted_access_token=employer.google_calendar_token,
+            title=old_interview.title,
+            description=description,
+            start_time=data.scheduled_at,
+            end_time=end_time,
+            attendee_emails=attendee_emails,
+            timezone=timezone_str,
+        )
+    except ValueError as e:
+        logger.error(f"Failed to create rescheduled calendar event: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create calendar event for rescheduled interview"
+        )
+
+    # Cancel old calendar event
+    if old_interview.google_event_id:
+        try:
+            await calendar_service.cancel_event(
+                encrypted_access_token=employer.google_calendar_token,
+                event_id=old_interview.google_event_id,
+                send_updates=True,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to cancel old calendar event: {e}")
+
+    # Create new interview record
+    new_interview = ScheduledInterview(
+        id=generate_cuid("si"),
+        employer_id=employer.id,
+        candidate_id=old_interview.candidate_id,
+        job_id=old_interview.job_id,
+        title=old_interview.title,
+        description=description,
+        interview_type=old_interview.interview_type,
+        scheduled_at=data.scheduled_at,
+        duration_minutes=duration,
+        timezone=timezone_str,
+        google_event_id=event_result.get("event_id"),
+        google_meet_link=event_result.get("hangout_link"),
+        calendar_link=event_result.get("html_link"),
+        additional_attendees=old_interview.additional_attendees,
+        status=ScheduledInterviewStatus.PENDING,
+        employer_notes=old_interview.employer_notes,
+    )
+
+    db.add(new_interview)
+
+    # Update old interview
+    old_interview.status = ScheduledInterviewStatus.RESCHEDULED
+    old_interview.rescheduled_to_id = new_interview.id
+
+    db.commit()
+    db.refresh(new_interview)
+    db.refresh(old_interview)
+
+    logger.info(f"Interview rescheduled: {interview_id} -> {new_interview.id} by employer {employer.id}")
+
+    return RescheduleInterviewResponse(
+        success=True,
+        message="Interview rescheduled successfully",
+        old_interview=_build_interview_response(old_interview, db),
+        new_interview=_build_interview_response(new_interview, db),
+    )

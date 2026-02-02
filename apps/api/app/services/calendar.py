@@ -33,17 +33,19 @@ class GoogleCalendarService:
         self.client_id = settings.google_client_id
         self.client_secret = settings.google_client_secret
         self.redirect_uri = settings.google_redirect_uri
+        self.employer_redirect_uri = settings.google_employer_redirect_uri or settings.google_redirect_uri
 
     def is_configured(self) -> bool:
         """Check if Google Calendar OAuth is configured."""
         return bool(self.client_id and self.client_secret and self.redirect_uri)
 
-    def get_oauth_url(self, state: str) -> str:
+    def get_oauth_url(self, state: str, is_employer: bool = False) -> str:
         """
         Generate Google OAuth URL for calendar authorization.
 
         Args:
             state: CSRF state token (should be stored in session/cookie)
+            is_employer: If True, use employer redirect URI
 
         Returns:
             OAuth authorization URL
@@ -51,9 +53,11 @@ class GoogleCalendarService:
         if not self.is_configured():
             raise ValueError("Google Calendar OAuth is not configured")
 
+        redirect_uri = self.employer_redirect_uri if is_employer else self.redirect_uri
+
         params = {
             "client_id": self.client_id,
-            "redirect_uri": self.redirect_uri,
+            "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": " ".join(GOOGLE_SCOPES),
             "access_type": "offline",  # Get refresh token
@@ -62,18 +66,21 @@ class GoogleCalendarService:
         }
         return f"{GOOGLE_AUTH_URL}?{urlencode(params)}"
 
-    async def exchange_code(self, code: str) -> dict:
+    async def exchange_code(self, code: str, is_employer: bool = False) -> dict:
         """
         Exchange authorization code for access and refresh tokens.
 
         Args:
             code: Authorization code from OAuth callback
+            is_employer: If True, use employer redirect URI
 
         Returns:
             Dict with access_token, refresh_token, expires_in
         """
         if not self.is_configured():
             raise ValueError("Google Calendar OAuth is not configured")
+
+        redirect_uri = self.employer_redirect_uri if is_employer else self.redirect_uri
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -83,7 +90,7 @@ class GoogleCalendarService:
                     "client_secret": self.client_secret,
                     "code": code,
                     "grant_type": "authorization_code",
-                    "redirect_uri": self.redirect_uri,
+                    "redirect_uri": redirect_uri,
                 },
             )
 

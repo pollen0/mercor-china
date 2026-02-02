@@ -7,7 +7,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from .config import settings
 from .database import init_db
-from .routers import health, candidates, questions, interviews, employers, auth, admin, courses, activities, public, calendar
+from .routers import health, candidates, questions, interviews, employers, auth, admin, courses, activities, public, calendar, employer_calendar
 from .utils.rate_limit import limiter, rate_limit_exceeded_handler
 
 # Configure logging
@@ -100,8 +100,11 @@ app.include_router(employers.router, prefix="/api/employers", tags=["employers"]
 # Authentication (verification)
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 
-# Calendar integration (Google Calendar)
+# Calendar integration (Google Calendar) - Candidates
 app.include_router(calendar.router, prefix="/api/calendar", tags=["calendar"])
+
+# Calendar integration (Google Calendar) - Employers
+app.include_router(employer_calendar.router, prefix="/api/employers/calendar", tags=["employer-calendar"])
 
 # Admin panel
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])

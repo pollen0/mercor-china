@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { DashboardNavbar } from '@/components/layout/navbar'
 import { Container, PageWrapper } from '@/components/layout/container'
-import { talentPoolApi, employerApi, type TalentProfileDetail, type MatchStatus } from '@/lib/api'
+import { talentPoolApi, employerApi, employerCalendarApi, type TalentProfileDetail, type MatchStatus, type CalendarStatus, type Job } from '@/lib/api'
+import { ScheduleInterviewModal } from '@/components/employer/schedule-interview-modal'
 
 // Use the TalentProfileDetail type from API
 type TalentProfile = TalentProfileDetail & {
@@ -118,6 +119,12 @@ export default function TalentProfilePage() {
   const [contactMessage, setContactMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
 
+  // Calendar/scheduling state
+  const [calendarStatus, setCalendarStatus] = useState<CalendarStatus | null>(null)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [showCalendarPrompt, setShowCalendarPrompt] = useState(false)
+
   useEffect(() => {
     const token = localStorage.getItem('employer_token')
     if (!token) {
@@ -125,9 +132,21 @@ export default function TalentProfilePage() {
       return
     }
 
-    // Get company name
+    // Get company name and jobs
     employerApi.getMe().then(employer => {
       setCompanyName(employer.companyName || '')
+    }).catch(() => {})
+
+    // Get calendar status
+    employerCalendarApi.getStatus().then(status => {
+      setCalendarStatus(status)
+    }).catch(() => {
+      setCalendarStatus({ connected: false })
+    })
+
+    // Get jobs for scheduling
+    employerApi.listJobs(true).then(result => {
+      setJobs(result.jobs)
     }).catch(() => {})
 
     fetchProfile()
@@ -223,7 +242,7 @@ ${companyName}`)
           <Card className="max-w-md">
             <CardContent className="py-8 text-center">
               <p className="text-red-600 mb-4">{error || 'Profile not found'}</p>
-              <Link href="/dashboard/talent-pool">
+              <Link href="/dashboard?tab=talent">
                 <Button>Back to Talent Pool</Button>
               </Link>
             </CardContent>
@@ -242,7 +261,7 @@ ${companyName}`)
 
       <Container className="py-8 pt-24 max-w-4xl">
         {/* Back Button */}
-        <Link href="/dashboard/talent-pool" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <Link href="/dashboard?tab=talent" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6">
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -376,7 +395,22 @@ ${companyName}`)
               <div className="flex-1" />
 
               {/* Action Buttons */}
-              <Button variant="brand" onClick={openContactModal}>
+              <Button
+                variant="brand"
+                onClick={() => {
+                  if (calendarStatus?.connected) {
+                    setShowScheduleModal(true)
+                  } else {
+                    setShowCalendarPrompt(true)
+                  }
+                }}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Schedule Interview
+              </Button>
+              <Button variant="outline" onClick={openContactModal}>
                 Send Message
               </Button>
               <Button
@@ -819,6 +853,97 @@ ${companyName}`)
               <p className="text-xs text-gray-500 text-center">
                 The candidate will receive this email and their status will be updated to "Contacted"
               </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Schedule Interview Modal */}
+      {showScheduleModal && profile && (
+        <ScheduleInterviewModal
+          candidateId={profile.candidate.id}
+          candidateName={profile.candidate.name}
+          candidateEmail={profile.candidate.email}
+          jobs={jobs}
+          onClose={() => setShowScheduleModal(false)}
+          onSuccess={() => {
+            // Optionally update status to CONTACTED
+            if (currentStatus === 'PENDING') {
+              handleStatusChange('CONTACTED')
+            }
+          }}
+        />
+      )}
+
+      {/* Calendar Connection Prompt */}
+      {showCalendarPrompt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <svg className="w-6 h-6 text-teal-600" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>
+                </svg>
+                Connect Google Calendar
+              </CardTitle>
+              <CardDescription>
+                To schedule interviews, you need to connect your Google Calendar first.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-stone-50 rounded-lg p-4">
+                <ul className="text-sm text-stone-600 space-y-2">
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Events appear on your Google Calendar
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Google Meet links generated automatically
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Candidates receive calendar invites instantly
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowCalendarPrompt(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="brand"
+                  className="flex-1"
+                  onClick={async () => {
+                    try {
+                      const { url, state } = await employerCalendarApi.getGoogleAuthUrl()
+                      sessionStorage.setItem('employer_google_oauth_state', state)
+                      window.location.href = url
+                    } catch {
+                      alert('Failed to start Google authorization. Please try again.')
+                    }
+                  }}
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  Connect Calendar
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

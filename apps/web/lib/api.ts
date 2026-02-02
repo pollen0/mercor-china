@@ -497,6 +497,8 @@ function transformTalentProfileResponse(data: Record<string, unknown>): TalentPr
         education: (profileScoreData.breakdown as Record<string, number> | undefined)?.education,
         githubActivity: (profileScoreData.breakdown as Record<string, number> | undefined)?.github_activity,
       },
+      strengths: (profileScoreData.strengths as string[]) || [],
+      concerns: (profileScoreData.concerns as string[]) || [],
     } : undefined,
     interview: interview ? {
       sessionId: (interview.session_id || interview.sessionId) as string,
@@ -517,6 +519,8 @@ function transformTalentProfileResponse(data: Record<string, unknown>): TalentPr
         questionType: (resp.question_type || resp.questionType || 'behavioral') as string,
         createdAt: (resp.created_at || resp.createdAt || new Date().toISOString()) as string,
       })),
+      overallStrengths: (interview.overall_strengths || interview.overallStrengths || []) as string[],
+      overallConcerns: (interview.overall_concerns || interview.overallConcerns || []) as string[],
     } : undefined,
     employerStatus: employerStatus ? {
       status: employerStatus.status as MatchStatus,
@@ -1824,6 +1828,8 @@ export interface TalentProfileDetail {
     aiSummary?: string
     completedAt?: string
     responses?: InterviewResponseDetail[]
+    overallStrengths?: string[]
+    overallConcerns?: string[]
   }
   // Employer's status for this candidate
   employerStatus?: {
@@ -2177,6 +2183,35 @@ export interface CalendarStatus {
   connectedAt?: string
 }
 
+// Scheduled interview types
+export type InterviewType = 'phone_screen' | 'technical' | 'behavioral' | 'culture_fit' | 'final' | 'other'
+export type ScheduledInterviewStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show' | 'rescheduled'
+
+export interface ScheduledInterview {
+  id: string
+  employerId: string
+  candidateId: string
+  candidateName?: string
+  candidateEmail?: string
+  jobId?: string
+  jobTitle?: string
+  title: string
+  description?: string
+  interviewType: InterviewType
+  scheduledAt: string
+  durationMinutes: number
+  timezone: string
+  googleEventId?: string
+  googleMeetLink?: string
+  calendarLink?: string
+  additionalAttendees?: string[]
+  status: ScheduledInterviewStatus
+  employerNotes?: string
+  rescheduledToId?: string
+  createdAt: string
+  updatedAt?: string
+}
+
 export interface MeetingDetails {
   eventId: string
   calendarLink: string
@@ -2283,5 +2318,225 @@ export const calendarApi = {
     return apiRequest(`/api/calendar/meetings/${eventId}?candidate_id=${candidateId}`, {
       method: 'DELETE',
     })
+  },
+}
+
+// ==================== EMPLOYER CALENDAR API ====================
+
+export const employerCalendarApi = {
+  // Get Google OAuth URL for employer
+  getGoogleAuthUrl: async (): Promise<{ url: string; state: string }> => {
+    return apiRequest('/api/employers/calendar/google/url')
+  },
+
+  // Connect Google Calendar (exchange code for tokens)
+  connectGoogle: async (code: string, state?: string): Promise<{
+    success: boolean
+    message: string
+  }> => {
+    return apiRequest('/api/employers/calendar/google/callback', {
+      method: 'POST',
+      body: JSON.stringify({ code, state }),
+    })
+  },
+
+  // Get calendar connection status
+  getStatus: async (): Promise<CalendarStatus> => {
+    const response = await apiRequest<{ connected: boolean; connected_at?: string }>(
+      '/api/employers/calendar/google/status'
+    )
+    return {
+      connected: response.connected,
+      connectedAt: response.connected_at,
+    }
+  },
+
+  // Disconnect Google Calendar
+  disconnect: async (): Promise<{ success: boolean; message: string }> => {
+    return apiRequest('/api/employers/calendar/google/disconnect', {
+      method: 'DELETE',
+    })
+  },
+}
+
+// ==================== SCHEDULED INTERVIEW API ====================
+
+// Helper to transform scheduled interview response
+function transformScheduledInterview(data: Record<string, unknown>): ScheduledInterview {
+  return {
+    id: data.id as string,
+    employerId: (data.employer_id || data.employerId) as string,
+    candidateId: (data.candidate_id || data.candidateId) as string,
+    candidateName: (data.candidate_name || data.candidateName) as string | undefined,
+    candidateEmail: (data.candidate_email || data.candidateEmail) as string | undefined,
+    jobId: (data.job_id || data.jobId) as string | undefined,
+    jobTitle: (data.job_title || data.jobTitle) as string | undefined,
+    title: data.title as string,
+    description: data.description as string | undefined,
+    interviewType: (data.interview_type || data.interviewType || 'other') as InterviewType,
+    scheduledAt: (data.scheduled_at || data.scheduledAt) as string,
+    durationMinutes: (data.duration_minutes || data.durationMinutes || 30) as number,
+    timezone: data.timezone as string,
+    googleEventId: (data.google_event_id || data.googleEventId) as string | undefined,
+    googleMeetLink: (data.google_meet_link || data.googleMeetLink) as string | undefined,
+    calendarLink: (data.calendar_link || data.calendarLink) as string | undefined,
+    additionalAttendees: (data.additional_attendees || data.additionalAttendees) as string[] | undefined,
+    status: (data.status || 'pending') as ScheduledInterviewStatus,
+    employerNotes: (data.employer_notes || data.employerNotes) as string | undefined,
+    rescheduledToId: (data.rescheduled_to_id || data.rescheduledToId) as string | undefined,
+    createdAt: (data.created_at || data.createdAt) as string,
+    updatedAt: (data.updated_at || data.updatedAt) as string | undefined,
+  }
+}
+
+export const scheduledInterviewApi = {
+  // Schedule an interview with a candidate
+  schedule: async (
+    profileId: string,
+    data: {
+      interviewType?: InterviewType
+      title?: string
+      description?: string
+      scheduledAt: Date
+      durationMinutes?: number
+      timezone?: string
+      jobId?: string
+      additionalAttendees?: string[]
+      employerNotes?: string
+    }
+  ): Promise<{
+    success: boolean
+    interview: ScheduledInterview
+    googleMeetLink?: string
+    calendarLink?: string
+    message: string
+  }> => {
+    const response = await apiRequest<{
+      success: boolean
+      interview: Record<string, unknown>
+      google_meet_link?: string
+      calendar_link?: string
+      message: string
+    }>(`/api/employers/talent-pool/${profileId}/schedule-interview`, {
+      method: 'POST',
+      body: JSON.stringify({
+        interview_type: data.interviewType || 'other',
+        title: data.title,
+        description: data.description,
+        scheduled_at: data.scheduledAt.toISOString(),
+        duration_minutes: data.durationMinutes || 30,
+        timezone: data.timezone || 'America/Los_Angeles',
+        job_id: data.jobId,
+        additional_attendees: data.additionalAttendees,
+        employer_notes: data.employerNotes,
+      }),
+    })
+
+    return {
+      success: response.success,
+      interview: transformScheduledInterview(response.interview),
+      googleMeetLink: response.google_meet_link,
+      calendarLink: response.calendar_link,
+      message: response.message,
+    }
+  },
+
+  // List scheduled interviews
+  list: async (params?: {
+    status?: ScheduledInterviewStatus
+    jobId?: string
+    fromDate?: Date
+    toDate?: Date
+    limit?: number
+    offset?: number
+  }): Promise<{
+    interviews: ScheduledInterview[]
+    total: number
+  }> => {
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status_filter', params.status)
+    if (params?.jobId) searchParams.set('job_id', params.jobId)
+    if (params?.fromDate) searchParams.set('from_date', params.fromDate.toISOString())
+    if (params?.toDate) searchParams.set('to_date', params.toDate.toISOString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.offset) searchParams.set('offset', params.offset.toString())
+
+    const query = searchParams.toString()
+    const response = await apiRequest<{
+      interviews: Record<string, unknown>[]
+      total: number
+    }>(`/api/employers/scheduled-interviews${query ? `?${query}` : ''}`)
+
+    return {
+      interviews: response.interviews.map(transformScheduledInterview),
+      total: response.total,
+    }
+  },
+
+  // Get a specific scheduled interview
+  get: async (interviewId: string): Promise<ScheduledInterview> => {
+    const response = await apiRequest<Record<string, unknown>>(
+      `/api/employers/scheduled-interviews/${interviewId}`
+    )
+    return transformScheduledInterview(response)
+  },
+
+  // Cancel a scheduled interview
+  cancel: async (interviewId: string, notifyAttendees: boolean = true): Promise<{
+    success: boolean
+    message: string
+    interviewId: string
+  }> => {
+    const response = await apiRequest<{
+      success: boolean
+      message: string
+      interview_id: string
+    }>(`/api/employers/scheduled-interviews/${interviewId}?notify_attendees=${notifyAttendees}`, {
+      method: 'DELETE',
+    })
+
+    return {
+      success: response.success,
+      message: response.message,
+      interviewId: response.interview_id,
+    }
+  },
+
+  // Reschedule an interview
+  reschedule: async (
+    interviewId: string,
+    data: {
+      scheduledAt: Date
+      durationMinutes?: number
+      timezone?: string
+      reason?: string
+    }
+  ): Promise<{
+    success: boolean
+    message: string
+    oldInterview: ScheduledInterview
+    newInterview: ScheduledInterview
+  }> => {
+    const response = await apiRequest<{
+      success: boolean
+      message: string
+      old_interview: Record<string, unknown>
+      new_interview: Record<string, unknown>
+    }>(`/api/employers/scheduled-interviews/${interviewId}/reschedule`, {
+      method: 'POST',
+      body: JSON.stringify({
+        scheduled_at: data.scheduledAt.toISOString(),
+        duration_minutes: data.durationMinutes,
+        timezone: data.timezone,
+        reason: data.reason,
+      }),
+    })
+
+    return {
+      success: response.success,
+      message: response.message,
+      oldInterview: transformScheduledInterview(response.old_interview),
+      newInterview: transformScheduledInterview(response.new_interview),
+    }
   },
 }

@@ -32,6 +32,7 @@ from app.models import (
     Match,
     FollowupQueue,
     Message,
+    ScheduledInterview,
 )
 
 # this is the Alembic Config object

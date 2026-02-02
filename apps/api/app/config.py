@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     google_client_id: str = ""  # Set via GOOGLE_CLIENT_ID env var
     google_client_secret: str = ""  # Set via GOOGLE_CLIENT_SECRET env var
     google_redirect_uri: str = ""  # Set via GOOGLE_REDIRECT_URI env var (e.g., http://localhost:3000/auth/google/callback)
+    google_employer_redirect_uri: str = ""  # Set via GOOGLE_EMPLOYER_REDIRECT_URI env var (e.g., http://localhost:3000/auth/google/callback for employers)
 
     # Redis (for caching)
     redis_url: str = "redis://localhost:6379/0"
