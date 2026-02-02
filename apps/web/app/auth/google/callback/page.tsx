@@ -76,7 +76,16 @@ function GoogleCallbackContent() {
         console.log('[Google OAuth] Exchanging code for token...')
 
         // Get candidate ID from localStorage
-        const candidateId = localStorage.getItem('candidate_id')
+        const candidateData = localStorage.getItem('candidate')
+        let candidateId: string | null = null
+        if (candidateData) {
+          try {
+            const parsed = JSON.parse(candidateData)
+            candidateId = parsed.id
+          } catch {
+            // ignore parse error
+          }
+        }
         if (!candidateId) {
           throw new Error('Candidate ID not found. Please log in again.')
         }
