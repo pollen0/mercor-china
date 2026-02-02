@@ -253,8 +253,24 @@ function EmployerDashboardContent() {
   }
 
   const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab)
-    router.push(`/employer/dashboard?tab=${tab}`, { scroll: false })
+    // Redirect to dedicated pages for better UX
+    switch (tab) {
+      case 'overview':
+        router.push('/dashboard')
+        break
+      case 'jobs':
+        router.push('/dashboard/jobs')
+        break
+      case 'interviews':
+        router.push('/dashboard/interviews')
+        break
+      case 'talent':
+        router.push('/dashboard/talent-pool')
+        break
+      default:
+        setActiveTab(tab)
+        router.push(`/employer/dashboard?tab=${tab}`, { scroll: false })
+    }
   }
 
   // Job handlers

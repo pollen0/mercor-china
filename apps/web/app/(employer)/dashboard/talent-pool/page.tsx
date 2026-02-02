@@ -584,16 +584,16 @@ ${companyName}`)
                                   </div>
                                 )}
 
-                                {/* Pros & Cons - Temporarily disabled due to type mismatch */}
-                                {/* {(detail.profileScore?.strengths?.length > 0 || detail.profileScore?.concerns?.length > 0) && (
+                                {/* Strengths & Areas to Explore */}
+                                {(detail.profileScore?.strengths && detail.profileScore.strengths.length > 0) || (detail.profileScore?.concerns && detail.profileScore.concerns.length > 0) ? (
                                   <div>
                                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Assessment</h4>
                                     <div className="space-y-2">
-                                      {detail.profileScore?.strengths?.length > 0 && (
+                                      {detail.profileScore?.strengths && detail.profileScore.strengths.length > 0 && (
                                         <div>
                                           <p className="text-xs font-medium text-green-700 mb-1">Strengths</p>
                                           <ul className="space-y-0.5">
-                                            {detail.profileScore.strengths.slice(0, 3).map((s: string, i: number) => (
+                                            {detail.profileScore.strengths.slice(0, 3).map((s, i) => (
                                               <li key={i} className="text-xs text-gray-600 flex items-start gap-1">
                                                 <span className="text-green-500 mt-0.5">+</span>
                                                 <span>{s}</span>
@@ -602,11 +602,11 @@ ${companyName}`)
                                           </ul>
                                         </div>
                                       )}
-                                      {detail.profileScore?.concerns?.length > 0 && (
+                                      {detail.profileScore?.concerns && detail.profileScore.concerns.length > 0 && (
                                         <div>
                                           <p className="text-xs font-medium text-amber-700 mb-1">Areas to Explore</p>
                                           <ul className="space-y-0.5">
-                                            {detail.profileScore.concerns.slice(0, 3).map((c: string, i: number) => (
+                                            {detail.profileScore.concerns.slice(0, 3).map((c, i) => (
                                               <li key={i} className="text-xs text-gray-600 flex items-start gap-1">
                                                 <span className="text-amber-500 mt-0.5">•</span>
                                                 <span>{c}</span>
@@ -617,7 +617,7 @@ ${companyName}`)
                                       )}
                                     </div>
                                   </div>
-                                )} */}
+                                ) : null}
                               </div>
 
                               {/* Middle: Skills & Experience */}

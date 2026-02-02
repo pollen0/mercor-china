@@ -1815,6 +1815,8 @@ export interface TalentProfileDetail {
       education?: number
       githubActivity?: number
     }
+    strengths?: string[]
+    concerns?: string[]
   }
   interview?: {
     sessionId: string
