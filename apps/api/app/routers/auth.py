@@ -10,12 +10,17 @@ from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 
+from passlib.context import CryptContext
+
 from ..database import get_db
 from ..models import Candidate, Employer
 from ..services.email import email_service
 
 logger = logging.getLogger("pathway.auth")
 router = APIRouter()
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def is_token_expired(expires_at) -> bool:
@@ -51,6 +56,27 @@ class ResendVerificationResponse(BaseModel):
     message: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    user_type: str  # "candidate" or "employer"
+
+
+class ForgotPasswordResponse(BaseModel):
+    success: bool
+    message: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    user_type: str  # "candidate" or "employer"
+    new_password: str
+
+
+class ResetPasswordResponse(BaseModel):
+    success: bool
+    message: str
+
+
 # Helper functions
 def generate_verification_token() -> str:
     """Generate a unique verification token."""
@@ -60,6 +86,16 @@ def generate_verification_token() -> str:
 def get_token_expiry() -> datetime:
     """Get token expiry (24 hours from now)."""
     return datetime.now(timezone.utc) + timedelta(hours=24)
+
+
+def generate_password_reset_token() -> str:
+    """Generate a unique password reset token."""
+    return f"r{uuid.uuid4().hex}"
+
+
+def get_password_reset_expiry() -> datetime:
+    """Get password reset token expiry (1 hour from now)."""
+    return datetime.now(timezone.utc) + timedelta(hours=1)
 
 
 def send_verification_email_background(
@@ -282,3 +318,147 @@ async def get_verification_status(
 
     else:
         raise HTTPException(status_code=400, detail="Invalid user type")
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(
+    data: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Request a password reset email.
+    Always returns success to prevent email enumeration.
+    """
+    if data.user_type == "candidate":
+        user = db.query(Candidate).filter(Candidate.email == data.email).first()
+
+        if user:
+            # Generate reset token
+            token = generate_password_reset_token()
+            user.password_reset_token = token
+            user.password_reset_expires_at = get_password_reset_expiry()
+            db.commit()
+
+            # Send email in background
+            background_tasks.add_task(
+                email_service.send_password_reset_email,
+                email=user.email,
+                name=user.name,
+                reset_token=token,
+                user_type="candidate",
+            )
+            logger.info(f"Password reset email queued for candidate: {user.email}")
+
+    elif data.user_type == "employer":
+        user = db.query(Employer).filter(Employer.email == data.email).first()
+
+        if user:
+            # Generate reset token
+            token = generate_password_reset_token()
+            user.password_reset_token = token
+            user.password_reset_expires_at = get_password_reset_expiry()
+            db.commit()
+
+            # Send email in background
+            background_tasks.add_task(
+                email_service.send_password_reset_email,
+                email=user.email,
+                name=user.company_name,
+                reset_token=token,
+                user_type="employer",
+            )
+            logger.info(f"Password reset email queued for employer: {user.email}")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user type"
+        )
+
+    # Always return success to prevent email enumeration
+    return ForgotPasswordResponse(
+        success=True,
+        message="If an account exists with this email, a password reset link will be sent."
+    )
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password(
+    data: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Reset password using token from email.
+    """
+    # Validate password
+    if len(data.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters"
+        )
+
+    if data.user_type == "candidate":
+        user = db.query(Candidate).filter(
+            Candidate.password_reset_token == data.token
+        ).first()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset link"
+            )
+
+        if is_token_expired(user.password_reset_expires_at):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reset link has expired. Please request a new one."
+            )
+
+        # Update password
+        user.password_hash = pwd_context.hash(data.new_password)
+        user.password_reset_token = None
+        user.password_reset_expires_at = None
+        db.commit()
+
+        logger.info(f"Password reset successful for candidate: {user.email}")
+
+        return ResetPasswordResponse(
+            success=True,
+            message="Password has been reset successfully. You can now log in."
+        )
+
+    elif data.user_type == "employer":
+        user = db.query(Employer).filter(
+            Employer.password_reset_token == data.token
+        ).first()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset link"
+            )
+
+        if is_token_expired(user.password_reset_expires_at):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reset link has expired. Please request a new one."
+            )
+
+        # Update password
+        user.password = pwd_context.hash(data.new_password)
+        user.password_reset_token = None
+        user.password_reset_expires_at = None
+        db.commit()
+
+        logger.info(f"Password reset successful for employer: {user.email}")
+
+        return ResetPasswordResponse(
+            success=True,
+            message="Password has been reset successfully. You can now log in."
+        )
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user type"
+        )

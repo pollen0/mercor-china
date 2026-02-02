@@ -425,5 +425,395 @@ class EmailService:
         )
 
 
+    def send_password_reset_email(
+        self,
+        email: str,
+        name: str,
+        reset_token: str,
+        user_type: str = "candidate",  # "candidate" or "employer"
+    ) -> Optional[str]:
+        """
+        Send password reset link.
+
+        Args:
+            email: Recipient email address
+            name: User's name
+            reset_token: Unique reset token
+            user_type: Type of user (candidate or employer)
+        """
+        reset_url = f"{settings.frontend_url}/reset-password?token={reset_token}&type={user_type}"
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .warning {{ background: #fef3c7; border: 1px solid #f59e0b; padding: 12px; border-radius: 6px; margin: 20px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">Reset Your Password</h1>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+
+                    <p>We received a request to reset your password. Click the button below to create a new password:</p>
+
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="{reset_url}" class="button">Reset Password</a>
+                    </p>
+
+                    <div class="warning">
+                        <strong>This link will expire in 1 hour.</strong>
+                        If you didn't request a password reset, you can safely ignore this email.
+                    </div>
+
+                    <p style="color: #6b7280; font-size: 14px;">
+                        If the button doesn't work, copy this link to your browser:<br>
+                        <a href="{reset_url}" style="color: #6366f1; word-break: break-all;">{reset_url}</a>
+                    </p>
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>If you didn't request this, please ignore this email or contact support.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=email,
+            subject="[Pathway] Reset Your Password",
+            html=html,
+        )
+
+    def send_welcome_email(
+        self,
+        email: str,
+        name: str,
+        user_type: str = "candidate",  # "candidate" or "employer"
+    ) -> Optional[str]:
+        """
+        Send welcome/onboarding email to new users.
+
+        Args:
+            email: Recipient email address
+            name: User's name
+            user_type: Type of user (candidate or employer)
+        """
+        if user_type == "candidate":
+            dashboard_url = f"{settings.frontend_url}/candidate/dashboard"
+            content = f"""
+                <p>Hi {name},</p>
+
+                <p>Welcome to <strong>Pathway</strong>! We're excited to help you land your first job.</p>
+
+                <p>Here's how to get started:</p>
+
+                <ol style="line-height: 2;">
+                    <li><strong>Complete your profile</strong> - Add your education, upload your resume</li>
+                    <li><strong>Connect GitHub</strong> - Showcase your projects and contributions</li>
+                    <li><strong>Take your first interview</strong> - Answer 5 questions to get your score</li>
+                    <li><strong>Get matched</strong> - Employers will find you based on your trajectory</li>
+                </ol>
+
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{dashboard_url}" class="button">Go to Dashboard</a>
+                </p>
+
+                <p><strong>Pro tip:</strong> Students who complete their profile within 24 hours are 3x more likely to get matched with employers.</p>
+            """
+            subject = "Welcome to Pathway - Let's Get Started!"
+        else:
+            dashboard_url = f"{settings.frontend_url}/employer/dashboard"
+            content = f"""
+                <p>Hi {name},</p>
+
+                <p>Welcome to <strong>Pathway</strong>! We're excited to help you find exceptional early-career talent.</p>
+
+                <p>Here's how to get started:</p>
+
+                <ol style="line-height: 2;">
+                    <li><strong>Browse the talent pool</strong> - See candidates ranked by AI-scored interviews</li>
+                    <li><strong>Create job postings</strong> - Get auto-matched with relevant candidates</li>
+                    <li><strong>Review interviews</strong> - Watch video responses and see detailed scoring</li>
+                    <li><strong>Contact candidates</strong> - Reach out to your top picks directly</li>
+                </ol>
+
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{dashboard_url}" class="button">Explore Talent Pool</a>
+                </p>
+
+                <p><strong>What makes Pathway different:</strong> Unlike traditional resumes, you can see candidates' growth over time. Watch how they improve interview-to-interview over 2-4 years of college.</p>
+            """
+            subject = "Welcome to Pathway - Find Your Next Hire"
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 40px 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .logo {{ font-size: 32px; font-weight: bold; margin-bottom: 10px; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .tip {{ background: #ecfdf5; border: 1px solid #10b981; padding: 12px; border-radius: 6px; margin: 20px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo">Pathway</div>
+                    <p style="margin: 0; opacity: 0.9;">Show your growth, land your first job</p>
+                </div>
+                <div class="content">
+                    {content}
+
+                    <p>Questions? Just reply to this email - we're here to help!</p>
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>You're receiving this because you signed up for Pathway.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=email,
+            subject=f"[Pathway] {subject}",
+            html=html,
+        )
+
+    def send_interview_reminder(
+        self,
+        email: str,
+        name: str,
+        days_since_signup: int = 3,
+    ) -> Optional[str]:
+        """
+        Send reminder to complete first interview.
+        """
+        dashboard_url = f"{settings.frontend_url}/candidate/dashboard"
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .stat {{ text-align: center; padding: 20px; background: white; border-radius: 8px; margin: 20px 0; }}
+                .stat-number {{ font-size: 48px; font-weight: bold; color: #6366f1; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">You're Almost There!</h1>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+
+                    <p>You signed up for Pathway {days_since_signup} days ago, but haven't completed your first interview yet.</p>
+
+                    <div class="stat">
+                        <div class="stat-number">15</div>
+                        <div>minutes to complete</div>
+                    </div>
+
+                    <p>Your first interview is just 5 video questions. Once complete:</p>
+                    <ul>
+                        <li>Get your AI-scored profile</li>
+                        <li>Become visible to employers</li>
+                        <li>Start tracking your growth over time</li>
+                    </ul>
+
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="{dashboard_url}" class="button">Start Interview Now</a>
+                    </p>
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>Don't want these reminders? <a href="{settings.frontend_url}/unsubscribe">Unsubscribe</a></p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=email,
+            subject="[Pathway] Complete your first interview (15 min)",
+            html=html,
+        )
+
+    def send_profile_view_notification(
+        self,
+        email: str,
+        name: str,
+        employer_name: str,
+        job_title: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Notify candidate when an employer views their profile.
+        """
+        dashboard_url = f"{settings.frontend_url}/candidate/dashboard"
+        job_info = f" for the <strong>{job_title}</strong> position" if job_title else ""
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">Someone's Interested!</h1>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+
+                    <p><strong>{employer_name}</strong> viewed your profile{job_info}.</p>
+
+                    <p>This is a good sign! Make sure your profile is complete and up-to-date to increase your chances of getting contacted.</p>
+
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="{dashboard_url}" class="button">View Your Profile</a>
+                    </p>
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>Manage notification preferences in your <a href="{settings.frontend_url}/candidate/settings">settings</a>.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=email,
+            subject=f"[Pathway] {employer_name} viewed your profile",
+            html=html,
+        )
+
+    def send_weekly_digest(
+        self,
+        email: str,
+        name: str,
+        profile_views: int,
+        new_matches: int,
+        next_interview_eligible: bool,
+    ) -> Optional[str]:
+        """
+        Send weekly activity digest to candidates.
+        """
+        dashboard_url = f"{settings.frontend_url}/candidate/dashboard"
+
+        interview_cta = ""
+        if next_interview_eligible:
+            interview_cta = """
+            <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <strong>You're eligible for a new monthly interview!</strong>
+                <p style="margin: 5px 0 0 0;">Take it to show your growth and improve your score.</p>
+            </div>
+            """
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .stats {{ display: flex; justify-content: space-around; margin: 20px 0; }}
+                .stat {{ text-align: center; padding: 15px; background: white; border-radius: 8px; flex: 1; margin: 0 5px; }}
+                .stat-number {{ font-size: 32px; font-weight: bold; color: #6366f1; }}
+                .stat-label {{ font-size: 14px; color: #6b7280; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">Your Weekly Update</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Here's what happened this week</p>
+                </div>
+                <div class="content">
+                    <p>Hi {name},</p>
+
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-number">{profile_views}</div>
+                            <div class="stat-label">Profile Views</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-number">{new_matches}</div>
+                            <div class="stat-label">New Matches</div>
+                        </div>
+                    </div>
+
+                    {interview_cta}
+
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="{dashboard_url}" class="button">View Dashboard</a>
+                    </p>
+
+                    <p>Keep showing your growth!</p>
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>Manage notification preferences in your <a href="{settings.frontend_url}/candidate/settings">settings</a>.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=email,
+            subject="[Pathway] Your weekly update",
+            html=html,
+        )
+
+
 # Global instance
 email_service = EmailService()

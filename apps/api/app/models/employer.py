@@ -53,6 +53,10 @@ class Employer(Base):
     email_verification_token = Column(String, nullable=True)
     email_verification_expires_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Password reset
+    password_reset_token = Column(String, nullable=True)
+    password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

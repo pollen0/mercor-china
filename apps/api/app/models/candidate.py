@@ -108,6 +108,15 @@ class Candidate(Base):
     email_verification_token = Column(String, nullable=True)
     email_verification_expires_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Password reset
+    password_reset_token = Column(String, nullable=True)
+    password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Google Calendar integration
+    google_calendar_token = Column(String, nullable=True)  # Encrypted OAuth token
+    google_calendar_refresh_token = Column(String, nullable=True)  # Encrypted refresh token
+    google_calendar_connected_at = Column(DateTime(timezone=True), nullable=True)
+
     # Profile Sharing & Preferences (for GTM)
     opted_in_to_sharing = Column(Boolean, default=False, nullable=False)  # Consent to share profile with employers
     sharing_preferences = Column(JSONB, nullable=True)  # {company_stages, locations, industries, email_digest}

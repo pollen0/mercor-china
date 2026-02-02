@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     # Frontend URL (for email links)
     frontend_url: str = "http://localhost:3000"
 
+    # Google Calendar OAuth
+    google_client_id: str = ""  # Set via GOOGLE_CLIENT_ID env var
+    google_client_secret: str = ""  # Set via GOOGLE_CLIENT_SECRET env var
+    google_redirect_uri: str = ""  # Set via GOOGLE_REDIRECT_URI env var (e.g., http://localhost:3000/auth/google/callback)
+
     # Redis (for caching)
     redis_url: str = "redis://localhost:6379/0"
     cache_ttl_seconds: int = 300  # 5 minutes default TTL

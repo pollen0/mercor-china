@@ -70,56 +70,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-32 px-6 bg-stone-50/50">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-20 animate-fade-in">
-            <p className="text-[11px] font-medium text-stone-400 uppercase tracking-[0.2em] mb-4">How it works</p>
-            <h2 className="text-2xl font-semibold text-stone-900 mb-4">
-              Build your profile over time
-            </h2>
-            <p className="text-stone-500 max-w-md mx-auto">
-              Not in a single high-pressure moment, but through consistent growth.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-10">
-            {[
-              {
-                step: '01',
-                title: 'Create your profile',
-                description: 'Sign up with your university email. Add your major, graduation year, and target roles.',
-              },
-              {
-                step: '02',
-                title: 'Connect GitHub',
-                description: 'Link your GitHub to showcase your projects, contributions, and coding activity.',
-              },
-              {
-                step: '03',
-                title: 'Interview monthly',
-                description: '15-minute video interviews tailored to your target role. Technical roles include coding.',
-              },
-              {
-                step: '04',
-                title: 'Get discovered',
-                description: 'Employers browse the talent pool and reach out when they find a match.',
-              },
-            ].map((item, i) => (
-              <div
-                key={item.step}
-                className="animate-slide-up group"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <div className="text-2xl font-light text-stone-300 mb-4 group-hover:text-teal-600/60 transition-colors duration-300">{item.step}</div>
-                <h3 className="font-medium text-stone-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-stone-500 leading-relaxed">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Features */}
       <section className="py-32 px-6 bg-stone-900 text-white">
         <div className="max-w-4xl mx-auto">
