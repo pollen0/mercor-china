@@ -3,6 +3,7 @@ Email service using Resend for transactional emails.
 """
 import logging
 import resend
+from datetime import datetime
 from typing import Optional
 from ..config import settings
 
@@ -111,10 +112,10 @@ class EmailService:
                         <a href="{dashboard_url}" class="button">View Interview</a>
                     </p>
 
-                    <p>Best regards,<br>ZhiPin AI Team</p>
+                    <p>Best regards,<br>The Pathway Team</p>
                 </div>
                 <div class="footer">
-                    <p>This is an automated notification from ZhiPin AI.</p>
+                    <p>This is an automated notification from Pathway.</p>
                 </div>
             </div>
         </body>
@@ -123,7 +124,7 @@ class EmailService:
 
         return self.send_email(
             to=employer_email,
-            subject=f"[ZhiPin AI] {candidate_name} completed interview for {job_title}",
+            subject=f"[Pathway] {candidate_name} completed interview for {job_title}",
             html=html,
         )
 
@@ -169,10 +170,10 @@ class EmailService:
 
                     <p>We appreciate your interest and wish you the best of luck!</p>
 
-                    <p>Best regards,<br>ZhiPin AI Team</p>
+                    <p>Best regards,<br>The Pathway Team</p>
                 </div>
                 <div class="footer">
-                    <p>This is an automated notification from ZhiPin AI.</p>
+                    <p>This is an automated notification from Pathway.</p>
                 </div>
             </div>
         </body>
@@ -242,10 +243,10 @@ class EmailService:
 
                     <p>Good luck!</p>
 
-                    <p>Best regards,<br>ZhiPin AI Team</p>
+                    <p>Best regards,<br>The Pathway Team</p>
                 </div>
                 <div class="footer">
-                    <p>This is an automated notification from ZhiPin AI.</p>
+                    <p>This is an automated notification from Pathway.</p>
                 </div>
             </div>
         </body>
@@ -811,6 +812,483 @@ class EmailService:
         return self.send_email(
             to=email,
             subject="[Pathway] Your weekly update",
+            html=html,
+        )
+
+
+    def send_interview_reminder_candidate(
+        self,
+        to_email: str,
+        candidate_name: str,
+        company_name: str,
+        interview_title: str,
+        scheduled_at: datetime,
+        duration_minutes: int,
+        google_meet_link: Optional[str] = None,
+        time_text: str = "soon",
+    ) -> Optional[str]:
+        """Send interview reminder to candidate."""
+        from datetime import datetime
+
+        formatted_date = scheduled_at.strftime("%A, %B %d, %Y")
+        formatted_time = scheduled_at.strftime("%I:%M %p")
+
+        meet_link_html = ""
+        if google_meet_link:
+            meet_link_html = f"""
+            <p style="text-align: center; margin: 20px 0;">
+                <a href="{google_meet_link}" class="button">Join Google Meet</a>
+            </p>
+            <p style="color: #6b7280; font-size: 14px; text-align: center;">
+                Meeting link: <a href="{google_meet_link}" style="color: #6366f1;">{google_meet_link}</a>
+            </p>
+            """
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">Interview Reminder</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Your interview is {time_text}</p>
+                </div>
+                <div class="content">
+                    <p>Hi {candidate_name},</p>
+
+                    <p>This is a reminder that your interview with <strong>{company_name}</strong> is coming up {time_text}.</p>
+
+                    <div class="details">
+                        <p style="margin: 0;"><strong>Interview:</strong> {interview_title}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Date:</strong> {formatted_date}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Time:</strong> {formatted_time}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Duration:</strong> {duration_minutes} minutes</p>
+                    </div>
+
+                    {meet_link_html}
+
+                    <p><strong>Tips for your interview:</strong></p>
+                    <ul>
+                        <li>Test your camera and microphone beforehand</li>
+                        <li>Find a quiet, well-lit space</li>
+                        <li>Have a copy of your resume handy</li>
+                        <li>Prepare questions for the interviewer</li>
+                    </ul>
+
+                    <p>Good luck!</p>
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated reminder from Pathway.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=to_email,
+            subject=f"Reminder: Your interview with {company_name} is {time_text}",
+            html=html,
+        )
+
+    def send_interview_reminder_interviewer(
+        self,
+        to_email: str,
+        candidate_name: str,
+        interview_title: str,
+        scheduled_at: datetime,
+        duration_minutes: int,
+        google_meet_link: Optional[str] = None,
+        time_text: str = "soon",
+    ) -> Optional[str]:
+        """Send interview reminder to interviewer."""
+        from datetime import datetime
+
+        formatted_date = scheduled_at.strftime("%A, %B %d, %Y")
+        formatted_time = scheduled_at.strftime("%I:%M %p")
+
+        meet_link_html = ""
+        if google_meet_link:
+            meet_link_html = f"""
+            <p style="text-align: center; margin: 20px 0;">
+                <a href="{google_meet_link}" class="button">Join Google Meet</a>
+            </p>
+            """
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">Interview Reminder</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Upcoming interview {time_text}</p>
+                </div>
+                <div class="content">
+                    <p>Hi,</p>
+
+                    <p>This is a reminder that you have an interview scheduled {time_text}.</p>
+
+                    <div class="details">
+                        <p style="margin: 0;"><strong>Candidate:</strong> {candidate_name}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Interview:</strong> {interview_title}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Date:</strong> {formatted_date}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Time:</strong> {formatted_time}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Duration:</strong> {duration_minutes} minutes</p>
+                    </div>
+
+                    {meet_link_html}
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated reminder from Pathway.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=to_email,
+            subject=f"Interview Reminder: {candidate_name} - {time_text}",
+            html=html,
+        )
+
+    def send_interview_scheduled_candidate(
+        self,
+        to_email: str,
+        candidate_name: str,
+        company_name: str,
+        interview_title: str,
+        scheduled_at: datetime,
+        duration_minutes: int,
+        google_meet_link: Optional[str] = None,
+    ) -> Optional[str]:
+        """Send interview confirmation to candidate after booking."""
+        from datetime import datetime
+
+        formatted_date = scheduled_at.strftime("%A, %B %d, %Y")
+        formatted_time = scheduled_at.strftime("%I:%M %p")
+
+        meet_link_html = ""
+        if google_meet_link:
+            meet_link_html = f"""
+            <p style="text-align: center; margin: 20px 0;">
+                <a href="{google_meet_link}" class="button">Add to Calendar</a>
+            </p>
+            <p style="color: #6b7280; font-size: 14px; text-align: center;">
+                Google Meet link: <a href="{google_meet_link}" style="color: #6366f1;">{google_meet_link}</a>
+            </p>
+            """
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">Interview Confirmed!</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Your interview has been scheduled</p>
+                </div>
+                <div class="content">
+                    <p>Hi {candidate_name},</p>
+
+                    <p>Great news! Your interview with <strong>{company_name}</strong> has been confirmed.</p>
+
+                    <div class="details">
+                        <p style="margin: 0;"><strong>Interview:</strong> {interview_title}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Date:</strong> {formatted_date}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Time:</strong> {formatted_time}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Duration:</strong> {duration_minutes} minutes</p>
+                    </div>
+
+                    {meet_link_html}
+
+                    <p>We'll send you reminders before the interview. In the meantime, here are some tips:</p>
+
+                    <ul>
+                        <li>Research the company and the role</li>
+                        <li>Prepare examples of your work and accomplishments</li>
+                        <li>Test your technology setup (camera, microphone, internet)</li>
+                        <li>Prepare thoughtful questions for the interviewer</li>
+                    </ul>
+
+                    <p>Good luck!</p>
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>Need to reschedule? Please contact {company_name} directly.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=to_email,
+            subject=f"Interview Confirmed: {interview_title} at {company_name}",
+            html=html,
+        )
+
+    def send_interview_scheduled_interviewer(
+        self,
+        to_email: str,
+        candidate_name: str,
+        candidate_email: str,
+        interview_title: str,
+        scheduled_at: datetime,
+        duration_minutes: int,
+        google_meet_link: Optional[str] = None,
+        dashboard_url: Optional[str] = None,
+    ) -> Optional[str]:
+        """Send interview notification to interviewer."""
+        from datetime import datetime
+
+        formatted_date = scheduled_at.strftime("%A, %B %d, %Y")
+        formatted_time = scheduled_at.strftime("%I:%M %p")
+
+        dashboard_html = ""
+        if dashboard_url:
+            dashboard_html = f"""
+            <p style="text-align: center; margin: 20px 0;">
+                <a href="{dashboard_url}" class="button">View in Dashboard</a>
+            </p>
+            """
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">New Interview Scheduled</h1>
+                </div>
+                <div class="content">
+                    <p>Hi,</p>
+
+                    <p>A new interview has been scheduled with a candidate.</p>
+
+                    <div class="details">
+                        <p style="margin: 0;"><strong>Candidate:</strong> {candidate_name}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Email:</strong> {candidate_email}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Interview:</strong> {interview_title}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Date:</strong> {formatted_date}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Time:</strong> {formatted_time}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Duration:</strong> {duration_minutes} minutes</p>
+                    </div>
+
+                    {dashboard_html}
+
+                    <p>A calendar invite has been sent to your email.</p>
+
+                    <p>Best regards,<br>The Pathway Team</p>
+                </div>
+                <div class="footer">
+                    <p>This is an automated notification from Pathway.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=to_email,
+            subject=f"New Interview: {candidate_name} - {interview_title}",
+            html=html,
+        )
+
+    def send_self_schedule_invitation(
+        self,
+        to_email: str,
+        candidate_name: str,
+        company_name: str,
+        job_title: Optional[str],
+        schedule_url: str,
+        message: Optional[str] = None,
+    ) -> Optional[str]:
+        """Send self-scheduling link invitation to candidate."""
+        job_info = f" for the <strong>{job_title}</strong> position" if job_title else ""
+        custom_message = f'<div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;"><p style="margin: 0; white-space: pre-wrap;">{message}</p></div>' if message else ""
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">Schedule Your Interview</h1>
+                    <p style="margin: 10px 0 0 0; opacity: 0.9;">Pick a time that works for you</p>
+                </div>
+                <div class="content">
+                    <p>Hi {candidate_name or 'there'},</p>
+
+                    <p><strong>{company_name}</strong> would like to schedule an interview with you{job_info}.</p>
+
+                    {custom_message}
+
+                    <p>Please use the link below to select a time that works best for you:</p>
+
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="{schedule_url}" class="button">Schedule Interview</a>
+                    </p>
+
+                    <p style="color: #6b7280; font-size: 14px;">
+                        Or copy this link: <a href="{schedule_url}" style="color: #6366f1;">{schedule_url}</a>
+                    </p>
+
+                    <p>We look forward to speaking with you!</p>
+
+                    <p>Best regards,<br>The {company_name} Team</p>
+                </div>
+                <div class="footer">
+                    <p>This invitation was sent via Pathway.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=to_email,
+            subject=f"[{company_name}] Schedule Your Interview",
+            html=html,
+        )
+
+    async def send_organization_invite(
+        self,
+        to_email: str,
+        organization_name: str,
+        inviter_name: str,
+        role: str,
+        invite_url: str,
+    ) -> Optional[str]:
+        """
+        Send invitation to join an organization/team.
+        """
+        role_descriptions = {
+            "owner": "Full access including billing and team management",
+            "admin": "Manage team members, jobs, and settings",
+            "recruiter": "Manage jobs and contact candidates",
+            "hiring_manager": "View candidates and provide feedback",
+            "interviewer": "View assigned candidates",
+        }
+        role_desc = role_descriptions.get(role, "Team member")
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .role-badge {{ display: inline-block; background: #e0f2fe; color: #0369a1; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 500; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1 style="margin: 0;">You're Invited!</h1>
+                </div>
+                <div class="content">
+                    <p>Hi there,</p>
+
+                    <p><strong>{inviter_name}</strong> has invited you to join <strong>{organization_name}</strong> on Pathway.</p>
+
+                    <p>
+                        Your role: <span class="role-badge">{role.replace('_', ' ').title()}</span>
+                        <br>
+                        <small style="color: #6b7280;">{role_desc}</small>
+                    </p>
+
+                    <p>Pathway is a collaborative recruiting platform that helps teams find and hire top talent from college students.</p>
+
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="{invite_url}" class="button">Accept Invitation</a>
+                    </p>
+
+                    <p style="color: #6b7280; font-size: 14px;">
+                        This invitation expires in 7 days. If you didn't expect this email, you can safely ignore it.
+                    </p>
+                </div>
+                <div class="footer">
+                    <p>Pathway - Collaborative Recruiting Platform</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+
+        return self.send_email(
+            to=to_email,
+            subject=f"[Pathway] {inviter_name} invited you to join {organization_name}",
             html=html,
         )
 

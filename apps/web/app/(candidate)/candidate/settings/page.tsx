@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { candidateApi } from '@/lib/api'
-import { CalendarSettings } from '@/components/calendar'
 
 const COMPANY_STAGES = [
   { value: 'seed', label: 'Seed Stage' },
@@ -43,12 +42,26 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const [candidateId, setCandidateId] = useState<string | null>(null)
+  const [_candidateId, setCandidateId] = useState<string | null>(null)
   const [optedIn, setOptedIn] = useState(false)
   const [companyStages, setCompanyStages] = useState<string[]>([])
   const [locations, setLocations] = useState<string[]>([])
   const [industries, setIndustries] = useState<string[]>([])
   const [emailDigest, setEmailDigest] = useState(true)
+
+  // Notification preferences
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    emailEmployerContact: true,
+    emailInterviewReminder: true,
+    emailWeeklyDigest: true,
+    emailMatchAlerts: true,
+    emailProductUpdates: false,
+    smsEnabled: false,
+    smsInterviewReminder: false,
+    pushEnabled: false,
+    pushEmployerContact: false,
+    pushMatchAlerts: false,
+  })
 
   useEffect(() => {
     loadPreferences()
@@ -332,26 +345,6 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Email Digest */}
-              <div className="mb-8">
-                <div className="flex items-start gap-4 p-4 bg-stone-50 rounded-xl">
-                  <input
-                    type="checkbox"
-                    id="email-digest"
-                    checked={emailDigest}
-                    onChange={(e) => setEmailDigest(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
-                  />
-                  <div className="flex-1">
-                    <Label htmlFor="email-digest" className="font-medium cursor-pointer text-stone-900">
-                      Email Digest Notifications
-                    </Label>
-                    <p className="text-sm text-stone-500 mt-1">
-                      Receive weekly updates when companies view your profile
-                    </p>
-                  </div>
-                </div>
-              </div>
             </>
           )}
 
@@ -367,19 +360,158 @@ export default function SettingsPage() {
             <Button
               onClick={handleSave}
               disabled={saving}
-              variant="brand"
+              variant="default"
             >
               {saving ? 'Saving...' : 'Save Preferences'}
             </Button>
           </div>
         </Card>
 
-        {/* Calendar Integration */}
-        {candidateId && (
-          <div className="mb-6">
-            <CalendarSettings candidateId={candidateId} />
+        {/* Notification Preferences Card */}
+        <Card className="p-6 mb-6 shadow-soft-sm">
+          <h2 className="text-xl font-semibold text-stone-900 mb-2">Notification Preferences</h2>
+          <p className="text-sm text-stone-500 mb-6">Choose how and when you want to be notified</p>
+
+          {/* Email Notifications */}
+          <div className="mb-8">
+            <h3 className="text-base font-semibold text-stone-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Email Notifications
+            </h3>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={notificationPrefs.emailEmployerContact}
+                  onChange={(e) => setNotificationPrefs(prev => ({ ...prev, emailEmployerContact: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
+                />
+                <div>
+                  <span className="font-medium text-stone-900 block">Employer Contact</span>
+                  <span className="text-sm text-stone-500">Get notified when an employer reaches out to you</span>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={notificationPrefs.emailInterviewReminder}
+                  onChange={(e) => setNotificationPrefs(prev => ({ ...prev, emailInterviewReminder: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
+                />
+                <div>
+                  <span className="font-medium text-stone-900 block">Interview Reminders</span>
+                  <span className="text-sm text-stone-500">Receive reminders before scheduled interviews</span>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={notificationPrefs.emailWeeklyDigest}
+                  onChange={(e) => setNotificationPrefs(prev => ({ ...prev, emailWeeklyDigest: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
+                />
+                <div>
+                  <span className="font-medium text-stone-900 block">Weekly Digest</span>
+                  <span className="text-sm text-stone-500">Summary of profile views and new opportunities</span>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={notificationPrefs.emailMatchAlerts}
+                  onChange={(e) => setNotificationPrefs(prev => ({ ...prev, emailMatchAlerts: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
+                />
+                <div>
+                  <span className="font-medium text-stone-900 block">Job Match Alerts</span>
+                  <span className="text-sm text-stone-500">Get notified when new jobs match your profile</span>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={notificationPrefs.emailProductUpdates}
+                  onChange={(e) => setNotificationPrefs(prev => ({ ...prev, emailProductUpdates: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
+                />
+                <div>
+                  <span className="font-medium text-stone-900 block">Product Updates</span>
+                  <span className="text-sm text-stone-500">News about new features and improvements</span>
+                </div>
+              </label>
+            </div>
           </div>
-        )}
+
+          {/* SMS Notifications */}
+          <div className="mb-8 pb-8 border-b border-stone-100">
+            <h3 className="text-base font-semibold text-stone-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              SMS Notifications
+              <span className="text-xs text-stone-400 font-normal">(Optional)</span>
+            </h3>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors">
+                <input
+                  type="checkbox"
+                  checked={notificationPrefs.smsEnabled}
+                  onChange={(e) => setNotificationPrefs(prev => ({
+                    ...prev,
+                    smsEnabled: e.target.checked,
+                    smsInterviewReminder: e.target.checked ? prev.smsInterviewReminder : false
+                  }))}
+                  className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
+                />
+                <div>
+                  <span className="font-medium text-stone-900 block">Enable SMS</span>
+                  <span className="text-sm text-stone-500">Turn on text message notifications</span>
+                </div>
+              </label>
+              {notificationPrefs.smsEnabled && (
+                <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors ml-6">
+                  <input
+                    type="checkbox"
+                    checked={notificationPrefs.smsInterviewReminder}
+                    onChange={(e) => setNotificationPrefs(prev => ({ ...prev, smsInterviewReminder: e.target.checked }))}
+                    className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
+                  />
+                  <div>
+                    <span className="font-medium text-stone-900 block">Interview Reminders via SMS</span>
+                    <span className="text-sm text-stone-500">Get a text reminder 1 hour before interviews</span>
+                  </div>
+                </label>
+              )}
+            </div>
+          </div>
+
+          {/* Push Notifications */}
+          <div>
+            <h3 className="text-base font-semibold text-stone-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              Browser Push Notifications
+              <span className="text-xs text-stone-400 font-normal">(Coming Soon)</span>
+            </h3>
+            <div className="space-y-3 opacity-50 pointer-events-none">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 cursor-not-allowed">
+                <input
+                  type="checkbox"
+                  checked={notificationPrefs.pushEnabled}
+                  disabled
+                  className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
+                />
+                <div>
+                  <span className="font-medium text-stone-900 block">Enable Push Notifications</span>
+                  <span className="text-sm text-stone-500">Get instant browser notifications</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </Card>
 
         {/* Info Card */}
         {!optedIn ? (

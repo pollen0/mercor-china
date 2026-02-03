@@ -197,7 +197,7 @@ export function ScheduleInterviewModal({
               </a>
             )}
 
-            <Button onClick={onClose} className="w-full" variant="brand">
+            <Button onClick={onClose} className="w-full" variant="default">
               Done
             </Button>
           </CardContent>
@@ -401,7 +401,7 @@ export function ScheduleInterviewModal({
               </Button>
               <Button
                 type="submit"
-                variant="brand"
+                variant="default"
                 className="flex-1"
                 disabled={isSubmitting}
               >

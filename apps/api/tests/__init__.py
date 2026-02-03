@@ -1,1 +1,1 @@
-# ZhiPin AI API Tests
+# Pathway API Tests

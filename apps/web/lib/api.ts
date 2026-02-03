@@ -77,6 +77,8 @@ export interface Candidate {
   email: string
   phone: string
   targetRoles: string[]
+  // Email verification
+  emailVerified?: boolean
   // Education fields
   university?: string
   major?: string
@@ -193,6 +195,7 @@ export interface Job {
 
 export interface Employer {
   id: string
+  name?: string  // Employer's personal name
   companyName: string
   email: string
   logo?: string
@@ -390,6 +393,131 @@ export interface BulkActionResult {
   errors: string[]
 }
 
+export interface MatchAlertCandidate {
+  id: string
+  name: string
+  email: string
+  university?: string
+  major?: string
+  graduationYear?: number
+}
+
+export interface MatchAlert {
+  id: string
+  candidate: MatchAlertCandidate
+  jobId?: string
+  jobTitle?: string
+  matchScore: number
+  interviewScore?: number
+  skillsMatchScore?: number
+  status: string
+  createdAt: string
+  isNew: boolean
+}
+
+export interface MatchAlertList {
+  alerts: MatchAlert[]
+  total: number
+  unreadCount: number
+}
+
+// Skill Gap Analysis Types
+export interface SkillMatch {
+  requirement: string
+  requirementCategory: string
+  matched: boolean
+  candidateSkill?: string
+  matchType: 'exact' | 'synonym' | 'related' | 'partial' | 'none'
+  proficiencyLevel: 'expert' | 'advanced' | 'intermediate' | 'beginner' | 'none'
+  proficiencyScore: number
+  evidence: string[]
+  yearsExperience?: number
+}
+
+export interface LearningPriority {
+  skill: string
+  priority: 'critical' | 'recommended' | 'optional'
+  reason: string
+  estimatedEffort: string
+}
+
+export interface SkillGapAnalysis {
+  overallMatchScore: number
+  totalRequirements: number
+  matchedRequirements: number
+  criticalGaps: string[]
+  skillMatches: SkillMatch[]
+  categoryCoverage: Record<string, {
+    matched: number
+    total: number
+    coverageScore: number
+    avgProficiency: number
+    importance: string
+    description: string
+  }>
+  proficiencyDistribution: Record<string, number>
+  avgProficiencyScore: number
+  learningPriorities: LearningPriority[]
+  alternativeSkills: Array<{
+    missingRequirement: string
+    alternativeSkill: string
+    transferability: string
+    note: string
+  }>
+  transferableSkills: string[]
+  bonusSkills: string[]
+  strongestAreas: string[]
+}
+
+// Enhanced Matching Types
+export interface EnhancedMatchResult {
+  overallMatchScore: number
+  interviewScore: number
+  skillsMatchScore: number
+  experienceMatchScore: number
+  githubSignalScore: number
+  educationScore: number
+  growthTrajectoryScore: number
+  locationMatch: boolean
+  factors: Record<string, unknown>
+  skillGapSummary: {
+    matchPercentage: number
+    matchedCount: number
+    missingCount: number
+    missingSkills: string[]
+    semanticMatches: number
+    hasCriticalGaps: boolean
+  }
+  topStrengths: string[]
+  areasForGrowth: string[]
+  hiringRecommendation: string
+  confidenceScore: number
+  aiReasoning: string
+}
+
+export interface RankedCandidate {
+  candidateId: string
+  name: string
+  email: string
+  university?: string
+  graduationYear?: number
+  overallMatchScore: number
+  interviewScore?: number
+  skillsMatchScore?: number
+  githubSignalScore?: number
+  topStrengths: string[]
+  skillGaps: string[]
+  hiringRecommendation: string
+}
+
+export interface CandidateRankingResponse {
+  jobId: string
+  jobTitle: string
+  candidates: RankedCandidate[]
+  total: number
+  averageMatchScore: number
+}
+
 export interface MessageResponse {
   id: string
   subject: string
@@ -488,6 +616,7 @@ function transformTalentProfileResponse(data: Record<string, unknown>): TalentPr
       githubConnected: (completionStatus.github_connected || completionStatus.githubConnected || false) as boolean,
       interviewCompleted: (completionStatus.interview_completed || completionStatus.interviewCompleted || false) as boolean,
       educationFilled: (completionStatus.education_filled || completionStatus.educationFilled || false) as boolean,
+      transcriptUploaded: (completionStatus.transcript_uploaded || completionStatus.transcriptUploaded || false) as boolean,
     } : undefined,
     profileScore: profileScoreData ? {
       score: profileScoreData.score as number,
@@ -610,6 +739,42 @@ export const candidateApi = {
 
   get: (id: string): Promise<Candidate> =>
     apiRequest(`/api/candidates/${id}`),
+
+  getMe: async (token?: string): Promise<Candidate> => {
+    const url = `${API_BASE_URL}/api/candidates/me`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const response = await fetch(url, { headers })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to fetch profile')
+    }
+
+    const data = await response.json()
+    return {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      phone: data.phone || '',
+      targetRoles: data.target_roles || [],
+      emailVerified: data.email_verified,
+      university: data.university,
+      major: data.major,
+      graduationYear: data.graduation_year,
+      gpa: data.gpa,
+      githubUsername: data.github_username,
+      resumeUrl: data.resume_url,
+      createdAt: data.created_at,
+    }
+  },
 
   uploadResume: async (candidateId: string, file: File, token?: string): Promise<ResumeParseResult> => {
     const formData = new FormData()
@@ -1178,6 +1343,63 @@ export const candidateApi = {
       } : undefined,
     }
   },
+
+  // Skill Gap Analysis for Candidates
+  getMySkillGap: async (
+    options: {
+      jobId?: string
+      jobRequirements?: string[]
+    },
+    token?: string
+  ): Promise<{
+    overallMatchScore: number
+    totalRequirements: number
+    matchedRequirements: number
+    criticalGaps: string[]
+    proficiencyDistribution: Record<string, number>
+    avgProficiencyScore: number
+    learningPriorities: LearningPriority[]
+    bonusSkills: string[]
+    strongestAreas: string[]
+  }> => {
+    const url = `${API_BASE_URL}/api/candidates/me/skill-gap`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const body: Record<string, unknown> = {}
+    if (options.jobId) body.job_id = options.jobId
+    if (options.jobRequirements) body.job_requirements = options.jobRequirements
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to analyze skill gap')
+    }
+
+    const data = await response.json()
+    return {
+      overallMatchScore: data.overall_match_score,
+      totalRequirements: data.total_requirements,
+      matchedRequirements: data.matched_requirements,
+      criticalGaps: data.critical_gaps,
+      proficiencyDistribution: data.proficiency_distribution,
+      avgProficiencyScore: data.avg_proficiency_score,
+      learningPriorities: data.learning_priorities,
+      bonusSkills: data.bonus_skills,
+      strongestAreas: data.strongest_areas,
+    }
+  },
 }
 
 // Interview API
@@ -1339,6 +1561,7 @@ export const interviewApi = {
 // Employer API
 export const employerApi = {
   register: (data: {
+    name?: string
     companyName: string
     email: string
     password: string
@@ -1346,6 +1569,7 @@ export const employerApi = {
     apiRequest('/api/employers/register', {
       method: 'POST',
       body: JSON.stringify({
+        name: data.name,
         company_name: data.companyName,
         email: data.email,
         password: data.password,
@@ -1360,6 +1584,22 @@ export const employerApi = {
 
   getMe: (): Promise<Employer> =>
     apiRequest('/api/employers/me'),
+
+  updateProfile: (data: {
+    name?: string
+    companyName?: string
+    industry?: string
+    companySize?: string
+  }): Promise<Employer> =>
+    apiRequest('/api/employers/me', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: data.name,
+        company_name: data.companyName,
+        industry: data.industry,
+        company_size: data.companySize,
+      }),
+    }),
 
   getDashboard: (): Promise<DashboardStats> =>
     apiRequest('/api/employers/dashboard'),
@@ -1557,6 +1797,167 @@ export const employerApi = {
       links: data.links,
     }
   },
+
+  // Match Alerts
+  getMatchAlerts: async (options?: {
+    limit?: number
+    offset?: number
+    unreadOnly?: boolean
+  }): Promise<MatchAlertList> => {
+    const params = new URLSearchParams()
+    if (options?.limit !== undefined) params.append('limit', options.limit.toString())
+    if (options?.offset !== undefined) params.append('offset', options.offset.toString())
+    if (options?.unreadOnly !== undefined) params.append('unread_only', options.unreadOnly.toString())
+
+    const queryString = params.toString()
+    const url = `/api/employers/match-alerts${queryString ? `?${queryString}` : ''}`
+    return apiRequest(url)
+  },
+
+  markMatchViewed: (matchId: string): Promise<{ success: boolean; status: string }> =>
+    apiRequest(`/api/employers/match-alerts/${matchId}/mark-viewed`, { method: 'POST' }),
+
+  // Skill Gap Analysis & ML-Powered Matching
+  analyzeSkillGap: async (
+    candidateId: string,
+    jobId?: string,
+    jobRequirements?: string[]
+  ): Promise<SkillGapAnalysis> => {
+    const body: Record<string, unknown> = { candidate_id: candidateId }
+    if (jobId) body.job_id = jobId
+    if (jobRequirements) body.job_requirements = jobRequirements
+
+    const response = await apiRequest('/api/employers/skill-gap/analyze', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    const data = response as Record<string, unknown>
+
+    return {
+      overallMatchScore: data.overall_match_score as number,
+      totalRequirements: data.total_requirements as number,
+      matchedRequirements: data.matched_requirements as number,
+      criticalGaps: data.critical_gaps as string[],
+      skillMatches: data.skill_matches as SkillMatch[],
+      categoryCoverage: data.category_coverage as Record<string, {
+        matched: number
+        total: number
+        coverageScore: number
+        avgProficiency: number
+        importance: string
+        description: string
+      }>,
+      proficiencyDistribution: data.proficiency_distribution as Record<string, number>,
+      avgProficiencyScore: data.avg_proficiency_score as number,
+      learningPriorities: data.learning_priorities as LearningPriority[],
+      alternativeSkills: data.alternative_skills as Array<{
+        missingRequirement: string
+        alternativeSkill: string
+        transferability: string
+        note: string
+      }>,
+      transferableSkills: data.transferable_skills as string[],
+      bonusSkills: data.bonus_skills as string[],
+      strongestAreas: data.strongest_areas as string[],
+    }
+  },
+
+  getEnhancedMatch: async (
+    candidateId: string,
+    options?: {
+      jobId?: string
+      jobTitle?: string
+      jobRequirements?: string[]
+      jobVertical?: string
+      includeSkillGap?: boolean
+    }
+  ): Promise<EnhancedMatchResult> => {
+    const body: Record<string, unknown> = {
+      candidate_id: candidateId,
+      include_skill_gap: options?.includeSkillGap ?? true,
+    }
+    if (options?.jobId) body.job_id = options.jobId
+    if (options?.jobTitle) body.job_title = options.jobTitle
+    if (options?.jobRequirements) body.job_requirements = options.jobRequirements
+    if (options?.jobVertical) body.job_vertical = options.jobVertical
+
+    const response = await apiRequest('/api/employers/enhanced-match', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    const data = response as Record<string, unknown>
+    const skillGapSummary = data.skill_gap_summary as Record<string, unknown> | undefined
+
+    return {
+      overallMatchScore: data.overall_match_score as number,
+      interviewScore: data.interview_score as number,
+      skillsMatchScore: data.skills_match_score as number,
+      experienceMatchScore: data.experience_match_score as number,
+      githubSignalScore: data.github_signal_score as number,
+      educationScore: data.education_score as number,
+      growthTrajectoryScore: data.growth_trajectory_score as number,
+      locationMatch: data.location_match as boolean,
+      factors: data.factors as Record<string, unknown>,
+      skillGapSummary: {
+        matchPercentage: (skillGapSummary?.match_percentage as number) || 0,
+        matchedCount: (skillGapSummary?.matched_count as number) || 0,
+        missingCount: (skillGapSummary?.missing_count as number) || 0,
+        missingSkills: (skillGapSummary?.missing_skills as string[]) || [],
+        semanticMatches: (skillGapSummary?.semantic_matches as number) || 0,
+        hasCriticalGaps: (skillGapSummary?.has_critical_gaps as boolean) || false,
+      },
+      topStrengths: data.top_strengths as string[],
+      areasForGrowth: data.areas_for_growth as string[],
+      hiringRecommendation: data.hiring_recommendation as string,
+      confidenceScore: data.confidence_score as number,
+      aiReasoning: data.ai_reasoning as string,
+    }
+  },
+
+  rankCandidates: async (
+    jobId: string,
+    options?: {
+      limit?: number
+      offset?: number
+      minScore?: number
+      includeSkillGap?: boolean
+    }
+  ): Promise<CandidateRankingResponse> => {
+    const body: Record<string, unknown> = {
+      job_id: jobId,
+      limit: options?.limit ?? 20,
+      offset: options?.offset ?? 0,
+      min_score: options?.minScore ?? 0,
+      include_skill_gap: options?.includeSkillGap ?? false,
+    }
+
+    const response = await apiRequest('/api/employers/candidates/rank', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    const data = response as Record<string, unknown>
+
+    return {
+      jobId: data.job_id as string,
+      jobTitle: data.job_title as string,
+      candidates: (data.candidates as Array<Record<string, unknown>>).map((c) => ({
+        candidateId: c.candidate_id as string,
+        name: c.name as string,
+        email: c.email as string,
+        university: c.university as string | undefined,
+        graduationYear: c.graduation_year as number | undefined,
+        overallMatchScore: c.overall_match_score as number,
+        interviewScore: c.interview_score as number | undefined,
+        skillsMatchScore: c.skills_match_score as number | undefined,
+        githubSignalScore: c.github_signal_score as number | undefined,
+        topStrengths: (c.top_strengths as string[]) || [],
+        skillGaps: (c.skill_gaps as string[]) || [],
+        hiringRecommendation: c.hiring_recommendation as string,
+      })),
+      total: data.total as number,
+      averageMatchScore: data.average_match_score as number,
+    }
+  },
 }
 
 // Public API (no auth required)
@@ -1721,6 +2122,7 @@ export interface CompletionStatus {
   githubConnected: boolean
   interviewCompleted: boolean
   educationFilled: boolean
+  transcriptUploaded: boolean
 }
 
 export interface ScoreBreakdown {
@@ -2012,6 +2414,7 @@ function transformTalentPoolCandidate(c: Record<string, unknown>): TalentPoolCan
       githubConnected: (completionStatus.github_connected || completionStatus.githubConnected || false) as boolean,
       interviewCompleted: (completionStatus.interview_completed || completionStatus.interviewCompleted || false) as boolean,
       educationFilled: (completionStatus.education_filled || completionStatus.educationFilled || false) as boolean,
+      transcriptUploaded: (completionStatus.transcript_uploaded || completionStatus.transcriptUploaded || false) as boolean,
     } : undefined,
     scoreBreakdown: scoreBreakdown ? {
       communication: scoreBreakdown.communication as number | undefined,
@@ -2538,5 +2941,1040 @@ export const scheduledInterviewApi = {
       oldInterview: transformScheduledInterview(response.old_interview),
       newInterview: transformScheduledInterview(response.new_interview),
     }
+  },
+}
+
+// ==================== CANDIDATE NOTES API ====================
+
+export interface CandidateNote {
+  id: string
+  employerId: string
+  candidateId: string
+  content: string
+  createdAt: string
+  updatedAt?: string
+}
+
+export const candidateNotesApi = {
+  // List notes for a candidate
+  list: async (candidateId: string): Promise<{
+    notes: CandidateNote[]
+    total: number
+  }> => {
+    const response = await apiRequest<{
+      notes: Array<{
+        id: string
+        employer_id: string
+        candidate_id: string
+        content: string
+        created_at: string
+        updated_at?: string
+      }>
+      total: number
+    }>(`/api/employers/candidates/${candidateId}/notes`)
+
+    return {
+      notes: response.notes.map(n => ({
+        id: n.id,
+        employerId: n.employer_id,
+        candidateId: n.candidate_id,
+        content: n.content,
+        createdAt: n.created_at,
+        updatedAt: n.updated_at,
+      })),
+      total: response.total,
+    }
+  },
+
+  // Create a note
+  create: async (candidateId: string, content: string): Promise<CandidateNote> => {
+    const response = await apiRequest<{
+      id: string
+      employer_id: string
+      candidate_id: string
+      content: string
+      created_at: string
+      updated_at?: string
+    }>(`/api/employers/candidates/${candidateId}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    })
+
+    return {
+      id: response.id,
+      employerId: response.employer_id,
+      candidateId: response.candidate_id,
+      content: response.content,
+      createdAt: response.created_at,
+      updatedAt: response.updated_at,
+    }
+  },
+
+  // Update a note
+  update: async (candidateId: string, noteId: string, content: string): Promise<CandidateNote> => {
+    const response = await apiRequest<{
+      id: string
+      employer_id: string
+      candidate_id: string
+      content: string
+      created_at: string
+      updated_at?: string
+    }>(`/api/employers/candidates/${candidateId}/notes/${noteId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content }),
+    })
+
+    return {
+      id: response.id,
+      employerId: response.employer_id,
+      candidateId: response.candidate_id,
+      content: response.content,
+      createdAt: response.created_at,
+      updatedAt: response.updated_at,
+    }
+  },
+
+  // Delete a note
+  delete: async (candidateId: string, noteId: string): Promise<{ success: boolean }> => {
+    return apiRequest(`/api/employers/candidates/${candidateId}/notes/${noteId}`, {
+      method: 'DELETE',
+    })
+  },
+}
+
+// ==================== TEAM MEMBER API ====================
+
+export type TeamMemberRole = 'admin' | 'recruiter' | 'hiring_manager' | 'interviewer'
+
+export interface TeamMember {
+  id: string
+  employerId: string
+  email: string
+  name: string
+  role: TeamMemberRole
+  isActive: boolean
+  googleCalendarConnected: boolean
+  googleCalendarConnectedAt?: string
+  maxInterviewsPerDay: number
+  maxInterviewsPerWeek: number
+  createdAt: string
+  updatedAt?: string
+  // Load info (from getTeamMember)
+  interviewsToday?: number
+  interviewsThisWeek?: number
+  availableToday?: boolean
+  availableThisWeek?: boolean
+}
+
+export interface AvailabilitySlot {
+  id: string
+  teamMemberId: string
+  dayOfWeek: number
+  startTime: string
+  endTime: string
+  timezone: string
+  isActive: boolean
+  createdAt: string
+}
+
+export interface AvailabilityException {
+  id: string
+  teamMemberId: string
+  date: string
+  isUnavailable: boolean
+  startTime?: string
+  endTime?: string
+  reason?: string
+  createdAt: string
+}
+
+export interface TimeSlot {
+  start: string
+  end: string
+  interviewerId: string
+  interviewerName?: string
+}
+
+// Helper to transform team member from snake_case to camelCase
+function transformTeamMember(data: Record<string, unknown>): TeamMember {
+  return {
+    id: data.id as string,
+    employerId: (data.employer_id || data.employerId) as string,
+    email: data.email as string,
+    name: data.name as string,
+    role: (data.role || 'interviewer') as TeamMemberRole,
+    isActive: (data.is_active ?? data.isActive ?? true) as boolean,
+    googleCalendarConnected: (data.google_calendar_connected ?? data.googleCalendarConnected ?? false) as boolean,
+    googleCalendarConnectedAt: (data.google_calendar_connected_at || data.googleCalendarConnectedAt) as string | undefined,
+    maxInterviewsPerDay: (data.max_interviews_per_day || data.maxInterviewsPerDay || 4) as number,
+    maxInterviewsPerWeek: (data.max_interviews_per_week || data.maxInterviewsPerWeek || 15) as number,
+    createdAt: (data.created_at || data.createdAt) as string,
+    updatedAt: (data.updated_at || data.updatedAt) as string | undefined,
+    interviewsToday: (data.interviews_today || data.interviewsToday) as number | undefined,
+    interviewsThisWeek: (data.interviews_this_week || data.interviewsThisWeek) as number | undefined,
+    availableToday: (data.available_today ?? data.availableToday) as boolean | undefined,
+    availableThisWeek: (data.available_this_week ?? data.availableThisWeek) as boolean | undefined,
+  }
+}
+
+export const teamMemberApi = {
+  // Create a team member
+  create: async (data: {
+    email: string
+    name: string
+    role?: TeamMemberRole
+    maxInterviewsPerDay?: number
+    maxInterviewsPerWeek?: number
+  }): Promise<TeamMember> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/employers/team-members', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: data.email,
+        name: data.name,
+        role: data.role || 'interviewer',
+        max_interviews_per_day: data.maxInterviewsPerDay || 4,
+        max_interviews_per_week: data.maxInterviewsPerWeek || 15,
+      }),
+    })
+    return transformTeamMember(response)
+  },
+
+  // List team members
+  list: async (includeInactive?: boolean): Promise<{
+    teamMembers: TeamMember[]
+    total: number
+  }> => {
+    const query = includeInactive ? '?include_inactive=true' : ''
+    const response = await apiRequest<{
+      team_members: Record<string, unknown>[]
+      total: number
+    }>(`/api/employers/team-members${query}`)
+    return {
+      teamMembers: response.team_members.map(transformTeamMember),
+      total: response.total,
+    }
+  },
+
+  // Get a team member
+  get: async (teamMemberId: string): Promise<TeamMember> => {
+    const response = await apiRequest<Record<string, unknown>>(
+      `/api/employers/team-members/${teamMemberId}`
+    )
+    return transformTeamMember(response)
+  },
+
+  // Update a team member
+  update: async (teamMemberId: string, data: {
+    name?: string
+    role?: TeamMemberRole
+    isActive?: boolean
+    maxInterviewsPerDay?: number
+    maxInterviewsPerWeek?: number
+  }): Promise<TeamMember> => {
+    const response = await apiRequest<Record<string, unknown>>(
+      `/api/employers/team-members/${teamMemberId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: data.name,
+          role: data.role,
+          is_active: data.isActive,
+          max_interviews_per_day: data.maxInterviewsPerDay,
+          max_interviews_per_week: data.maxInterviewsPerWeek,
+        }),
+      }
+    )
+    return transformTeamMember(response)
+  },
+
+  // Delete a team member
+  delete: async (teamMemberId: string): Promise<void> => {
+    return apiRequest(`/api/employers/team-members/${teamMemberId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  // Get calendar connect URL
+  getCalendarConnectUrl: async (teamMemberId: string): Promise<{ url: string }> => {
+    return apiRequest(`/api/employers/team-members/${teamMemberId}/calendar/connect-url`)
+  },
+
+  // Connect calendar
+  connectCalendar: async (teamMemberId: string, code: string): Promise<{
+    success: boolean
+    message: string
+    connectedAt?: string
+  }> => {
+    const response = await apiRequest<{
+      success: boolean
+      message: string
+      connected_at?: string
+    }>(`/api/employers/team-members/${teamMemberId}/calendar/connect`, {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+    return {
+      success: response.success,
+      message: response.message,
+      connectedAt: response.connected_at,
+    }
+  },
+
+  // Disconnect calendar
+  disconnectCalendar: async (teamMemberId: string): Promise<{
+    success: boolean
+    message: string
+  }> => {
+    return apiRequest(`/api/employers/team-members/${teamMemberId}/calendar`, {
+      method: 'DELETE',
+    })
+  },
+
+  // Get availability
+  getAvailability: async (teamMemberId: string): Promise<{
+    teamMemberId: string
+    timezone: string
+    slots: AvailabilitySlot[]
+    exceptions: AvailabilityException[]
+  }> => {
+    const response = await apiRequest<{
+      team_member_id: string
+      timezone: string
+      slots: Array<{
+        id: string
+        team_member_id: string
+        day_of_week: number
+        start_time: string
+        end_time: string
+        timezone: string
+        is_active: boolean
+        created_at: string
+      }>
+      exceptions: Array<{
+        id: string
+        team_member_id: string
+        date: string
+        is_unavailable: boolean
+        start_time?: string
+        end_time?: string
+        reason?: string
+        created_at: string
+      }>
+    }>(`/api/employers/team-members/${teamMemberId}/availability`)
+    return {
+      teamMemberId: response.team_member_id,
+      timezone: response.timezone,
+      slots: response.slots.map(s => ({
+        id: s.id,
+        teamMemberId: s.team_member_id,
+        dayOfWeek: s.day_of_week,
+        startTime: s.start_time,
+        endTime: s.end_time,
+        timezone: s.timezone,
+        isActive: s.is_active,
+        createdAt: s.created_at,
+      })),
+      exceptions: response.exceptions.map(e => ({
+        id: e.id,
+        teamMemberId: e.team_member_id,
+        date: e.date,
+        isUnavailable: e.is_unavailable,
+        startTime: e.start_time,
+        endTime: e.end_time,
+        reason: e.reason,
+        createdAt: e.created_at,
+      })),
+    }
+  },
+
+  // Set availability
+  setAvailability: async (teamMemberId: string, data: {
+    slots: Array<{
+      dayOfWeek: number
+      startTime: string
+      endTime: string
+    }>
+    timezone: string
+  }): Promise<{ success: boolean; message: string }> => {
+    return apiRequest(`/api/employers/team-members/${teamMemberId}/availability`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        slots: data.slots.map(s => ({
+          day_of_week: s.dayOfWeek,
+          start_time: s.startTime,
+          end_time: s.endTime,
+        })),
+        timezone: data.timezone,
+      }),
+    })
+  },
+
+  // Add availability exception
+  addException: async (teamMemberId: string, data: {
+    date: string
+    isUnavailable: boolean
+    startTime?: string
+    endTime?: string
+    reason?: string
+  }): Promise<AvailabilityException> => {
+    const response = await apiRequest<{
+      id: string
+      team_member_id: string
+      date: string
+      is_unavailable: boolean
+      start_time?: string
+      end_time?: string
+      reason?: string
+      created_at: string
+    }>(`/api/employers/team-members/${teamMemberId}/availability/exceptions`, {
+      method: 'POST',
+      body: JSON.stringify({
+        date: data.date,
+        is_unavailable: data.isUnavailable,
+        start_time: data.startTime,
+        end_time: data.endTime,
+        reason: data.reason,
+      }),
+    })
+    return {
+      id: response.id,
+      teamMemberId: response.team_member_id,
+      date: response.date,
+      isUnavailable: response.is_unavailable,
+      startTime: response.start_time,
+      endTime: response.end_time,
+      reason: response.reason,
+      createdAt: response.created_at,
+    }
+  },
+
+  // Delete availability exception
+  deleteException: async (teamMemberId: string, exceptionId: string): Promise<void> => {
+    return apiRequest(
+      `/api/employers/team-members/${teamMemberId}/availability/exceptions/${exceptionId}`,
+      { method: 'DELETE' }
+    )
+  },
+
+  // Get available slots
+  getAvailableSlots: async (teamMemberId: string, params: {
+    startDate: string
+    endDate: string
+    durationMinutes?: number
+  }): Promise<{
+    slots: TimeSlot[]
+    timezone: string
+    total: number
+  }> => {
+    const searchParams = new URLSearchParams({
+      start_date: params.startDate,
+      end_date: params.endDate,
+    })
+    if (params.durationMinutes) {
+      searchParams.set('duration_minutes', params.durationMinutes.toString())
+    }
+    const response = await apiRequest<{
+      slots: Array<{
+        start: string
+        end: string
+        interviewer_id: string
+        interviewer_name?: string
+      }>
+      timezone: string
+      total: number
+    }>(`/api/employers/team-members/${teamMemberId}/slots?${searchParams}`)
+    return {
+      slots: response.slots.map(s => ({
+        start: s.start,
+        end: s.end,
+        interviewerId: s.interviewer_id,
+        interviewerName: s.interviewer_name,
+      })),
+      timezone: response.timezone,
+      total: response.total,
+    }
+  },
+}
+
+// ==================== SCHEDULING LINK API ====================
+
+export interface SchedulingLink {
+  id: string
+  employerId: string
+  jobId?: string
+  jobTitle?: string
+  slug: string
+  name: string
+  description?: string
+  durationMinutes: number
+  interviewerIds: string[]
+  interviewers?: Array<{ id: string; name: string; email: string }>
+  bufferBeforeMinutes: number
+  bufferAfterMinutes: number
+  minNoticeHours: number
+  maxDaysAhead: number
+  isActive: boolean
+  expiresAt?: string
+  viewCount: number
+  bookingCount: number
+  createdAt: string
+  updatedAt?: string
+  publicUrl?: string
+}
+
+export interface PublicSchedulingLink {
+  id: string
+  name: string
+  description?: string
+  durationMinutes: number
+  companyName: string
+  companyLogo?: string
+  jobTitle?: string
+  minNoticeHours: number
+  maxDaysAhead: number
+}
+
+// Helper to transform scheduling link from snake_case to camelCase
+function transformSchedulingLink(data: Record<string, unknown>): SchedulingLink {
+  const interviewers = data.interviewers as Array<Record<string, unknown>> | undefined
+  return {
+    id: data.id as string,
+    employerId: (data.employer_id || data.employerId) as string,
+    jobId: (data.job_id || data.jobId) as string | undefined,
+    jobTitle: (data.job_title || data.jobTitle) as string | undefined,
+    slug: data.slug as string,
+    name: data.name as string,
+    description: data.description as string | undefined,
+    durationMinutes: (data.duration_minutes || data.durationMinutes || 30) as number,
+    interviewerIds: (data.interviewer_ids || data.interviewerIds || []) as string[],
+    interviewers: interviewers?.map(i => ({
+      id: i.id as string,
+      name: i.name as string,
+      email: i.email as string,
+    })),
+    bufferBeforeMinutes: (data.buffer_before_minutes || data.bufferBeforeMinutes || 5) as number,
+    bufferAfterMinutes: (data.buffer_after_minutes || data.bufferAfterMinutes || 5) as number,
+    minNoticeHours: (data.min_notice_hours || data.minNoticeHours || 24) as number,
+    maxDaysAhead: (data.max_days_ahead || data.maxDaysAhead || 14) as number,
+    isActive: (data.is_active ?? data.isActive ?? true) as boolean,
+    expiresAt: (data.expires_at || data.expiresAt) as string | undefined,
+    viewCount: (data.view_count || data.viewCount || 0) as number,
+    bookingCount: (data.booking_count || data.bookingCount || 0) as number,
+    createdAt: (data.created_at || data.createdAt) as string,
+    updatedAt: (data.updated_at || data.updatedAt) as string | undefined,
+    publicUrl: (data.public_url || data.publicUrl) as string | undefined,
+  }
+}
+
+export const schedulingLinkApi = {
+  // Create a scheduling link
+  create: async (data: {
+    name: string
+    interviewerIds: string[]
+    durationMinutes?: number
+    jobId?: string
+    description?: string
+    bufferBeforeMinutes?: number
+    bufferAfterMinutes?: number
+    minNoticeHours?: number
+    maxDaysAhead?: number
+    expiresAt?: string
+  }): Promise<SchedulingLink> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/employers/scheduling-links', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: data.name,
+        interviewer_ids: data.interviewerIds,
+        duration_minutes: data.durationMinutes || 30,
+        job_id: data.jobId,
+        description: data.description,
+        buffer_before_minutes: data.bufferBeforeMinutes || 5,
+        buffer_after_minutes: data.bufferAfterMinutes || 5,
+        min_notice_hours: data.minNoticeHours || 24,
+        max_days_ahead: data.maxDaysAhead || 14,
+        expires_at: data.expiresAt,
+      }),
+    })
+    return transformSchedulingLink(response)
+  },
+
+  // List scheduling links
+  list: async (includeInactive?: boolean): Promise<{
+    links: SchedulingLink[]
+    total: number
+  }> => {
+    const query = includeInactive ? '?include_inactive=true' : ''
+    const response = await apiRequest<{
+      links: Record<string, unknown>[]
+      total: number
+    }>(`/api/employers/scheduling-links${query}`)
+    return {
+      links: response.links.map(transformSchedulingLink),
+      total: response.total,
+    }
+  },
+
+  // Get a scheduling link
+  get: async (linkId: string): Promise<SchedulingLink> => {
+    const response = await apiRequest<Record<string, unknown>>(
+      `/api/employers/scheduling-links/${linkId}`
+    )
+    return transformSchedulingLink(response)
+  },
+
+  // Update a scheduling link
+  update: async (linkId: string, data: {
+    name?: string
+    description?: string
+    durationMinutes?: number
+    interviewerIds?: string[]
+    bufferBeforeMinutes?: number
+    bufferAfterMinutes?: number
+    minNoticeHours?: number
+    maxDaysAhead?: number
+    isActive?: boolean
+    expiresAt?: string
+  }): Promise<SchedulingLink> => {
+    const response = await apiRequest<Record<string, unknown>>(
+      `/api/employers/scheduling-links/${linkId}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description,
+          duration_minutes: data.durationMinutes,
+          interviewer_ids: data.interviewerIds,
+          buffer_before_minutes: data.bufferBeforeMinutes,
+          buffer_after_minutes: data.bufferAfterMinutes,
+          min_notice_hours: data.minNoticeHours,
+          max_days_ahead: data.maxDaysAhead,
+          is_active: data.isActive,
+          expires_at: data.expiresAt,
+        }),
+      }
+    )
+    return transformSchedulingLink(response)
+  },
+
+  // Delete a scheduling link
+  delete: async (linkId: string): Promise<void> => {
+    return apiRequest(`/api/employers/scheduling-links/${linkId}`, {
+      method: 'DELETE',
+    })
+  },
+
+  // Get public scheduling link info and available slots (no auth required)
+  getPublic: async (slug: string): Promise<{
+    link: PublicSchedulingLink
+    slots: Array<{ start: string; end: string }>
+    timezone: string
+  }> => {
+    const response = await apiRequest<{
+      link: {
+        id: string
+        name: string
+        description?: string
+        duration_minutes: number
+        company_name: string
+        company_logo?: string
+        job_title?: string
+        min_notice_hours: number
+        max_days_ahead: number
+      }
+      slots: Array<{ start: string; end: string }>
+      timezone: string
+    }>(`/api/employers/scheduling-links/public/${slug}`)
+    return {
+      link: {
+        id: response.link.id,
+        name: response.link.name,
+        description: response.link.description,
+        durationMinutes: response.link.duration_minutes,
+        companyName: response.link.company_name,
+        companyLogo: response.link.company_logo,
+        jobTitle: response.link.job_title,
+        minNoticeHours: response.link.min_notice_hours,
+        maxDaysAhead: response.link.max_days_ahead,
+      },
+      slots: response.slots,
+      timezone: response.timezone,
+    }
+  },
+
+  // Book a slot (no auth required)
+  book: async (slug: string, data: {
+    slotStart: string
+    candidateName: string
+    candidateEmail: string
+    candidatePhone?: string
+    candidateNotes?: string
+    timezone?: string
+  }): Promise<{
+    success: boolean
+    message: string
+    interviewId?: string
+    scheduledAt?: string
+    durationMinutes?: number
+    googleMeetLink?: string
+    calendarLink?: string
+    interviewerName?: string
+    confirmationEmailSent?: boolean
+    error?: string
+    errorCode?: string
+  }> => {
+    const response = await apiRequest<{
+      success: boolean
+      message: string
+      interview_id?: string
+      scheduled_at?: string
+      duration_minutes?: number
+      google_meet_link?: string
+      calendar_link?: string
+      interviewer_name?: string
+      confirmation_email_sent?: boolean
+      error?: string
+      error_code?: string
+    }>(`/api/employers/scheduling-links/public/${slug}/book`, {
+      method: 'POST',
+      body: JSON.stringify({
+        slot_start: data.slotStart,
+        candidate_name: data.candidateName,
+        candidate_email: data.candidateEmail,
+        candidate_phone: data.candidatePhone,
+        candidate_notes: data.candidateNotes,
+        timezone: data.timezone || 'America/Los_Angeles',
+      }),
+    })
+    return {
+      success: response.success,
+      message: response.message,
+      interviewId: response.interview_id,
+      scheduledAt: response.scheduled_at,
+      durationMinutes: response.duration_minutes,
+      googleMeetLink: response.google_meet_link,
+      calendarLink: response.calendar_link,
+      interviewerName: response.interviewer_name,
+      confirmationEmailSent: response.confirmation_email_sent,
+      error: response.error,
+      errorCode: response.error_code,
+    }
+  },
+
+  // Find panel slots (where all specified interviewers are available)
+  findPanelSlots: async (data: {
+    interviewerIds: string[]
+    durationMinutes?: number
+    daysAhead?: number
+  }): Promise<{
+    slots: TimeSlot[]
+    total: number
+  }> => {
+    const response = await apiRequest<{
+      slots: Array<{
+        start: string
+        end: string
+        interviewer_id: string
+        interviewer_name?: string
+      }>
+      total: number
+    }>('/api/employers/scheduling-links/find-panel-slots', {
+      method: 'POST',
+      body: JSON.stringify({
+        interviewer_ids: data.interviewerIds,
+        duration_minutes: data.durationMinutes || 30,
+        days_ahead: data.daysAhead || 14,
+      }),
+    })
+    return {
+      slots: response.slots.map(s => ({
+        start: s.start,
+        end: s.end,
+        interviewerId: s.interviewer_id,
+        interviewerName: s.interviewer_name,
+      })),
+      total: response.total,
+    }
+  },
+
+  // Check for scheduling conflicts
+  checkConflicts: async (data: {
+    interviewerIds: string[]
+    proposedStart: string
+    durationMinutes?: number
+  }): Promise<{
+    hasConflicts: boolean
+    conflicts: Array<{
+      interviewerId: string
+      interviewerName: string
+      conflictType: string
+      conflictStart: string
+      conflictEnd: string
+      description?: string
+    }>
+    suggestedAlternatives: TimeSlot[]
+  }> => {
+    const response = await apiRequest<{
+      has_conflicts: boolean
+      conflicts: Array<{
+        interviewer_id: string
+        interviewer_name: string
+        conflict_type: string
+        conflict_start: string
+        conflict_end: string
+        description?: string
+      }>
+      suggested_alternatives: Array<{
+        start: string
+        end: string
+        interviewer_id: string
+        interviewer_name?: string
+      }>
+    }>('/api/employers/scheduling-links/check-conflicts', {
+      method: 'POST',
+      body: JSON.stringify({
+        interviewer_ids: data.interviewerIds,
+        proposed_start: data.proposedStart,
+        duration_minutes: data.durationMinutes || 30,
+      }),
+    })
+    return {
+      hasConflicts: response.has_conflicts,
+      conflicts: response.conflicts.map(c => ({
+        interviewerId: c.interviewer_id,
+        interviewerName: c.interviewer_name,
+        conflictType: c.conflict_type,
+        conflictStart: c.conflict_start,
+        conflictEnd: c.conflict_end,
+        description: c.description,
+      })),
+      suggestedAlternatives: response.suggested_alternatives.map(s => ({
+        start: s.start,
+        end: s.end,
+        interviewerId: s.interviewer_id,
+        interviewerName: s.interviewer_name,
+      })),
+    }
+  },
+}
+
+// ==================== ORGANIZATION / TEAM API ====================
+
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  logoUrl?: string
+  website?: string
+  industry?: string
+  companySize?: string
+  description?: string
+  plan: string
+  memberCount: number
+  createdAt: string
+}
+
+export interface OrganizationMember {
+  id: string
+  employerId: string
+  name: string
+  email: string
+  role: 'owner' | 'admin' | 'recruiter' | 'hiring_manager' | 'interviewer'
+  joinedAt: string
+  invitedBy?: string
+}
+
+export interface OrganizationInvite {
+  id: string
+  email: string
+  role: string
+  status: 'pending' | 'accepted' | 'expired' | 'cancelled'
+  inviteUrl: string
+  expiresAt: string
+  createdAt: string
+  invitedBy?: string
+}
+
+export const organizationApi = {
+  // Create organization
+  create: async (data: {
+    name: string
+    website?: string
+    industry?: string
+    companySize?: string
+    description?: string
+  }): Promise<Organization> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/organizations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+    return {
+      id: response.id as string,
+      name: response.name as string,
+      slug: response.slug as string,
+      logoUrl: response.logo_url as string | undefined,
+      website: response.website as string | undefined,
+      industry: response.industry as string | undefined,
+      companySize: response.company_size as string | undefined,
+      description: response.description as string | undefined,
+      plan: response.plan as string,
+      memberCount: response.member_count as number,
+      createdAt: response.created_at as string,
+    }
+  },
+
+  // Get current organization
+  getMe: async (): Promise<Organization> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/organizations/me')
+    return {
+      id: response.id as string,
+      name: response.name as string,
+      slug: response.slug as string,
+      logoUrl: response.logo_url as string | undefined,
+      website: response.website as string | undefined,
+      industry: response.industry as string | undefined,
+      companySize: response.company_size as string | undefined,
+      description: response.description as string | undefined,
+      plan: response.plan as string,
+      memberCount: response.member_count as number,
+      createdAt: response.created_at as string,
+    }
+  },
+
+  // Update organization
+  update: async (data: {
+    name?: string
+    website?: string
+    industry?: string
+    companySize?: string
+    description?: string
+    logoUrl?: string
+  }): Promise<Organization> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/organizations/me', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: data.name,
+        website: data.website,
+        industry: data.industry,
+        company_size: data.companySize,
+        description: data.description,
+        logo_url: data.logoUrl,
+      }),
+    })
+    return {
+      id: response.id as string,
+      name: response.name as string,
+      slug: response.slug as string,
+      logoUrl: response.logo_url as string | undefined,
+      website: response.website as string | undefined,
+      industry: response.industry as string | undefined,
+      companySize: response.company_size as string | undefined,
+      description: response.description as string | undefined,
+      plan: response.plan as string,
+      memberCount: response.member_count as number,
+      createdAt: response.created_at as string,
+    }
+  },
+
+  // List team members
+  listMembers: async (): Promise<OrganizationMember[]> => {
+    const response = await apiRequest<Array<Record<string, unknown>>>('/api/organizations/members')
+    return response.map(m => ({
+      id: m.id as string,
+      employerId: m.employer_id as string,
+      name: m.name as string,
+      email: m.email as string,
+      role: m.role as OrganizationMember['role'],
+      joinedAt: m.joined_at as string,
+      invitedBy: m.invited_by as string | undefined,
+    }))
+  },
+
+  // Update member role
+  updateMemberRole: (memberId: string, role: string): Promise<{ success: boolean; message: string }> =>
+    apiRequest(`/api/organizations/members/${memberId}/role?role=${role}`, {
+      method: 'PATCH',
+    }),
+
+  // Remove member
+  removeMember: (memberId: string): Promise<{ success: boolean; message: string }> =>
+    apiRequest(`/api/organizations/members/${memberId}`, {
+      method: 'DELETE',
+    }),
+
+  // Create invite
+  createInvite: async (data: { email: string; role: string }): Promise<OrganizationInvite> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/organizations/invites', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+    return {
+      id: response.id as string,
+      email: response.email as string,
+      role: response.role as string,
+      status: response.status as OrganizationInvite['status'],
+      inviteUrl: response.invite_url as string,
+      expiresAt: response.expires_at as string,
+      createdAt: response.created_at as string,
+      invitedBy: response.invited_by as string | undefined,
+    }
+  },
+
+  // List invites
+  listInvites: async (): Promise<OrganizationInvite[]> => {
+    const response = await apiRequest<Array<Record<string, unknown>>>('/api/organizations/invites')
+    return response.map(inv => ({
+      id: inv.id as string,
+      email: inv.email as string,
+      role: inv.role as string,
+      status: inv.status as OrganizationInvite['status'],
+      inviteUrl: inv.invite_url as string,
+      expiresAt: inv.expires_at as string,
+      createdAt: inv.created_at as string,
+      invitedBy: inv.invited_by as string | undefined,
+    }))
+  },
+
+  // Cancel invite
+  cancelInvite: (inviteId: string): Promise<{ success: boolean; message: string }> =>
+    apiRequest(`/api/organizations/invites/${inviteId}`, {
+      method: 'DELETE',
+    }),
+
+  // Join organization via invite token
+  join: (token: string): Promise<{
+    success: boolean
+    message: string
+    organizationId: string
+    role: string
+  }> =>
+    apiRequest('/api/organizations/join', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+
+  // List team jobs (all jobs from organization members)
+  listTeamJobs: async (): Promise<Array<{
+    id: string
+    title: string
+    vertical?: string
+    roleType?: string
+    location?: string
+    isActive: boolean
+    createdAt: string
+    createdBy: string
+    createdById: string
+  }>> => {
+    const response = await apiRequest<{ jobs: Array<Record<string, unknown>> }>('/api/organizations/jobs')
+    return response.jobs.map(j => ({
+      id: j.id as string,
+      title: j.title as string,
+      vertical: j.vertical as string | undefined,
+      roleType: j.role_type as string | undefined,
+      location: j.location as string | undefined,
+      isActive: j.is_active as boolean,
+      createdAt: j.created_at as string,
+      createdBy: j.created_by as string,
+      createdById: j.created_by_id as string,
+    }))
   },
 }

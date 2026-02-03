@@ -167,7 +167,7 @@ export default function EmployerLoginPage() {
 
               <Button
                 type="submit"
-                variant="brand"
+                variant="default"
                 className="w-full"
                 disabled={isLoading}
                 loading={isLoading}

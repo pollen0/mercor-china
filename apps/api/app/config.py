@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""  # Set via ANTHROPIC_API_KEY env var
     claude_model: str = "claude-sonnet-4-5-20250514"  # Claude Sonnet 4.5 - best balance of speed and accuracy
 
+    # DeepSeek API (fallback for AI features)
+    deepseek_api_key: str = ""  # Set via DEEPSEEK_API_KEY env var
+    deepseek_base_url: str = "https://api.deepseek.com"  # Set via DEEPSEEK_BASE_URL env var
+
     # OpenAI API (for Whisper speech-to-text only - Claude doesn't have native STT)
     openai_api_key: str = ""  # Set via OPENAI_API_KEY env var
 

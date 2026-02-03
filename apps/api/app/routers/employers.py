@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from typing import Optional
+from pydantic import BaseModel, Field
 import uuid
 import json
 
@@ -12,6 +13,7 @@ from ..models.activity import CandidateActivity, CandidateAward, Club
 from ..schemas.employer import (
     EmployerRegister,
     EmployerLogin,
+    EmployerUpdate,
     EmployerResponse,
     EmployerWithToken,
     JobCreate,
@@ -23,6 +25,9 @@ from ..schemas.employer import (
     MessageResponse,
     BulkActionRequest,
     BulkActionResult,
+    MatchAlert,
+    MatchAlertCandidate,
+    MatchAlertList,
 )
 from ..schemas.interview import (
     InterviewSessionResponse,
@@ -120,6 +125,7 @@ async def register_employer(
 
     employer = Employer(
         id=generate_cuid("e"),
+        name=data.name,
         company_name=data.company_name,
         email=data.email,
         password=get_password_hash(data.password),
@@ -178,6 +184,28 @@ async def get_current_employer_profile(
     employer: Employer = Depends(get_current_employer)
 ):
     """Get the current employer's profile."""
+    return employer
+
+
+@router.patch("/me", response_model=EmployerResponse)
+async def update_current_employer_profile(
+    data: EmployerUpdate,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Update the current employer's profile."""
+    # Update fields if provided
+    if data.name is not None:
+        employer.name = data.name
+    if data.company_name is not None:
+        employer.company_name = data.company_name
+    if data.industry is not None:
+        employer.industry = data.industry
+    if data.company_size is not None:
+        employer.company_size = data.company_size
+
+    db.commit()
+    db.refresh(employer)
     return employer
 
 
@@ -266,6 +294,191 @@ async def get_dashboard_stats(
     cache_service.set_dashboard_stats(employer.id, stats.model_dump())
 
     return stats
+
+
+@router.get("/match-alerts", response_model=MatchAlertList)
+async def get_match_alerts(
+    limit: int = 20,
+    offset: int = 0,
+    unread_only: bool = False,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Get recent candidate matches/alerts for the employer."""
+    # Get job IDs for this employer
+    job_ids = [job.id for job in employer.jobs]
+
+    if not job_ids:
+        return MatchAlertList(alerts=[], total=0, unread_count=0)
+
+    # Build query for matches
+    query = db.query(Match).filter(Match.job_id.in_(job_ids))
+
+    # Optionally filter to only new/unviewed matches (PENDING status)
+    if unread_only:
+        query = query.filter(Match.status == MatchStatus.PENDING)
+
+    # Get total count before pagination
+    total = query.count()
+
+    # Get unread count (matches with PENDING status)
+    unread_count = db.query(Match).filter(
+        Match.job_id.in_(job_ids),
+        Match.status == MatchStatus.PENDING
+    ).count()
+
+    # Get matches with pagination, ordered by newest first
+    matches = query.order_by(Match.created_at.desc()).offset(offset).limit(limit).all()
+
+    # Build response
+    alerts = []
+    for match in matches:
+        candidate = match.candidate
+        job = match.job
+
+        alerts.append(MatchAlert(
+            id=match.id,
+            candidate=MatchAlertCandidate(
+                id=candidate.id,
+                name=candidate.name,
+                email=candidate.email,
+                university=candidate.university,
+                major=candidate.major,
+                graduation_year=candidate.graduation_year,
+            ),
+            job_id=job.id if job else None,
+            job_title=job.title if job else None,
+            match_score=match.overall_match_score or match.score,
+            interview_score=match.interview_score,
+            skills_match_score=match.skills_match_score,
+            status=match.status.value,
+            created_at=match.created_at,
+            is_new=match.status == MatchStatus.PENDING,
+        ))
+
+    return MatchAlertList(alerts=alerts, total=total, unread_count=unread_count)
+
+
+@router.post("/match-alerts/{match_id}/mark-viewed")
+async def mark_match_viewed(
+    match_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Mark a match alert as viewed (changes status from PENDING if still pending)."""
+    # Verify the match belongs to one of the employer's jobs
+    job_ids = [job.id for job in employer.jobs]
+
+    match = db.query(Match).filter(
+        Match.id == match_id,
+        Match.job_id.in_(job_ids)
+    ).first()
+
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Match not found"
+        )
+
+    # Only update if still in PENDING status
+    # We don't want to downgrade a match that's already CONTACTED, SHORTLISTED, etc.
+    if match.status == MatchStatus.PENDING:
+        match.status = MatchStatus.IN_REVIEW
+        db.commit()
+
+    return {"success": True, "status": match.status.value}
+
+
+class WatchlistCandidate(BaseModel):
+    """Candidate on employer's watchlist."""
+    candidate_id: str
+    candidate_name: str
+    candidate_email: str
+    university: Optional[str] = None
+    major: Optional[str] = None
+    graduation_year: Optional[int] = None
+    vertical: Optional[str] = None
+    best_score: Optional[float] = None
+    profile_score: Optional[float] = None
+    github_username: Optional[str] = None
+    added_at: datetime
+    job_id: Optional[str] = None
+    job_title: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class WatchlistResponse(BaseModel):
+    """Response for watchlist."""
+    candidates: list[WatchlistCandidate]
+    total: int
+
+
+@router.get("/watchlist", response_model=WatchlistResponse)
+async def get_watchlist(
+    graduation_year: Optional[int] = None,
+    university: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """
+    Get candidates on the employer's watchlist.
+
+    Watchlist is for tracking promising candidates (e.g., freshmen/sophomores)
+    for future opportunities. Filter by graduation year or university.
+    """
+    # Get job IDs for this employer
+    job_ids = [job.id for job in employer.jobs]
+
+    if not job_ids:
+        return WatchlistResponse(candidates=[], total=0)
+
+    # Query watchlist matches
+    query = db.query(Match).filter(
+        Match.job_id.in_(job_ids),
+        Match.status == MatchStatus.WATCHLIST
+    ).join(
+        Candidate, Match.candidate_id == Candidate.id
+    )
+
+    # Apply filters
+    if graduation_year:
+        query = query.filter(Candidate.graduation_year == graduation_year)
+    if university:
+        query = query.filter(Candidate.university.ilike(f"%{university}%"))
+
+    # Get total count
+    total = query.count()
+
+    # Get paginated results ordered by when added (most recent first)
+    matches = query.order_by(Match.updated_at.desc().nulls_last(), Match.created_at.desc()).offset(offset).limit(limit).all()
+
+    # Build response
+    candidates = []
+    for match in matches:
+        candidate = match.candidate
+        job = match.job
+        vertical_profile = match.vertical_profile
+
+        candidates.append(WatchlistCandidate(
+            candidate_id=candidate.id,
+            candidate_name=candidate.name,
+            candidate_email=candidate.email,
+            university=candidate.university,
+            major=candidate.major,
+            graduation_year=candidate.graduation_year,
+            vertical=vertical_profile.vertical.value if vertical_profile else None,
+            best_score=vertical_profile.best_score if vertical_profile else None,
+            profile_score=match.score,
+            github_username=candidate.github_username,
+            added_at=match.updated_at or match.created_at,
+            job_id=job.id if job else None,
+            job_title=job.title if job else None,
+            notes=match.ai_reasoning,  # Using ai_reasoning field for notes
+        ))
+
+    return WatchlistResponse(candidates=candidates, total=total)
 
 
 # Job management
@@ -365,12 +578,18 @@ def auto_match_job_with_talent_pool(job_id: str, db_url: str):
 
         logger.info(f"Auto-matching job {job_id} with {len(profiles)} talent pool candidates")
 
+        # Get employer info for job details (company_stage, industry)
+        employer = job.employer if job else None
+        job_company_stage = getattr(employer, 'company_stage', None) if employer else None
+        job_industry = getattr(employer, 'industry', None) if employer else None
+
         for profile in profiles:
             try:
                 candidate = profile.candidate
                 candidate_data = candidate.resume_parsed_data if candidate else None
+                candidate_preferences = candidate.sharing_preferences if candidate else None
 
-                # Calculate match score
+                # Calculate match score with preference boost
                 match_result = _run_async(
                     matching_service.calculate_match(
                         interview_score=profile.best_score or profile.interview_score or 5.0,
@@ -379,6 +598,10 @@ def auto_match_job_with_talent_pool(job_id: str, db_url: str):
                         job_requirements=job.requirements or [],
                         job_location=job.location,
                         job_vertical=job.vertical.value,
+                        # Preference boost params
+                        candidate_preferences=candidate_preferences,
+                        job_company_stage=job_company_stage,
+                        job_industry=job_industry,
                     )
                 )
 
@@ -389,7 +612,7 @@ def auto_match_job_with_talent_pool(job_id: str, db_url: str):
                 ).first()
 
                 if not existing_match:
-                    # Create new match
+                    # Create new match (use boosted score for ranking)
                     new_match = Match(
                         id=f"m{uuid.uuid4().hex[:24]}",
                         candidate_id=profile.candidate_id,
@@ -400,12 +623,13 @@ def auto_match_job_with_talent_pool(job_id: str, db_url: str):
                         skills_match_score=match_result.skills_match_score,
                         experience_match_score=match_result.experience_match_score,
                         location_match=match_result.location_match,
-                        overall_match_score=match_result.overall_match_score,
+                        overall_match_score=match_result.boosted_match_score,  # Use boosted score
                         factors=json.dumps(match_result.factors, ensure_ascii=False),
                         ai_reasoning=match_result.ai_reasoning,
                     )
                     db.add(new_match)
-                    logger.info(f"Created match for candidate {profile.candidate_id}, score: {match_result.overall_match_score}")
+                    boost_info = f" (boost: +{int(match_result.preference_boost)})" if match_result.preference_boost > 0 else ""
+                    logger.info(f"Created match for candidate {profile.candidate_id}, score: {match_result.boosted_match_score}{boost_info}")
 
             except Exception as e:
                 logger.error(f"Failed to create match for profile {profile.id}: {e}")
@@ -568,6 +792,83 @@ async def list_interviews(
         ))
 
     return InterviewListResponse(interviews=interviews, total=total)
+
+
+@router.get("/interviews/export")
+async def export_interviews_csv(
+    job_id: Optional[str] = None,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Export interviews to CSV format."""
+    job_ids = [job.id for job in employer.jobs]
+
+    if not job_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have not created any jobs yet"
+        )
+
+    # Build query
+    query = db.query(InterviewSession).filter(
+        InterviewSession.job_id.in_(job_ids),
+        InterviewSession.is_practice == False
+    )
+
+    if job_id:
+        query = query.filter(InterviewSession.job_id == job_id)
+
+    sessions = query.order_by(InterviewSession.created_at.desc()).all()
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow([
+        'Candidate Name',
+        'Email',
+        'Phone',
+        'Job Title',
+        'Score',
+        'Status',
+        'Interview Date',
+        'Completed Date'
+    ])
+
+    # Write data rows
+    for session in sessions:
+        # Get match status if exists
+        match = db.query(Match).filter(
+            Match.candidate_id == session.candidate_id,
+            Match.job_id == session.job_id
+        ).first()
+        status_text = match.status.value if match else session.status.value
+
+        writer.writerow([
+            session.candidate.name,
+            session.candidate.email,
+            session.candidate.phone,
+            session.job.title if session.job else 'N/A',
+            f"{session.total_score:.2f}" if session.total_score else 'N/A',
+            status_text,
+            session.started_at.strftime('%Y-%m-%d %H:%M') if session.started_at else 'N/A',
+            session.completed_at.strftime('%Y-%m-%d %H:%M') if session.completed_at else 'N/A'
+        ])
+
+    # Get the CSV content
+    output.seek(0)
+    csv_content = output.getvalue()
+
+    # Generate filename
+    from datetime import datetime
+    filename = f"interviews_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    return StreamingResponse(
+        iter([csv_content]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 @router.get("/interviews/{interview_id}", response_model=InterviewSessionResponse)
@@ -994,91 +1295,12 @@ async def bulk_interview_action(
     )
 
 
-# ==================== EXPORT ENDPOINTS ====================
-
-@router.get("/interviews/export")
-async def export_interviews_csv(
-    job_id: Optional[str] = None,
-    employer: Employer = Depends(get_current_employer),
-    db: Session = Depends(get_db)
-):
-    """Export interviews to CSV format."""
-    job_ids = [job.id for job in employer.jobs]
-
-    if not job_ids:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You have not created any jobs yet"
-        )
-
-    # Build query
-    query = db.query(InterviewSession).filter(
-        InterviewSession.job_id.in_(job_ids),
-        InterviewSession.is_practice == False
-    )
-
-    if job_id:
-        query = query.filter(InterviewSession.job_id == job_id)
-
-    sessions = query.order_by(InterviewSession.created_at.desc()).all()
-
-    # Create CSV in memory
-    output = io.StringIO()
-    writer = csv.writer(output)
-
-    # Write header
-    writer.writerow([
-        'Candidate Name',
-        'Email',
-        'Phone',
-        'Job Title',
-        'Score',
-        'Status',
-        'Interview Date',
-        'Completed Date'
-    ])
-
-    # Write data rows
-    for session in sessions:
-        # Get match status if exists
-        match = db.query(Match).filter(
-            Match.candidate_id == session.candidate_id,
-            Match.job_id == session.job_id
-        ).first()
-        status_text = match.status.value if match else session.status.value
-
-        writer.writerow([
-            session.candidate.name,
-            session.candidate.email,
-            session.candidate.phone,
-            session.job.title if session.job else 'N/A',
-            f"{session.total_score:.2f}" if session.total_score else 'N/A',
-            status_text,
-            session.started_at.strftime('%Y-%m-%d %H:%M') if session.started_at else 'N/A',
-            session.completed_at.strftime('%Y-%m-%d %H:%M') if session.completed_at else 'N/A'
-        ])
-
-    # Get the CSV content
-    output.seek(0)
-    csv_content = output.getvalue()
-
-    # Generate filename
-    from datetime import datetime
-    filename = f"interviews_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
-
-    return StreamingResponse(
-        iter([csv_content]),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
-
-
 # ==================== TOP CANDIDATES / MATCHING ENDPOINTS ====================
 
-from pydantic import BaseModel as PydanticBaseModel
+from pydantic import BaseModel as BaseModel
 
 
-class MatchDetailResponse(PydanticBaseModel):
+class MatchDetailResponse(BaseModel):
     id: str
     candidate_id: str
     candidate_name: str
@@ -1205,15 +1427,16 @@ async def get_all_top_candidates(
 from pydantic import Field as PydanticField
 
 
-class CompletionStatus(PydanticBaseModel):
+class CompletionStatus(BaseModel):
     """Status indicators for what the candidate has completed."""
     resume_uploaded: bool = False
     github_connected: bool = False
     interview_completed: bool = False
     education_filled: bool = False
+    transcript_uploaded: bool = False
 
 
-class ScoreBreakdown(PydanticBaseModel):
+class ScoreBreakdown(BaseModel):
     """Score breakdown by category."""
     communication: Optional[float] = None
     problem_solving: Optional[float] = None
@@ -1227,7 +1450,7 @@ class ScoreBreakdown(PydanticBaseModel):
     github_activity: Optional[float] = None
 
 
-class ActivitySummary(PydanticBaseModel):
+class ActivitySummary(BaseModel):
     """Summary of a candidate's activity/club involvement."""
     name: str
     role: Optional[str] = None
@@ -1238,7 +1461,7 @@ class ActivitySummary(PydanticBaseModel):
         from_attributes = True
 
 
-class AwardSummary(PydanticBaseModel):
+class AwardSummary(BaseModel):
     """Summary of a candidate's award."""
     name: str
     issuer: Optional[str] = None
@@ -1249,7 +1472,16 @@ class AwardSummary(PydanticBaseModel):
         from_attributes = True
 
 
-class TalentPoolCandidate(PydanticBaseModel):
+class CohortBadge(BaseModel):
+    """Cohort comparison badge (e.g., 'Top 10% of Berkeley 2026')."""
+    percentile: int  # 1-99, where candidate ranks
+    top_percent: int  # Inverse of percentile (for "Top X%" display)
+    cohort_label: str  # e.g., "Berkeley 2026"
+    cohort_size: int  # Number of candidates in cohort
+    badge_text: str  # Full display text, e.g., "Top 10% of Berkeley 2026"
+
+
+class TalentPoolCandidate(BaseModel):
     """Candidate info for talent pool browsing."""
     profile_id: Optional[str] = None  # May be None for candidates without vertical profile
     candidate_id: str
@@ -1281,12 +1513,14 @@ class TalentPoolCandidate(PydanticBaseModel):
     # GitHub info
     github_username: Optional[str] = None
     github_languages: list[str] = []  # Top languages
+    # Cohort comparison (e.g., "Top 10% of Berkeley 2026")
+    cohort_badge: Optional[CohortBadge] = None
 
     class Config:
         from_attributes = True
 
 
-class TalentPoolResponse(PydanticBaseModel):
+class TalentPoolResponse(BaseModel):
     """Response for talent pool browse."""
     candidates: list[TalentPoolCandidate]
     total: int
@@ -1317,6 +1551,7 @@ async def browse_talent_pool(
     from sqlalchemy import or_, cast, String, case
     from sqlalchemy.dialects.postgresql import JSONB
     from ..services.scoring import scoring_service
+    from ..services.cohort import cohort_service
 
     candidates_result = []
 
@@ -1393,6 +1628,7 @@ async def browse_talent_pool(
             github_connected=candidate.github_username is not None,
             interview_completed=True,  # They have a completed profile
             education_filled=candidate.university is not None or candidate.major is not None,
+            transcript_uploaded=candidate.courses is not None and len(candidate.courses) > 0,
         )
 
         # Build score breakdown from interview data
@@ -1464,6 +1700,19 @@ async def browse_talent_pool(
             # Sort by bytes and take top 5
             github_languages = sorted(langs.keys(), key=lambda x: langs.get(x, 0), reverse=True)[:5]
 
+        # Calculate cohort badge (e.g., "Top 10% of Berkeley 2026")
+        cohort_badge = None
+        if profile.best_score and candidate.university and candidate.graduation_year:
+            badge_data = cohort_service.get_cohort_badge(
+                score=profile.best_score,
+                university=candidate.university,
+                graduation_year=candidate.graduation_year,
+                vertical=profile.vertical,
+                db=db,
+            )
+            if badge_data:
+                cohort_badge = CohortBadge(**badge_data)
+
         candidates_result.append(TalentPoolCandidate(
             profile_id=profile.id,
             candidate_id=candidate.id,
@@ -1489,6 +1738,7 @@ async def browse_talent_pool(
             gpa=candidate.gpa,
             github_username=candidate.github_username,
             github_languages=github_languages,
+            cohort_badge=cohort_badge,
         ))
 
     # Part 2: Get candidates with profile data but no completed interview
@@ -1558,6 +1808,7 @@ async def browse_talent_pool(
                 github_connected=candidate.github_username is not None,
                 interview_completed=False,
                 education_filled=candidate.university is not None or candidate.major is not None,
+                transcript_uploaded=candidate.courses is not None and len(candidate.courses) > 0,
             )
 
             # Determine status
@@ -1718,6 +1969,7 @@ async def get_talent_candidate_detail(
         "github_connected": candidate.github_username is not None,
         "interview_completed": profile is not None and profile.status == VerticalProfileStatus.COMPLETED,
         "education_filled": candidate.university is not None or candidate.major is not None,
+        "transcript_uploaded": candidate.courses is not None and len(candidate.courses) > 0,
     }
 
     # Get interview session details if available
@@ -2018,6 +2270,7 @@ async def get_talent_profile_detail(
         "github_connected": candidate.github_username is not None,
         "interview_completed": profile.status == VerticalProfileStatus.COMPLETED,
         "education_filled": candidate.university is not None or candidate.major is not None,
+        "transcript_uploaded": candidate.courses is not None and len(candidate.courses) > 0,
     }
 
     # Build profile score if no completed interview
@@ -2112,9 +2365,9 @@ async def get_talent_profile_detail(
     }
 
 
-class TalentPoolStatusUpdate(PydanticBaseModel):
+class TalentPoolStatusUpdate(BaseModel):
     """Request body for updating talent pool candidate status."""
-    status: str  # CONTACTED, IN_REVIEW, SHORTLISTED, REJECTED, HIRED
+    status: str  # CONTACTED, IN_REVIEW, WATCHLIST, SHORTLISTED, REJECTED, HIRED
     job_id: Optional[str] = None  # Which job to associate with (optional)
 
 
@@ -2317,6 +2570,151 @@ async def contact_talent_pool_candidate(
         "email_sent": email_sent,
         "candidate_email": candidate.email if email_sent else None,
     }
+
+
+# ============================================================================
+# CANDIDATE NOTES
+# ============================================================================
+
+from ..models.candidate_note import CandidateNote
+from pydantic import BaseModel, Field
+
+
+class CandidateNoteCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=5000)
+
+
+class CandidateNoteUpdate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=5000)
+
+
+class CandidateNoteResponse(BaseModel):
+    id: str
+    employer_id: str
+    candidate_id: str
+    content: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/candidates/{candidate_id}/notes")
+async def list_candidate_notes(
+    candidate_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    List all notes for a candidate by the current employer.
+    """
+    # Verify candidate exists
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    notes = db.query(CandidateNote).filter(
+        CandidateNote.employer_id == employer.id,
+        CandidateNote.candidate_id == candidate_id
+    ).order_by(CandidateNote.created_at.desc()).all()
+
+    return {
+        "notes": [CandidateNoteResponse.model_validate(note) for note in notes],
+        "total": len(notes),
+    }
+
+
+@router.post("/candidates/{candidate_id}/notes", response_model=CandidateNoteResponse)
+async def create_candidate_note(
+    candidate_id: str,
+    data: CandidateNoteCreate,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Add a private note on a candidate.
+    """
+    # Verify candidate exists
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    note = CandidateNote(
+        employer_id=employer.id,
+        candidate_id=candidate_id,
+        content=data.content,
+    )
+
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+
+    return CandidateNoteResponse.model_validate(note)
+
+
+@router.put("/candidates/{candidate_id}/notes/{note_id}", response_model=CandidateNoteResponse)
+async def update_candidate_note(
+    candidate_id: str,
+    note_id: str,
+    data: CandidateNoteUpdate,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Update a note on a candidate.
+    """
+    note = db.query(CandidateNote).filter(
+        CandidateNote.id == note_id,
+        CandidateNote.employer_id == employer.id,
+        CandidateNote.candidate_id == candidate_id
+    ).first()
+
+    if not note:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Note not found"
+        )
+
+    note.content = data.content
+    db.commit()
+    db.refresh(note)
+
+    return CandidateNoteResponse.model_validate(note)
+
+
+@router.delete("/candidates/{candidate_id}/notes/{note_id}")
+async def delete_candidate_note(
+    candidate_id: str,
+    note_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Delete a note on a candidate.
+    """
+    note = db.query(CandidateNote).filter(
+        CandidateNote.id == note_id,
+        CandidateNote.employer_id == employer.id,
+        CandidateNote.candidate_id == candidate_id
+    ).first()
+
+    if not note:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Note not found"
+        )
+
+    db.delete(note)
+    db.commit()
+
+    return {"success": True, "message": "Note deleted"}
 
 
 # ============================================================================
@@ -2903,4 +3301,366 @@ async def reschedule_interview(
         message="Interview rescheduled successfully",
         old_interview=_build_interview_response(old_interview, db),
         new_interview=_build_interview_response(new_interview, db),
+    )
+
+
+# ============================================================================
+# SKILL GAP ANALYSIS & ML-POWERED MATCHING
+# ============================================================================
+
+from ..services.skill_gap import skill_gap_service, SkillGapAnalysis
+from ..schemas.employer import (
+    SkillGapAnalysisRequest,
+    SkillGapAnalysisResponse,
+    EnhancedMatchRequest,
+    EnhancedMatchResponse,
+    CandidateRankingRequest,
+    CandidateRankingResponse,
+    RankedCandidate,
+)
+from dataclasses import asdict
+
+
+@router.post("/skill-gap/analyze", response_model=SkillGapAnalysisResponse)
+async def analyze_skill_gap(
+    data: SkillGapAnalysisRequest,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Analyze the skill gap between a candidate and job requirements.
+
+    Returns detailed analysis including:
+    - Overall match score
+    - Skill-by-skill matching with proficiency levels
+    - Category coverage
+    - Learning priorities
+    - Alternative/transferable skills
+    """
+    # Get candidate
+    candidate = db.query(Candidate).filter(Candidate.id == data.candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    # Get job requirements
+    job_requirements = data.job_requirements
+    if data.job_id:
+        job = db.query(Job).filter(Job.id == data.job_id).first()
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job not found"
+            )
+        job_requirements = job.required_skills or []
+
+    if not job_requirements:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No job requirements provided"
+        )
+
+    # Get candidate skills from resume
+    candidate_skills = []
+    parsed_resume = None
+
+    if candidate.resume_parsed_data:
+        try:
+            resume_data = candidate.resume_parsed_data if isinstance(candidate.resume_parsed_data, dict) else json.loads(candidate.resume_parsed_data)
+            candidate_skills = resume_data.get('skills', [])
+            # Convert to ParsedResume for skill gap service
+            from ..schemas.candidate import ParsedResume, ExperienceItem, ProjectItem
+            parsed_resume = ParsedResume(
+                name=resume_data.get('name'),
+                email=resume_data.get('email'),
+                skills=candidate_skills,
+                experience=[
+                    ExperienceItem(**exp) if isinstance(exp, dict) else exp
+                    for exp in resume_data.get('experience', [])
+                ],
+                projects=[
+                    ProjectItem(**proj) if isinstance(proj, dict) else proj
+                    for proj in resume_data.get('projects', [])
+                ],
+            )
+        except Exception as e:
+            logger.warning(f"Failed to parse resume data: {e}")
+
+    # Get GitHub data
+    github_data = None
+    if candidate.github_data:
+        try:
+            github_data = candidate.github_data if isinstance(candidate.github_data, dict) else json.loads(candidate.github_data)
+        except Exception:
+            pass
+
+    # Run skill gap analysis
+    analysis = skill_gap_service.analyze_skill_gap(
+        candidate_skills=candidate_skills,
+        job_requirements=job_requirements,
+        parsed_resume=parsed_resume,
+        github_data=github_data,
+    )
+
+    logger.info(f"Skill gap analysis: candidate={data.candidate_id}, score={analysis.overall_match_score}")
+
+    return SkillGapAnalysisResponse(
+        overall_match_score=analysis.overall_match_score,
+        total_requirements=analysis.total_requirements,
+        matched_requirements=analysis.matched_requirements,
+        critical_gaps=analysis.critical_gaps,
+        skill_matches=analysis.skill_matches,
+        category_coverage=analysis.category_coverage,
+        proficiency_distribution=analysis.proficiency_distribution,
+        avg_proficiency_score=analysis.avg_proficiency_score,
+        learning_priorities=analysis.learning_priorities,
+        alternative_skills=analysis.alternative_skills,
+        transferable_skills=analysis.transferable_skills,
+        bonus_skills=analysis.bonus_skills,
+        strongest_areas=analysis.strongest_areas,
+    )
+
+
+@router.post("/enhanced-match", response_model=EnhancedMatchResponse)
+async def get_enhanced_match(
+    data: EnhancedMatchRequest,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Get ML-powered enhanced match score for a candidate-job pair.
+
+    Includes:
+    - Traditional scores (interview, skills, experience, location)
+    - ML-powered scores (GitHub signal, education, growth trajectory)
+    - Hiring recommendation
+    - Top strengths and areas for growth
+    """
+    # Get candidate
+    candidate = db.query(Candidate).filter(Candidate.id == data.candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    # Get job info
+    job_title = data.job_title or "Software Engineer"
+    job_requirements = data.job_requirements or []
+    job_vertical = data.job_vertical
+
+    if data.job_id:
+        job = db.query(Job).filter(Job.id == data.job_id).first()
+        if job:
+            job_title = job.title
+            job_requirements = job.required_skills or []
+            job_vertical = job.vertical.value if job.vertical else None
+
+    # Get candidate's interview score
+    profile = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.candidate_id == data.candidate_id,
+        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED,
+    ).order_by(CandidateVerticalProfile.best_score.desc().nulls_last()).first()
+
+    interview_score = profile.best_score if profile else 5.0
+
+    # Get candidate data
+    candidate_data = None
+    if candidate.resume_parsed_data:
+        try:
+            candidate_data = candidate.resume_parsed_data if isinstance(candidate.resume_parsed_data, dict) else json.loads(candidate.resume_parsed_data)
+        except Exception:
+            pass
+
+    # Get GitHub data
+    github_data = None
+    if candidate.github_data:
+        try:
+            github_data = candidate.github_data if isinstance(candidate.github_data, dict) else json.loads(candidate.github_data)
+        except Exception:
+            pass
+
+    # Get education data
+    education_data = {
+        "university": candidate.university,
+        "major": candidate.major,
+        "gpa": candidate.gpa,
+        "graduation_year": candidate.graduation_year,
+    }
+
+    # Get interview history for trajectory
+    interview_history = []
+    sessions = db.query(InterviewSession).filter(
+        InterviewSession.candidate_id == data.candidate_id,
+        InterviewSession.status == InterviewStatus.COMPLETED,
+    ).order_by(InterviewSession.completed_at.asc()).all()
+
+    for session in sessions:
+        interview_history.append({
+            "overall_score": session.total_score,
+            "completed_at": session.completed_at.isoformat() if session.completed_at else None,
+        })
+
+    # Calculate enhanced match
+    result = await matching_service.calculate_enhanced_match(
+        interview_score=interview_score,
+        candidate_data=candidate_data,
+        job_title=job_title,
+        job_requirements=job_requirements,
+        job_location=None,  # Can be added later
+        job_vertical=job_vertical,
+        github_data=github_data,
+        education_data=education_data,
+        interview_history=interview_history,
+    )
+
+    logger.info(f"Enhanced match: candidate={data.candidate_id}, score={result.overall_match_score}")
+
+    return EnhancedMatchResponse(
+        overall_match_score=result.overall_match_score,
+        interview_score=result.interview_score,
+        skills_match_score=result.skills_match_score,
+        experience_match_score=result.experience_match_score,
+        github_signal_score=result.github_signal_score,
+        education_score=result.education_score,
+        growth_trajectory_score=result.growth_trajectory_score,
+        location_match=result.location_match,
+        factors=result.factors,
+        skill_gap_summary=result.skill_gap_summary,
+        top_strengths=result.top_strengths,
+        areas_for_growth=result.areas_for_growth,
+        hiring_recommendation=result.hiring_recommendation,
+        confidence_score=result.confidence_score,
+        ai_reasoning=result.ai_reasoning,
+    )
+
+
+@router.post("/candidates/rank", response_model=CandidateRankingResponse)
+async def rank_candidates_for_job(
+    data: CandidateRankingRequest,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db),
+):
+    """
+    Rank all candidates for a specific job using ML-powered matching.
+
+    Returns candidates sorted by overall match score with quick insights.
+    """
+    # Get job
+    job = db.query(Job).filter(
+        Job.id == data.job_id,
+        Job.employer_id == employer.id,
+    ).first()
+
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found"
+        )
+
+    # Get candidates with completed interviews in relevant vertical
+    candidates_query = db.query(Candidate).join(
+        CandidateVerticalProfile,
+        Candidate.id == CandidateVerticalProfile.candidate_id
+    ).filter(
+        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED,
+    )
+
+    # Filter by vertical if job has one
+    if job.vertical:
+        candidates_query = candidates_query.filter(
+            CandidateVerticalProfile.vertical == job.vertical
+        )
+
+    candidates = candidates_query.all()
+
+    # Calculate match scores for each candidate
+    ranked_candidates = []
+
+    for candidate in candidates:
+        # Get best interview score
+        profile = db.query(CandidateVerticalProfile).filter(
+            CandidateVerticalProfile.candidate_id == candidate.id,
+            CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED,
+        ).order_by(CandidateVerticalProfile.best_score.desc().nulls_last()).first()
+
+        interview_score = profile.best_score if profile else 5.0
+
+        # Get candidate data
+        candidate_data = None
+        if candidate.resume_parsed_data:
+            try:
+                candidate_data = candidate.resume_parsed_data if isinstance(candidate.resume_parsed_data, dict) else json.loads(candidate.resume_parsed_data)
+            except Exception:
+                pass
+
+        # Get GitHub data
+        github_data = None
+        if candidate.github_data:
+            try:
+                github_data = candidate.github_data if isinstance(candidate.github_data, dict) else json.loads(candidate.github_data)
+            except Exception:
+                pass
+
+        # Get education data
+        education_data = {
+            "university": candidate.university,
+            "major": candidate.major,
+            "gpa": candidate.gpa,
+        }
+
+        # Calculate enhanced match
+        result = await matching_service.calculate_enhanced_match(
+            interview_score=interview_score,
+            candidate_data=candidate_data,
+            job_title=job.title,
+            job_requirements=job.required_skills or [],
+            job_vertical=job.vertical.value if job.vertical else None,
+            github_data=github_data,
+            education_data=education_data,
+            interview_history=None,  # Skip trajectory for bulk ranking
+        )
+
+        # Filter by minimum score
+        if result.overall_match_score >= data.min_score:
+            # Get skill gaps if requested
+            skill_gaps = []
+            if data.include_skill_gap:
+                skill_gaps = result.skill_gap_summary.get('missing_skills', [])[:3]
+
+            ranked_candidates.append(RankedCandidate(
+                candidate_id=candidate.id,
+                name=candidate.name,
+                email=candidate.email,
+                university=candidate.university,
+                graduation_year=candidate.graduation_year,
+                overall_match_score=result.overall_match_score,
+                interview_score=interview_score,
+                skills_match_score=result.skills_match_score,
+                github_signal_score=result.github_signal_score,
+                top_strengths=result.top_strengths[:2],
+                skill_gaps=skill_gaps,
+                hiring_recommendation=result.hiring_recommendation,
+            ))
+
+    # Sort by match score
+    ranked_candidates.sort(key=lambda c: c.overall_match_score, reverse=True)
+
+    # Apply pagination
+    total = len(ranked_candidates)
+    ranked_candidates = ranked_candidates[data.offset:data.offset + data.limit]
+
+    # Calculate average score
+    avg_score = sum(c.overall_match_score for c in ranked_candidates) / len(ranked_candidates) if ranked_candidates else 0
+
+    logger.info(f"Ranked {total} candidates for job {data.job_id}")
+
+    return CandidateRankingResponse(
+        job_id=data.job_id,
+        job_title=job.title,
+        candidates=ranked_candidates,
+        total=total,
+        average_match_score=round(avg_score, 1),
     )

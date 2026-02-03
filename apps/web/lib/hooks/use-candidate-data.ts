@@ -1,11 +1,31 @@
 import useSWR from 'swr'
-import { candidateApi, candidateVerticalApi } from '@/lib/api'
+import { candidateApi, candidateVerticalApi, type Candidate } from '@/lib/api'
 
 // SWR fetcher that uses the token from the function argument
 const createFetcher = <T>(fetchFn: (token: string) => Promise<T>) => {
   return async (key: string, token: string) => {
     if (!token) throw new Error('No token')
     return fetchFn(token)
+  }
+}
+
+// Hook for fetching candidate profile with caching
+export function useCandidateProfile(token: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    token ? ['candidate-profile', token] : null,
+    ([, t]) => candidateApi.getMe(t),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000, // 1 minute
+    }
+  )
+
+  return {
+    profile: data,
+    isLoading,
+    error,
+    mutate,
   }
 }
 
@@ -121,15 +141,18 @@ export function useMatchingJobs(token: string | null) {
 
 // Combined hook for all dashboard data
 export function useDashboardData(token: string | null) {
+  const candidateProfile = useCandidateProfile(token)
   const resume = useResumeData(token)
   const github = useGitHubData(token)
   const githubAnalysis = useGitHubAnalysis(token)
   const profiles = useVerticalProfiles(token)
   const jobs = useMatchingJobs(token)
 
-  const isLoading = resume.isLoading || github.isLoading || profiles.isLoading || jobs.isLoading
+  const isLoading = candidateProfile.isLoading || resume.isLoading || github.isLoading || profiles.isLoading || jobs.isLoading
 
   return {
+    candidateProfile: candidateProfile.profile,
+    emailVerified: candidateProfile.profile?.emailVerified ?? true, // Default to true to avoid showing banner on error
     resumeData: resume.resumeData,
     githubData: github.githubData,
     githubAnalysis: githubAnalysis.githubAnalysis,

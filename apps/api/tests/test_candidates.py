@@ -13,34 +13,38 @@ class TestCandidateRegistration:
         response = client.post("/api/candidates/", json={
             "name": "John Doe",
             "email": "john.doe@test.com",
-            "phone": "13800138000",
-            "target_roles": ["Software Engineer", "Backend Developer"],
+            "password": "securepassword123",
+            "university": "UC Berkeley",
+            "major": "Computer Science",
+            "graduation_year": 2026,
         })
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
-        assert data["name"] == "John Doe"
-        assert data["email"] == "john.doe@test.com"
-        assert "id" in data
+        assert "candidate" in data
+        assert "token" in data
+        assert data["candidate"]["name"] == "John Doe"
+        assert data["candidate"]["email"] == "john.doe@test.com"
 
     def test_register_candidate_minimal(self, client):
         """Test candidate registration with minimal data."""
         response = client.post("/api/candidates/", json={
             "name": "Jane Doe",
             "email": "jane.doe@test.com",
-            "phone": "13900139000",
-            "target_roles": [],
+            "password": "securepassword123",
         })
 
         assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()
+        assert "candidate" in data
+        assert "token" in data
 
     def test_register_candidate_duplicate_email(self, client, test_candidate):
         """Test registration with existing email fails."""
         response = client.post("/api/candidates/", json={
             "name": "Another Person",
             "email": test_candidate.email,
-            "phone": "13700137000",
-            "target_roles": [],
+            "password": "securepassword123",
         })
 
         assert response.status_code == status.HTTP_409_CONFLICT
@@ -50,66 +54,71 @@ class TestCandidateRegistration:
         response = client.post("/api/candidates/", json={
             "name": "Test",
             "email": "invalid-email",
-            "phone": "13800138000",
-            "target_roles": [],
+            "password": "securepassword123",
         })
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_register_candidate_international_phone(self, client):
-        """Test registration with international phone number."""
-        response = client.post("/api/candidates/", json={
-            "name": "International User",
-            "email": "intl@test.com",
-            "phone": "+14155551234",
-            "target_roles": ["Software Engineer"],
-        })
-
-        assert response.status_code == status.HTTP_201_CREATED
-        data = response.json()
-        assert data["phone"] == "+14155551234"
-
-    def test_register_candidate_short_phone(self, client):
-        """Test registration with too short phone number fails."""
+    def test_register_candidate_short_password(self, client):
+        """Test registration with too short password fails."""
         response = client.post("/api/candidates/", json={
             "name": "Test User",
             "email": "short@test.com",
-            "phone": "12345",
-            "target_roles": [],
+            "password": "123",
         })
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_register_candidate_with_university(self, client):
-        """Test registration with university info."""
-        response = client.post("/api/candidates/", json={
-            "name": "John Smith",
-            "email": "john.smith@berkeley.edu",
-            "password": "testpass123",
-            "university": "UC Berkeley",
-            "major": "Computer Science",
-            "graduation_year": 2026,
-        })
-
-        assert response.status_code == status.HTTP_201_CREATED
-        data = response.json()
-        assert data["candidate"]["name"] == "John Smith"
-
 
 class TestGetCandidate:
-    """Tests for getting candidate details."""
+    """Tests for getting candidate profile."""
 
-    def test_get_candidate_success(self, client, test_candidate):
-        """Test getting candidate by ID."""
-        response = client.get(f"/api/candidates/{test_candidate.id}")
+    def test_get_candidate_success(self, client, test_candidate, candidate_auth_headers):
+        """Test getting candidate profile with auth."""
+        response = client.get(
+            "/api/candidates/me",
+            headers=candidate_auth_headers
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["id"] == test_candidate.id
         assert data["name"] == test_candidate.name
+        assert data["email"] == test_candidate.email
 
-    def test_get_candidate_not_found(self, client):
-        """Test getting nonexistent candidate."""
-        response = client.get("/api/candidates/nonexistent_id")
+    def test_get_candidate_not_found(self, client, candidate_auth_headers):
+        """Test getting profile without auth returns error."""
+        response = client.get("/api/candidates/me")
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        # Should return 403 (no auth) rather than 404
+        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
+
+
+class TestUpdateCandidate:
+    """Tests for updating candidate profile."""
+
+    def test_update_candidate_success(self, client, test_candidate, candidate_auth_headers):
+        """Test updating candidate profile."""
+        response = client.patch(
+            "/api/candidates/me",
+            headers=candidate_auth_headers,
+            json={
+                "university": "Stanford University",
+                "major": "Computer Science",
+                "graduation_year": 2025,
+            }
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["university"] == "Stanford University"
+        assert data["major"] == "Computer Science"
+        assert data["graduation_year"] == 2025
+
+    def test_update_candidate_unauthorized(self, client):
+        """Test updating without auth fails."""
+        response = client.patch("/api/candidates/me", json={
+            "university": "Test",
+        })
+
+        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]

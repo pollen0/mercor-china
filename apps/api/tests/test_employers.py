@@ -1,8 +1,18 @@
 """
 Tests for employer API endpoints.
 """
+import os
 import pytest
 from fastapi import status
+
+# Check if we're using SQLite (default in tests)
+USING_SQLITE = os.environ.get("TEST_DATABASE_URL", "sqlite://").startswith("sqlite")
+
+# Skip marker for tests requiring array support
+requires_array = pytest.mark.skipif(
+    USING_SQLITE,
+    reason="SQLite does not support ARRAY type"
+)
 
 
 class TestEmployerRegistration:
@@ -137,8 +147,9 @@ class TestDashboard:
 class TestJobManagement:
     """Tests for job management endpoints."""
 
+    @requires_array
     def test_create_job_success(self, client, auth_headers):
-        """Test successful job creation."""
+        """Test successful job creation with requirements array (PostgreSQL only)."""
         response = client.post("/api/employers/jobs", headers=auth_headers, json={
             "title": "Frontend Developer",
             "description": "Build amazing UIs",
@@ -154,8 +165,9 @@ class TestJobManagement:
         assert data["is_active"] is True
         assert "id" in data
 
+    @requires_array
     def test_create_job_minimal(self, client, auth_headers):
-        """Test job creation with minimal data."""
+        """Test job creation with minimal data (PostgreSQL only)."""
         response = client.post("/api/employers/jobs", headers=auth_headers, json={
             "title": "Backend Developer",
             "description": "Build APIs",

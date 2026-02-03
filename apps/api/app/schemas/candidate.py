@@ -102,6 +102,8 @@ class CandidateResponse(BaseModel):
     email: str
     phone: Optional[str] = None
     target_roles: list[str] = []
+    # Email verification
+    email_verified: bool = False
     # Education
     university: Optional[str] = None
     major: Optional[str] = None
@@ -129,6 +131,8 @@ class CandidateDetailResponse(BaseModel):
     email: str
     phone: Optional[str] = None
     target_roles: list[str] = []
+    # Email verification
+    email_verified: bool = False
     # Education
     education: Optional[EducationInfo] = None
     # GitHub

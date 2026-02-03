@@ -8,13 +8,74 @@ from ..config import settings
 
 logger = logging.getLogger("pathway.scoring")
 
+
+# =============================================================================
+# SCORE BOUNDS VALIDATION
+# =============================================================================
+def clamp_score(score: float, min_val: float = 0.0, max_val: float = 10.0) -> float:
+    """
+    Clamp a score to valid bounds.
+
+    Args:
+        score: The score to clamp
+        min_val: Minimum allowed value (default 0.0)
+        max_val: Maximum allowed value (default 10.0)
+
+    Returns:
+        Score clamped to [min_val, max_val]
+    """
+    if score is None:
+        return min_val
+    try:
+        score = float(score)
+    except (TypeError, ValueError):
+        logger.warning(f"Invalid score value: {score}, using minimum")
+        return min_val
+    return max(min_val, min(max_val, score))
+
+
+def validate_and_convert_score(raw_score: float, scale: int = 100) -> float:
+    """
+    Validate a raw AI score and convert to 0-10 scale.
+
+    Args:
+        raw_score: Score from AI (expected 0-100 by default)
+        scale: The expected scale of raw_score (100 for 0-100, 10 for 0-10)
+
+    Returns:
+        Score on 0-10 scale, clamped to valid bounds
+    """
+    if raw_score is None:
+        return 0.0
+    try:
+        raw_score = float(raw_score)
+    except (TypeError, ValueError):
+        logger.warning(f"Invalid score value: {raw_score}, using 0")
+        return 0.0
+
+    # Clamp to expected scale first
+    clamped = max(0.0, min(float(scale), raw_score))
+
+    # Convert to 0-10 scale
+    if scale == 100:
+        converted = clamped / 10.0
+    elif scale == 10:
+        converted = clamped
+    else:
+        converted = (clamped / scale) * 10.0
+
+    # Final clamp to 0-10
+    return round(max(0.0, min(10.0, converted)), 2)
+
+
 # =============================================================================
 # SCORING ALGORITHM VERSION - INCREMENT WHEN CHANGING SCORING LOGIC
 # =============================================================================
-SCORING_ALGORITHM_VERSION = "2.0.0"  # Major.Minor.Patch
+SCORING_ALGORITHM_VERSION = "2.0.1"  # Major.Minor.Patch
 # Version history:
 # 1.0.0 - Initial scoring with generic rubric
 # 2.0.0 - Vertical-specific rubrics with industry-standard questions
+# 2.0.1 - Added score bounds validation to prevent out-of-range scores
 
 
 @dataclass
@@ -376,7 +437,7 @@ Always respond in valid JSON format."""
             job_requirements: List of job requirements
             vertical: Industry vertical (software_engineering, data, product, design, finance)
             role_type: Specific role type
-            language: Response language ("zh" for Chinese, "en" for English)
+            language: Response language (defaults to English)
 
         Returns:
             ScoreResult with detailed scoring and version tracking
@@ -416,7 +477,7 @@ Respond in JSON format:
         "culture_fit": <0-100>
     }},
     "overall_score": <0-100 weighted average>,
-    "analysis": "<2-3 sentence analysis in {'Chinese' if language == 'zh' else 'English'}>",
+    "analysis": "<2-3 sentence analysis in English>",
     "strengths": ["<strength 1>", "<strength 2>"],
     "concerns": ["<concern 1>", "<concern 2>"],
     "highlight_quotes": ["<notable quote from transcript>"]
@@ -432,23 +493,30 @@ Respond in JSON format:
             parsed = json.loads(content)
             scores = parsed["scores"]
 
-            # Calculate weighted overall score using vertical-specific weights
+            # Validate and convert scores from 0-100 to 0-10 scale with bounds checking
+            validated_scores = {
+                dim: validate_and_convert_score(scores.get(dim, 50), scale=100)
+                for dim in weights.keys()
+            }
+
+            # Calculate weighted overall score using validated scores
             overall = sum(
-                (scores[dim] / 10) * weight
+                validated_scores[dim] * weight
                 for dim, weight in weights.items()
             )
+            overall = clamp_score(overall, 0.0, 10.0)
 
             logger.info(f"Scored response for {vertical}/{role_type}: overall={overall:.2f}, "
                        f"version={SCORING_ALGORITHM_VERSION}")
 
             return ScoreResult(
-                communication=scores["communication"] / 10,  # Convert to 0-10 scale
-                problem_solving=scores["problem_solving"] / 10,
-                domain_knowledge=scores["domain_knowledge"] / 10,
-                motivation=scores["motivation"] / 10,
-                culture_fit=scores["culture_fit"] / 10,
+                communication=validated_scores["communication"],
+                problem_solving=validated_scores["problem_solving"],
+                domain_knowledge=validated_scores["domain_knowledge"],
+                motivation=validated_scores["motivation"],
+                culture_fit=validated_scores["culture_fit"],
                 overall=round(overall, 2),
-                analysis=parsed["analysis"],
+                analysis=parsed.get("analysis", ""),
                 strengths=parsed.get("strengths", []),
                 concerns=parsed.get("concerns", []),
                 highlight_quotes=parsed.get("highlight_quotes", []),
@@ -510,7 +578,7 @@ INTERVIEW RESPONSES:
 Generate a comprehensive summary in JSON format:
 {{
     "total_score": <0-100>,
-    "summary": "<3-4 sentence overall assessment in {'Chinese' if language == 'zh' else 'English'}>",
+    "summary": "<3-4 sentence overall assessment in English>",
     "overall_strengths": ["<key strength 1>", "<key strength 2>", "<key strength 3>"],
     "overall_concerns": ["<concern 1>", "<concern 2>"],
     "recommendation": "<one of: advance, maybe, reject>"
@@ -530,12 +598,21 @@ Recommendation guide:
             content = result["choices"][0]["message"]["content"]
             parsed = json.loads(content)
 
+            # Validate and convert total_score with bounds checking
+            total_score = validate_and_convert_score(parsed.get("total_score", 50), scale=100)
+
+            # Validate recommendation is one of expected values
+            recommendation = parsed.get("recommendation", "maybe")
+            if recommendation not in ["advance", "maybe", "reject"]:
+                logger.warning(f"Invalid recommendation: {recommendation}, defaulting to 'maybe'")
+                recommendation = "maybe"
+
             return InterviewSummary(
-                total_score=parsed["total_score"] / 10,  # Convert to 0-10 scale
-                summary=parsed["summary"],
+                total_score=total_score,
+                summary=parsed.get("summary", ""),
                 overall_strengths=parsed.get("overall_strengths", []),
                 overall_concerns=parsed.get("overall_concerns", []),
-                recommendation=parsed["recommendation"],
+                recommendation=recommendation,
                 raw_response=parsed
             )
         except (KeyError, json.JSONDecodeError) as e:
@@ -554,8 +631,10 @@ Recommendation guide:
         if not responses:
             return 0.0
 
-        total = sum(r.overall for r in responses)
-        return round(total / len(responses), 2)
+        # Sum all individual scores, applying bounds checking to each
+        total = sum(clamp_score(r.overall, 0.0, 10.0) for r in responses)
+        average = total / len(responses)
+        return clamp_score(round(average, 2), 0.0, 10.0)
 
     async def get_immediate_feedback(
         self,
@@ -597,7 +676,7 @@ Respond in JSON format:
         "culture_fit": <0-100>
     }},
     "overall_score": <0-100>,
-    "analysis": "<2-3 sentence analysis in {'Chinese' if language == 'zh' else 'English'}>",
+    "analysis": "<2-3 sentence analysis in English>",
     "strengths": ["<strength 1>", "<strength 2>"],
     "concerns": ["<area to improve 1>", "<area to improve 2>"],
     "tips": [
@@ -605,7 +684,7 @@ Respond in JSON format:
         "<specific actionable tip 2>",
         "<specific actionable tip 3>"
     ],
-    "sample_answer": "<A brief example of a strong answer to this question (2-3 sentences, in {'Chinese' if language == 'zh' else 'English'})>"
+    "sample_answer": "<A brief example of a strong answer to this question (2-3 sentences, in English)>"
 }}"""
 
         result = await self._call_llm([
@@ -616,23 +695,30 @@ Respond in JSON format:
         try:
             content = result["choices"][0]["message"]["content"]
             parsed = json.loads(content)
-            scores = parsed["scores"]
+            scores = parsed.get("scores", {})
 
-            # Calculate weighted overall score (convert from 0-100 to 0-10 scale)
+            # Validate and convert scores with bounds checking
+            validated_scores = {
+                dim: validate_and_convert_score(scores.get(dim, 50), scale=100)
+                for dim in self.SCORING_WEIGHTS.keys()
+            }
+
+            # Calculate weighted overall score using validated scores
             overall = sum(
-                (scores[dim] / 10) * weight
+                validated_scores[dim] * weight
                 for dim, weight in self.SCORING_WEIGHTS.items()
             )
+            overall = clamp_score(overall, 0.0, 10.0)
 
             return {
                 "score_result": ScoreResult(
-                    communication=scores["communication"] / 10,
-                    problem_solving=scores["problem_solving"] / 10,
-                    domain_knowledge=scores["domain_knowledge"] / 10,
-                    motivation=scores["motivation"] / 10,
-                    culture_fit=scores["culture_fit"] / 10,
+                    communication=validated_scores["communication"],
+                    problem_solving=validated_scores["problem_solving"],
+                    domain_knowledge=validated_scores["domain_knowledge"],
+                    motivation=validated_scores["motivation"],
+                    culture_fit=validated_scores["culture_fit"],
                     overall=round(overall, 2),
-                    analysis=parsed["analysis"],
+                    analysis=parsed.get("analysis", ""),
                     strengths=parsed.get("strengths", []),
                     concerns=parsed.get("concerns", []),
                     highlight_quotes=[],
@@ -697,12 +783,12 @@ Respond in JSON format:
         "culture_fit": <0-100>
     }},
     "overall_score": <0-100>,
-    "analysis": "<2-3 sentence analysis in {'Chinese' if language == 'zh' else 'English'}>",
+    "analysis": "<2-3 sentence analysis in English>",
     "strengths": ["<strength 1>", "<strength 2>"],
     "concerns": ["<concern 1>", "<concern 2>"],
     "highlight_quotes": ["<notable quote>"],
     "followup_questions": [
-        "<follow-up question 1 in {'Chinese' if language == 'zh' else 'English'}>",
+        "<follow-up question 1 in English>",
         "<follow-up question 2 if needed>"
     ]
 }}
@@ -717,22 +803,29 @@ Note: followup_questions array can be empty if the response was complete."""
         try:
             content = result["choices"][0]["message"]["content"]
             parsed = json.loads(content)
-            scores = parsed["scores"]
+            scores = parsed.get("scores", {})
 
-            # Calculate weighted overall score
+            # Validate and convert scores with bounds checking
+            validated_scores = {
+                dim: validate_and_convert_score(scores.get(dim, 50), scale=100)
+                for dim in self.SCORING_WEIGHTS.keys()
+            }
+
+            # Calculate weighted overall score using validated scores
             overall = sum(
-                (scores[dim] / 10) * weight
+                validated_scores[dim] * weight
                 for dim, weight in self.SCORING_WEIGHTS.items()
             )
+            overall = clamp_score(overall, 0.0, 10.0)
 
             score_result = ScoreResult(
-                communication=scores["communication"] / 10,
-                problem_solving=scores["problem_solving"] / 10,
-                domain_knowledge=scores["domain_knowledge"] / 10,
-                motivation=scores["motivation"] / 10,
-                culture_fit=scores["culture_fit"] / 10,
+                communication=validated_scores["communication"],
+                problem_solving=validated_scores["problem_solving"],
+                domain_knowledge=validated_scores["domain_knowledge"],
+                motivation=validated_scores["motivation"],
+                culture_fit=validated_scores["culture_fit"],
                 overall=round(overall, 2),
-                analysis=parsed["analysis"],
+                analysis=parsed.get("analysis", ""),
                 strengths=parsed.get("strengths", []),
                 concerns=parsed.get("concerns", []),
                 highlight_quotes=parsed.get("highlight_quotes", []),
@@ -794,7 +887,7 @@ Always respond in valid JSON format."""
             problem_description: The coding problem description
             code: The submitted Python code
             test_results: List of test result dicts with keys: name, passed, actual, expected
-            language: Response language ("zh" for Chinese, "en" for English)
+            language: Response language (defaults to English)
 
         Returns:
             ScoreResult with coding-specific scoring mapped to standard dimensions
@@ -814,8 +907,6 @@ Always respond in valid JSON format."""
             visible_results.append(
                 f"  {status} {t.get('name', 'Test')}: expected={t.get('expected', '?')}, got={t.get('actual', '?')}"
             )
-
-        lang_instruction = "Chinese" if language == "zh" else "English"
 
         user_prompt = f"""PROBLEM DESCRIPTION:
 {problem_description}
@@ -841,7 +932,7 @@ Respond in JSON format:
         "problem_understanding": <0-100>
     }},
     "overall_score": <0-100 weighted average>,
-    "analysis": "<2-3 sentence analysis in {lang_instruction}>",
+    "analysis": "<2-3 sentence analysis in English>",
     "strengths": ["<strength 1>", "<strength 2>"],
     "concerns": ["<area to improve 1>", "<area to improve 2>"],
     "time_complexity": "<e.g., O(n), O(n^2), O(n log n)>",
@@ -856,7 +947,7 @@ Respond in JSON format:
         try:
             content = result["choices"][0]["message"]["content"]
             parsed = json.loads(content)
-            scores = parsed["scores"]
+            scores = parsed.get("scores", {})
 
             # Map coding scores to standard 5-dimension model:
             # - correctness → problem_solving
@@ -864,6 +955,14 @@ Respond in JSON format:
             # - efficiency → domain_knowledge (algorithmic knowledge)
             # - problem_understanding → motivation (engagement with the problem)
             # - culture_fit = neutral default for coding
+
+            # Validate and convert scores with bounds checking
+            validated_scores = {
+                'correctness': validate_and_convert_score(scores.get('correctness', correctness_pct), scale=100),
+                'code_quality': validate_and_convert_score(scores.get('code_quality', 50), scale=100),
+                'efficiency': validate_and_convert_score(scores.get('efficiency', 50), scale=100),
+                'problem_understanding': validate_and_convert_score(scores.get('problem_understanding', 50), scale=100),
+            }
 
             # Calculate weighted overall (coding-specific weights)
             coding_weights = {
@@ -874,19 +973,20 @@ Respond in JSON format:
             }
 
             overall = sum(
-                (scores[dim] / 10) * weight
+                validated_scores[dim] * weight
                 for dim, weight in coding_weights.items()
             )
+            overall = clamp_score(overall, 0.0, 10.0)
 
             return ScoreResult(
                 # Map to standard dimensions
-                problem_solving=scores["correctness"] / 10,  # 0-10 scale
-                communication=scores["code_quality"] / 10,
-                domain_knowledge=scores["efficiency"] / 10,
-                motivation=scores["problem_understanding"] / 10,
+                problem_solving=validated_scores["correctness"],
+                communication=validated_scores["code_quality"],
+                domain_knowledge=validated_scores["efficiency"],
+                motivation=validated_scores["problem_understanding"],
                 culture_fit=7.0,  # Neutral default for coding challenges
                 overall=round(overall, 2),
-                analysis=parsed["analysis"],
+                analysis=parsed.get("analysis", ""),
                 strengths=parsed.get("strengths", []),
                 concerns=parsed.get("concerns", []),
                 highlight_quotes=[
@@ -897,7 +997,7 @@ Respond in JSON format:
             )
         except (KeyError, json.JSONDecodeError) as e:
             # Fallback scoring based on test results alone
-            base_score = correctness_pct / 10  # Convert to 0-10
+            base_score = clamp_score(correctness_pct / 10, 0.0, 10.0)  # Convert to 0-10
             return ScoreResult(
                 problem_solving=base_score,
                 communication=5.0,  # Neutral
@@ -928,8 +1028,6 @@ Respond in JSON format:
         total = len(test_results)
         correctness_pct = (passed / total * 100) if total > 0 else 0
 
-        lang_instruction = "Chinese" if language == "zh" else "English"
-
         user_prompt = f"""PROBLEM DESCRIPTION:
 {problem_description}
 
@@ -951,28 +1049,36 @@ Respond in JSON format:
         "problem_understanding": <0-100>
     }},
     "overall_score": <0-100>,
-    "analysis": "<2-3 sentence analysis in {lang_instruction}>",
+    "analysis": "<2-3 sentence analysis in English>",
     "strengths": ["<strength 1>", "<strength 2>"],
     "concerns": ["<area to improve 1>", "<area to improve 2>"],
     "tips": [
-        "<specific actionable tip 1 in {lang_instruction}>",
-        "<specific actionable tip 2 in {lang_instruction}>",
-        "<specific actionable tip 3 in {lang_instruction}>"
+        "<specific actionable tip 1 in English>",
+        "<specific actionable tip 2 in English>",
+        "<specific actionable tip 3 in English>"
     ],
-    "suggested_approach": "<Brief description of an optimal approach in {lang_instruction}>",
+    "suggested_approach": "<Brief description of an optimal approach in English>",
     "time_complexity": "<current solution's complexity>",
     "optimal_complexity": "<optimal solution's complexity>"
 }}"""
 
         result = await self._call_llm([
-            {"role": "system", "content": self.CODING_SYSTEM_PROMPT + f"\n\nFor practice mode, also provide actionable improvement tips and suggest an optimal approach. Respond in {lang_instruction}."},
+            {"role": "system", "content": self.CODING_SYSTEM_PROMPT + "\n\nFor practice mode, also provide actionable improvement tips and suggest an optimal approach. Respond in English."},
             {"role": "user", "content": user_prompt}
         ])
 
         try:
             content = result["choices"][0]["message"]["content"]
             parsed = json.loads(content)
-            scores = parsed["scores"]
+            scores = parsed.get("scores", {})
+
+            # Validate and convert scores with bounds checking
+            validated_scores = {
+                'correctness': validate_and_convert_score(scores.get('correctness', correctness_pct), scale=100),
+                'code_quality': validate_and_convert_score(scores.get('code_quality', 50), scale=100),
+                'efficiency': validate_and_convert_score(scores.get('efficiency', 50), scale=100),
+                'problem_understanding': validate_and_convert_score(scores.get('problem_understanding', 50), scale=100),
+            }
 
             # Calculate weighted overall
             coding_weights = {
@@ -983,18 +1089,19 @@ Respond in JSON format:
             }
 
             overall = sum(
-                (scores[dim] / 10) * weight
+                validated_scores[dim] * weight
                 for dim, weight in coding_weights.items()
             )
+            overall = clamp_score(overall, 0.0, 10.0)
 
             score_result = ScoreResult(
-                problem_solving=scores["correctness"] / 10,
-                communication=scores["code_quality"] / 10,
-                domain_knowledge=scores["efficiency"] / 10,
-                motivation=scores["problem_understanding"] / 10,
+                problem_solving=validated_scores["correctness"],
+                communication=validated_scores["code_quality"],
+                domain_knowledge=validated_scores["efficiency"],
+                motivation=validated_scores["problem_understanding"],
                 culture_fit=7.0,
                 overall=round(overall, 2),
-                analysis=parsed["analysis"],
+                analysis=parsed.get("analysis", ""),
                 strengths=parsed.get("strengths", []),
                 concerns=parsed.get("concerns", []),
                 highlight_quotes=[
@@ -1145,9 +1252,21 @@ Respond in JSON format:
             content = result["choices"][0]["message"]["content"]
             parsed = json.loads(content)
 
+            # Validate and clamp profile scores (already on 0-10 scale)
+            raw_profile_score = parsed.get("profile_score", 5.0)
+            profile_score = clamp_score(raw_profile_score, 0.0, 10.0)
+
+            # Validate breakdown scores
+            raw_breakdown = parsed.get("scores", {})
+            validated_breakdown = {
+                key: clamp_score(value, 0.0, 10.0)
+                for key, value in raw_breakdown.items()
+                if isinstance(value, (int, float))
+            }
+
             return {
-                "profile_score": parsed.get("profile_score", 5.0),
-                "breakdown": parsed.get("scores", {}),
+                "profile_score": profile_score,
+                "breakdown": validated_breakdown,
                 "strengths": parsed.get("strengths", []),
                 "gaps": parsed.get("gaps", []),
                 "summary": parsed.get("summary", ""),
@@ -1402,19 +1521,26 @@ Respond in JSON:
         parsed = json.loads(content)
         scores = parsed.get("scores", {})
 
-        # Calculate weighted overall with persona's adjusted weights
+        # Validate and convert scores with bounds checking
+        validated_scores = {
+            dim: validate_and_convert_score(scores.get(dim, 50), scale=100)
+            for dim in adjusted_weights.keys()
+        }
+
+        # Calculate weighted overall with persona's adjusted weights using validated scores
         overall = sum(
-            scores.get(dim, 50) * weight
+            validated_scores.get(dim, 5.0) * weight
             for dim, weight in adjusted_weights.items()
         )
+        overall = clamp_score(overall, 0.0, 10.0)
 
         return ScoreResult(
-            communication=scores.get("communication", 50) / 10,
-            problem_solving=scores.get("problem_solving", 50) / 10,
-            domain_knowledge=scores.get("domain_knowledge", 50) / 10,
-            motivation=scores.get("motivation", 50) / 10,
-            culture_fit=scores.get("culture_fit", 50) / 10,
-            overall=overall / 10,
+            communication=validated_scores.get("communication", 5.0),
+            problem_solving=validated_scores.get("problem_solving", 5.0),
+            domain_knowledge=validated_scores.get("domain_knowledge", 5.0),
+            motivation=validated_scores.get("motivation", 5.0),
+            culture_fit=validated_scores.get("culture_fit", 5.0),
+            overall=round(overall, 2),
             analysis=parsed.get("analysis", ""),
             strengths=parsed.get("strengths", []),
             concerns=parsed.get("concerns", []),
@@ -1463,6 +1589,9 @@ Respond in JSON:
 
         calibration = calibration_data or DEFAULT_CALIBRATION
 
+        # Clamp raw_score to valid bounds first
+        raw_score = clamp_score(raw_score, 0.0, 10.0)
+
         # Find the matching range
         hire_rate = 0.5
         percentile = 50
@@ -1472,7 +1601,7 @@ Respond in JSON:
                 hire_rate = data["hire_rate"]
                 pct_low, pct_high = data["percentile_range"]
                 # Interpolate within range
-                ratio = (raw_score - low) / (high - low)
+                ratio = (raw_score - low) / (high - low) if high > low else 0
                 percentile = pct_low + ratio * (pct_high - pct_low)
                 break
 
@@ -1480,10 +1609,11 @@ Respond in JSON:
         # If hire rate is low for this score, adjust down slightly
         calibration_factor = 0.9 + (hire_rate * 0.2)  # Range: 0.9 to 1.1
         calibrated_score = raw_score * calibration_factor
+        calibrated_score = clamp_score(calibrated_score, 0.0, 10.0)
 
         return {
-            "raw_score": raw_score,
-            "calibrated_score": round(min(10, calibrated_score), 2),
+            "raw_score": round(raw_score, 2),
+            "calibrated_score": round(calibrated_score, 2),
             "calibration_factor": round(calibration_factor, 3),
             "hire_probability": round(hire_rate, 2),
             "percentile": round(percentile, 1),

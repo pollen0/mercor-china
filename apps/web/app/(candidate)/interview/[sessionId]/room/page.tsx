@@ -373,6 +373,42 @@ export default function InterviewRoomPage() {
     }
   }, [currentQuestionIndex, questions, sessionId])
 
+  // Navigate to a specific question (for retaking)
+  const goToQuestion = useCallback(async (questionIndex: number) => {
+    // Don't allow navigation during follow-up or other special states
+    if (roomState !== 'question') return
+    if (questionIndex < 0 || questionIndex >= questions.length) return
+
+    setCurrentQuestionIndex(questionIndex)
+
+    // Reset states
+    setCodingChallenge(null)
+    setCodingFeedback(null)
+    setFollowupData(null)
+    setActiveFollowup(null)
+
+    // Check if the question is a coding question
+    const targetQuestion = questions[questionIndex] as ExtendedQuestionInfo
+    if (targetQuestion?.questionType === 'coding') {
+      try {
+        const challenge = await interviewApi.getCodingChallenge(sessionId, questionIndex)
+        setCodingChallenge(challenge)
+        setRoomState('code_editor')
+      } catch {
+        setRoomState('question')
+      }
+    } else {
+      setRoomState('question')
+    }
+  }, [questions, sessionId, roomState])
+
+  // Go to previous question
+  const goToPreviousQuestion = useCallback(() => {
+    if (currentQuestionIndex > 0) {
+      goToQuestion(currentQuestionIndex - 1)
+    }
+  }, [currentQuestionIndex, goToQuestion])
+
   const finishInterview = async () => {
     try {
       setRoomState('uploading')
@@ -488,6 +524,7 @@ export default function InterviewRoomPage() {
               currentQuestion={currentQuestionIndex}
               totalQuestions={questions.length}
               completedQuestions={completedQuestions}
+              onQuestionClick={goToQuestion}
             />
           </div>
 
@@ -608,6 +645,7 @@ export default function InterviewRoomPage() {
             currentQuestion={currentQuestionIndex}
             totalQuestions={questions.length}
             completedQuestions={completedQuestions}
+            onQuestionClick={!isFollowupMode ? goToQuestion : undefined}
           />
         </div>
 
@@ -670,14 +708,29 @@ export default function InterviewRoomPage() {
         {/* Navigation */}
         <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between">
           {!isFollowupMode ? (
-            <Button
-              variant="outline"
-              onClick={skipQuestion}
-              disabled={isLastQuestion}
-              className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white min-h-[48px]"
-            >
-              Skip Question
-            </Button>
+            <div className="flex gap-2">
+              {/* Previous Question Button - for retaking */}
+              {currentQuestionIndex > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={goToPreviousQuestion}
+                  className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white min-h-[48px]"
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Previous
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={skipQuestion}
+                disabled={isLastQuestion}
+                className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white min-h-[48px]"
+              >
+                Skip Question
+              </Button>
+            </div>
           ) : (
             <div /> /* Spacer for follow-up mode */
           )}
@@ -700,6 +753,15 @@ export default function InterviewRoomPage() {
             </Button>
           )}
         </div>
+
+        {/* Retake Hint - shows when there are completed questions */}
+        {completedQuestions.length > 0 && !isFollowupMode && (
+          <div className="text-center">
+            <p className="text-xs text-slate-500">
+              Use &quot;Previous&quot; to go back and re-record any answer before finishing
+            </p>
+          </div>
+        )}
 
         {/* Error display */}
         {error && (

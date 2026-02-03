@@ -66,10 +66,10 @@ For a Series B Enterprise SaaS startup in Austin:
 ## Backend Implementation
 
 ### Current State
-The preference boost logic is **not yet implemented** in the matching algorithm. Currently, matching is based only on interview scores and skills.
+The preference boost logic is **implemented** in `app/services/matching.py`. The `calculate_preference_boost()` method calculates boost points based on candidate preferences matching job attributes (company_stage, location, industry).
 
-### To Implement
-Update `app/services/matching.py` (or create if doesn't exist):
+### Implementation Details
+In `app/services/matching.py`:
 
 ```python
 def calculate_match_score(candidate, job):
@@ -158,4 +158,4 @@ After launch, track:
 
 ---
 
-**Status**: Preferences UI implemented with limits. Matching algorithm boost logic documented but not yet coded.
+**Status**: ✅ Fully implemented. Preferences UI with limits + matching algorithm boost logic.

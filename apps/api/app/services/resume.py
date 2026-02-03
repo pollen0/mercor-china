@@ -277,8 +277,7 @@ Return JSON:
 {{
     "questions": [
         {{
-            "text": "English question",
-            "text_zh": "Chinese translation",
+            "text": "Question text",
             "category": "behavioral/technical/experience",
             "based_on": "Resume element referenced"
         }}
@@ -441,8 +440,7 @@ Return JSON:
 {{
     "questions": [
         {{
-            "text": "English question that references specific profile item",
-            "text_zh": "Chinese translation",
+            "text": "Question that references specific profile item",
             "category": "technical/behavioral/experience",
             "based_on": "The specific profile element this question references"
         }}

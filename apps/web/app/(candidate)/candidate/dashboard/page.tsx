@@ -11,8 +11,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UploadProgress } from '@/components/ui/upload-progress'
 import { DocumentPreview } from '@/components/ui/document-preview'
-import { candidateApi, type GitHubData } from '@/lib/api'
+import { candidateApi, type GitHubData, type GitHubAnalysis as GitHubAnalysisType } from '@/lib/api'
+import { GitHubAnalysis } from '@/components/dashboard/github-analysis'
 import { useDashboardData } from '@/lib/hooks/use-candidate-data'
+import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
 
 interface Candidate {
   id: string
@@ -103,6 +105,7 @@ function DashboardContent() {
     githubData,
     verticalProfiles,
     matchingJobs,
+    emailVerified,
     isLoading: isDataLoading,
     mutateResume,
     mutateGitHub,
@@ -586,6 +589,11 @@ function DashboardContent() {
       )}
 
       <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Email Verification Banner */}
+        {!emailVerified && candidate?.email && (
+          <EmailVerificationBanner email={candidate.email} />
+        )}
+
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="space-y-6">
@@ -966,7 +974,7 @@ function DashboardContent() {
 
                         {showReposDropdown && (
                           <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
-                            {githubData.repos.map((repo, idx) => (
+                            {githubData.repos.map((repo, idx: number) => (
                               <a
                                 key={idx}
                                 href={repo.url}
@@ -1009,6 +1017,9 @@ function DashboardContent() {
                         )}
                       </div>
                     )}
+
+                    {/* GitHub Analysis Section */}
+                    <GitHubAnalysis hasGitHub={hasGitHub} />
                   </div>
                 ) : (
                   <div className="text-center py-4">

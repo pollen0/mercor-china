@@ -2,10 +2,16 @@ from .candidate import Candidate, CandidateVerticalProfile, VerticalProfileStatu
 from .employer import Employer, Job, InterviewQuestion, InviteToken, Vertical, RoleType, CandidateQuestionHistory
 from .profile_token import ProfileToken
 from .scheduled_interview import ScheduledInterview, InterviewType, ScheduledInterviewStatus
+from .candidate_note import CandidateNote
 from .interview import InterviewSession, InterviewResponse, Match, InterviewStatus, MatchStatus, FollowupQueue, FollowupQueueStatus
 from .message import Message, MessageType
 from .coding_challenge import CodingChallenge
 from .github_analysis import GitHubAnalysis, ProjectType, CodeOriginSignal
+# Scheduling models
+from .team_member import EmployerTeamMember, TeamMemberRole
+from .availability import InterviewerAvailability, AvailabilityException
+from .scheduling_link import SelfSchedulingLink
+from .reminder import InterviewReminder, ReminderType, ReminderStatus
 from .course import (
     University, Course, CourseGradeMapping, DifficultyTier, CourseType,
     CandidateTranscript, CandidateCourseGrade
@@ -91,4 +97,15 @@ __all__ = [
     "ScheduledInterview",
     "InterviewType",
     "ScheduledInterviewStatus",
+    # Candidate notes
+    "CandidateNote",
+    # Scheduling & Team Management
+    "EmployerTeamMember",
+    "TeamMemberRole",
+    "InterviewerAvailability",
+    "AvailabilityException",
+    "SelfSchedulingLink",
+    "InterviewReminder",
+    "ReminderType",
+    "ReminderStatus",
 ]

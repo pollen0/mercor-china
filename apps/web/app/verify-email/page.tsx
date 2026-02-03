@@ -114,7 +114,7 @@ function VerifyEmailContent() {
         {status === 'success' && (
           <div className="pt-2">
             <Link href={getRedirectPath()}>
-              <Button variant="brand" className="w-full">
+              <Button variant="default" className="w-full">
                 Continue to Login
               </Button>
             </Link>

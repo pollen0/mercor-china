@@ -2,7 +2,6 @@
 Google Calendar integration endpoints.
 Allows candidates and employers to connect their Google Calendar for scheduling.
 """
-import uuid
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -15,6 +14,7 @@ from ..database import get_db
 from ..models import Candidate
 from ..services.calendar import calendar_service
 from ..utils.crypto import encrypt_token, decrypt_token
+from ..utils.csrf import generate_csrf_token, validate_csrf_token
 
 logger = logging.getLogger("pathway.calendar")
 router = APIRouter()
@@ -83,7 +83,7 @@ async def get_current_candidate(
 async def get_google_oauth_url():
     """
     Get Google OAuth URL for calendar authorization.
-    Returns URL and state token (store state in session for CSRF protection).
+    Returns URL and state token (stored server-side for CSRF protection).
     """
     if not calendar_service.is_configured():
         raise HTTPException(
@@ -91,7 +91,8 @@ async def get_google_oauth_url():
             detail="Google Calendar integration is not configured"
         )
 
-    state = f"cal_{uuid.uuid4().hex}"
+    # Generate CSRF state token with proper storage
+    state = generate_csrf_token(oauth_type="google_calendar", prefix="cal_")
     url = calendar_service.get_oauth_url(state)
 
     return GoogleOAuthUrlResponse(url=url, state=state)
@@ -105,8 +106,21 @@ async def google_oauth_callback(
 ):
     """
     Handle Google OAuth callback and store tokens.
-    The frontend should verify the state matches what was stored.
+    Validates the CSRF state token server-side.
     """
+    # Validate CSRF state token
+    if not data.state:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing state token. Please restart the OAuth flow."
+        )
+
+    if not validate_csrf_token(data.state, expected_type="google_calendar"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired state token. Please restart the OAuth flow."
+        )
+
     try:
         # Exchange code for tokens
         tokens = await calendar_service.exchange_code(data.code)

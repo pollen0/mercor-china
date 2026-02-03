@@ -19,6 +19,7 @@ class MatchStatus(str, enum.Enum):
     PENDING = "PENDING"
     CONTACTED = "CONTACTED"  # Employer has reached out
     IN_REVIEW = "IN_REVIEW"  # Under active consideration
+    WATCHLIST = "WATCHLIST"  # Tracking for future (e.g., promising freshmen/sophomores)
     SHORTLISTED = "SHORTLISTED"
     REJECTED = "REJECTED"
     HIRED = "HIRED"

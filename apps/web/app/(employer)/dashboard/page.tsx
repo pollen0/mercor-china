@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CandidateCard } from '@/components/dashboard/candidate-card'
-import { employerApi, inviteApi, talentPoolApi, type Employer, type DashboardStats, type InterviewSession, type Job, type InviteTokenResponse, type TalentPoolCandidate, type TalentProfileDetail, type Vertical, type RoleType } from '@/lib/api'
+import { MatchAlerts } from '@/components/employer/match-alerts'
+import { CandidateNotes } from '@/components/employer/candidate-notes'
+import { employerApi, inviteApi, talentPoolApi, organizationApi, schedulingLinkApi, type Employer, type DashboardStats, type InterviewSession, type Job, type InviteTokenResponse, type TalentPoolCandidate, type TalentProfileDetail, type Vertical, type RoleType, type Organization, type OrganizationMember, type OrganizationInvite, type SchedulingLink, type MatchStatus } from '@/lib/api'
 
-type TabType = 'overview' | 'interviews' | 'jobs' | 'talent'
+type TabType = 'overview' | 'interviews' | 'jobs' | 'talent' | 'team'
 
 // Vertical and Role Type definitions
 const VERTICALS = [
@@ -71,6 +73,16 @@ const ROLE_NAMES: Record<string, string> = {
   product_designer: 'Product Designer',
 }
 
+// Candidate status options for employers
+const MATCH_STATUS_OPTIONS: { value: MatchStatus; label: string; color: string; bgColor: string }[] = [
+  { value: 'PENDING', label: 'New', color: 'text-stone-600', bgColor: 'bg-stone-100' },
+  { value: 'CONTACTED', label: 'Contacted', color: 'text-blue-700', bgColor: 'bg-blue-100' },
+  { value: 'IN_REVIEW', label: 'In Review', color: 'text-amber-700', bgColor: 'bg-amber-100' },
+  { value: 'SHORTLISTED', label: 'Shortlisted', color: 'text-teal-700', bgColor: 'bg-teal-100' },
+  { value: 'REJECTED', label: 'Rejected', color: 'text-red-700', bgColor: 'bg-red-100' },
+  { value: 'HIRED', label: 'Hired', color: 'text-green-700', bgColor: 'bg-green-100' },
+]
+
 function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -128,12 +140,19 @@ function DashboardContent() {
   const [expandedData, setExpandedData] = useState<Record<string, TalentProfileDetail>>({})
   const [loadingDetail, setLoadingDetail] = useState<string | null>(null)
 
+  // Candidate status management state
+  const [candidateStatuses, setCandidateStatuses] = useState<Record<string, MatchStatus>>({})
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+
   // Contact modal state
   const [showContactModal, setShowContactModal] = useState(false)
   const [contactCandidate, setContactCandidate] = useState<TalentPoolCandidate | null>(null)
   const [contactSubject, setContactSubject] = useState('')
   const [contactMessage, setContactMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [schedulingLinks, setSchedulingLinks] = useState<SchedulingLink[]>([])
+  const [selectedSchedulingLink, setSelectedSchedulingLink] = useState<string>('')
+  const [loadingSchedulingLinks, setLoadingSchedulingLinks] = useState(false)
 
   // Resume preview modal state
   const [showResumeModal, setShowResumeModal] = useState(false)
@@ -144,6 +163,22 @@ function DashboardContent() {
   const [showTranscriptModal, setShowTranscriptModal] = useState(false)
   const [transcriptData, setTranscriptData] = useState<TalentProfileDetail | null>(null)
   const [transcriptCandidateName, setTranscriptCandidateName] = useState<string>('')
+
+  // Profile dropdown state
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+
+  // Team state
+  const [organization, setOrganization] = useState<Organization | null>(null)
+  const [teamMembers, setTeamMembers] = useState<OrganizationMember[]>([])
+  const [teamInvites, setTeamInvites] = useState<OrganizationInvite[]>([])
+  const [teamLoading, setTeamLoading] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('recruiter')
+  const [isInviting, setIsInviting] = useState(false)
+  const [showCreateOrgModal, setShowCreateOrgModal] = useState(false)
+  const [newOrgName, setNewOrgName] = useState('')
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false)
 
   // Initial data load
   useEffect(() => {
@@ -231,6 +266,86 @@ function DashboardContent() {
       loadTalentPool()
     }
   }, [activeTab, loadTalentPool])
+
+  // Load team when tab changes
+  const loadTeam = useCallback(async () => {
+    setTeamLoading(true)
+    try {
+      const [org, members, invites] = await Promise.all([
+        organizationApi.getMe().catch(() => null),
+        organizationApi.listMembers().catch(() => []),
+        organizationApi.listInvites().catch(() => []),
+      ])
+      setOrganization(org)
+      setTeamMembers(members)
+      setTeamInvites(invites)
+    } catch (err) {
+      console.error('Failed to load team:', err)
+    } finally {
+      setTeamLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'team') {
+      loadTeam()
+    }
+  }, [activeTab, loadTeam])
+
+  // Team handlers
+  const handleCreateOrganization = async () => {
+    if (!newOrgName.trim()) return
+    setIsCreatingOrg(true)
+    try {
+      const org = await organizationApi.create({ name: newOrgName.trim() })
+      setOrganization(org)
+      setShowCreateOrgModal(false)
+      setNewOrgName('')
+      loadTeam()
+    } catch (err) {
+      console.error('Failed to create organization:', err)
+      alert('Failed to create organization')
+    } finally {
+      setIsCreatingOrg(false)
+    }
+  }
+
+  const handleInviteMember = async () => {
+    if (!inviteEmail.trim()) return
+    setIsInviting(true)
+    try {
+      await organizationApi.createInvite({ email: inviteEmail.trim(), role: inviteRole })
+      setShowInviteModal(false)
+      setInviteEmail('')
+      setInviteRole('recruiter')
+      loadTeam()
+    } catch (err) {
+      console.error('Failed to send invite:', err)
+      alert('Failed to send invite')
+    } finally {
+      setIsInviting(false)
+    }
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm('Are you sure you want to remove this team member?')) return
+    try {
+      await organizationApi.removeMember(memberId)
+      loadTeam()
+    } catch (err) {
+      console.error('Failed to remove member:', err)
+      alert('Failed to remove member')
+    }
+  }
+
+  const handleCancelInvite = async (inviteId: string) => {
+    try {
+      await organizationApi.cancelInvite(inviteId)
+      loadTeam()
+    } catch (err) {
+      console.error('Failed to cancel invite:', err)
+    }
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('employer_token')
@@ -388,9 +503,63 @@ function DashboardContent() {
     }
   }
 
-  const openContactModal = (candidate: TalentPoolCandidate) => {
+  // Update candidate status handler
+  const handleStatusChange = async (candidateId: string, profileId: string | undefined, newStatus: MatchStatus) => {
+    const id = profileId || candidateId
+    setUpdatingStatus(id)
+    try {
+      await talentPoolApi.updateStatus(id, newStatus)
+      setCandidateStatuses(prev => ({ ...prev, [id]: newStatus }))
+      // Also update the expanded data if it exists
+      if (expandedData[id]?.employerStatus) {
+        setExpandedData(prev => ({
+          ...prev,
+          [id]: {
+            ...prev[id],
+            employerStatus: {
+              ...prev[id].employerStatus,
+              status: newStatus,
+            }
+          }
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error)
+    } finally {
+      setUpdatingStatus(null)
+    }
+  }
+
+  // Get the current status for a candidate (from local state, expanded data, or default)
+  const getCandidateStatus = (candidate: TalentPoolCandidate): MatchStatus => {
+    const id = candidate.profileId || candidate.candidateId
+    // Check local state first (most recent updates)
+    if (candidateStatuses[id]) return candidateStatuses[id]
+    // Check expanded data
+    if (expandedData[id]?.employerStatus?.status) return expandedData[id].employerStatus!.status
+    // Default to PENDING
+    return 'PENDING'
+  }
+
+  const openContactModal = async (candidate: TalentPoolCandidate) => {
     setContactCandidate(candidate)
     setContactSubject(`Interview Opportunity at ${employer?.companyName || 'Our Company'}`)
+    setSelectedSchedulingLink('')
+    setShowContactModal(true)
+
+    // Fetch scheduling links
+    setLoadingSchedulingLinks(true)
+    try {
+      const { links } = await schedulingLinkApi.list()
+      setSchedulingLinks(links.filter((link: SchedulingLink) => link.isActive))
+    } catch (error) {
+      console.error('Failed to load scheduling links:', error)
+      setSchedulingLinks([])
+    } finally {
+      setLoadingSchedulingLinks(false)
+    }
+
+    // Set default message
     const roleDisplay = candidate.roleType ? (ROLE_NAMES[candidate.roleType] || candidate.roleType) : 'open'
     setContactMessage(`Dear ${candidate.candidateName},
 
@@ -400,7 +569,40 @@ We would like to discuss a potential opportunity with you. Would you be availabl
 
 Best regards,
 ${employer?.companyName || 'Our Company'}`)
-    setShowContactModal(true)
+  }
+
+  // Update message when scheduling link is selected
+  const handleSchedulingLinkChange = (linkId: string) => {
+    setSelectedSchedulingLink(linkId)
+    if (!contactCandidate) return
+
+    const roleDisplay = contactCandidate.roleType ? (ROLE_NAMES[contactCandidate.roleType] || contactCandidate.roleType) : 'open'
+    const selectedLink = schedulingLinks.find(l => l.id === linkId)
+
+    if (selectedLink) {
+      const scheduleUrl = `${window.location.origin}/schedule/${selectedLink.slug}`
+      setContactMessage(`Dear ${contactCandidate.candidateName},
+
+We reviewed your profile on Pathway and were impressed by your qualifications for ${roleDisplay} positions.
+
+We would like to schedule an interview with you. Please use the link below to select a time that works best for you:
+
+📅 Schedule your interview: ${scheduleUrl}
+
+This ${selectedLink.durationMinutes}-minute interview will be conducted via Google Meet. You'll receive a calendar invite with the meeting link once you book a time.
+
+Best regards,
+${employer?.companyName || 'Our Company'}`)
+    } else {
+      setContactMessage(`Dear ${contactCandidate.candidateName},
+
+We reviewed your profile on Pathway and were impressed by your qualifications for ${roleDisplay} positions.
+
+We would like to discuss a potential opportunity with you. Would you be available for a conversation?
+
+Best regards,
+${employer?.companyName || 'Our Company'}`)
+    }
   }
 
   const sendContactEmail = async () => {
@@ -441,6 +643,45 @@ ${employer?.companyName || 'Our Company'}`)
     setShowTranscriptModal(true)
   }
 
+  // Transcript download handler
+  const downloadTranscript = (detail: TalentProfileDetail, candidateName: string) => {
+    if (!detail.interview?.responses?.length) return
+
+    // Build transcript text
+    let content = `Interview - ${candidateName}\n`
+    content += `${'='.repeat(50)}\n\n`
+
+    if (detail.profile?.vertical) {
+      content += `Vertical: ${detail.profile.vertical}\n`
+    }
+    if (detail.profile?.roleType) {
+      content += `Role: ${detail.profile.roleType}\n`
+    }
+    if (detail.interview.completedAt) {
+      content += `Date: ${new Date(detail.interview.completedAt).toLocaleDateString()}\n`
+    }
+    content += `\n${'='.repeat(50)}\n\n`
+
+    detail.interview.responses.forEach((response, index) => {
+      content += `Question ${index + 1}:\n`
+      content += `${response.questionText || 'N/A'}\n\n`
+      content += `Answer:\n`
+      content += `${response.transcription || '(No transcript available)'}\n\n`
+      content += `${'-'.repeat(40)}\n\n`
+    })
+
+    // Create and download file
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${candidateName.replace(/\s+/g, '_')}_interview.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   if (isLoading) {
     return (
       <main className="min-h-screen bg-stone-50 flex items-center justify-center">
@@ -461,17 +702,87 @@ ${employer?.companyName || 'Our Company'}`)
             Pathway
           </Link>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 rounded-full">
-              <div className="w-5 h-5 bg-teal-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-xs">
-                  {employer?.companyName?.charAt(0) || 'E'}
-                </span>
-              </div>
-              <span className="text-sm text-stone-600">{employer?.companyName}</span>
+            {/* Profile Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 rounded-full transition-colors cursor-pointer"
+              >
+                <div className="w-6 h-6 bg-teal-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium text-xs">
+                    {(employer?.name?.charAt(0) || employer?.companyName?.charAt(0) || employer?.email?.split('@')[0]?.charAt(0) || 'U').toUpperCase()}
+                  </span>
+                </div>
+                <span className="text-sm text-stone-700 font-medium">{employer?.name || employer?.companyName || employer?.email?.split('@')[0]}</span>
+                <svg className={`w-4 h-4 text-stone-400 transition-transform ${showProfileDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {/* Dropdown Menu */}
+              {showProfileDropdown && (
+                <>
+                  {/* Backdrop to close dropdown */}
+                  <div className="fixed inset-0 z-10" onClick={() => setShowProfileDropdown(false)} />
+
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-stone-200 py-2 z-20">
+                    {/* User Info */}
+                    <div className="px-4 py-3 border-b border-stone-100">
+                      <p className="font-medium text-stone-900">{employer?.name || employer?.email?.split('@')[0]}</p>
+                      {employer?.companyName && (
+                        <p className="text-xs text-stone-600">{employer.companyName}</p>
+                      )}
+                      <p className="text-xs text-stone-500">{employer?.email}</p>
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false)
+                          router.push('/dashboard/settings')
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-3"
+                      >
+                        <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Account Settings
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false)
+                          // TODO: Navigate to billing page
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-3"
+                      >
+                        <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        Billing
+                      </button>
+                    </div>
+
+                    {/* Logout */}
+                    <div className="border-t border-stone-100 pt-1">
+                      <button
+                        onClick={() => {
+                          setShowProfileDropdown(false)
+                          handleLogout()
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-            <Button variant="ghost" size="sm" className="text-stone-500 hover:text-stone-900" onClick={handleLogout}>
-              Logout
-            </Button>
           </div>
         </div>
       </header>
@@ -485,6 +796,7 @@ ${employer?.companyName || 'Our Company'}`)
               { key: 'interviews', label: 'Interviews' },
               { key: 'jobs', label: 'Jobs' },
               { key: 'talent', label: 'Talent Pool' },
+              { key: 'team', label: 'Team' },
             ].map(tab => (
               <button
                 key={tab.key}
@@ -537,57 +849,63 @@ ${employer?.companyName || 'Our Company'}`)
               </Card>
             </div>
 
-            {/* Recent Interviews */}
-            <Card>
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-lg">Recent Interviews</CardTitle>
-                    <CardDescription>Latest candidate submissions</CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setActiveTab('interviews')}
-                    className="text-teal-600 hover:text-teal-700"
-                  >
-                    View all →
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {recentInterviews.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <svg className="w-6 h-6 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
+            {/* Match Alerts and Recent Interviews */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Match Alerts */}
+              <MatchAlerts limit={5} showViewAll={true} />
+
+              {/* Recent Interviews */}
+              <Card>
+                <CardHeader className="pb-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-lg">Recent Interviews</CardTitle>
+                      <CardDescription>Latest candidate submissions</CardDescription>
                     </div>
-                    <p className="text-stone-500 text-sm">No interviews yet</p>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      onClick={() => setActiveTab('jobs')}
-                      className="mt-3"
+                      onClick={() => setActiveTab('interviews')}
+                      className="text-teal-600 hover:text-teal-700"
                     >
-                      Create a Job
+                      View all →
                     </Button>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {recentInterviews.map((interview) => (
-                      <CandidateCard
-                        key={interview.id}
-                        name={interview.candidateName || 'Unknown'}
-                        email={interview.candidateId}
-                        score={interview.totalScore}
-                        onClick={() => router.push(`/dashboard/interviews/${interview.id}`)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  {recentInterviews.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-stone-500 text-sm">No interviews yet</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setActiveTab('jobs')}
+                        className="mt-3"
+                      >
+                        Create a Job
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentInterviews.map((interview) => (
+                        <CandidateCard
+                          key={interview.id}
+                          name={interview.candidateName || 'Unknown'}
+                          email={interview.candidateId}
+                          score={interview.totalScore}
+                          onClick={() => router.push(`/dashboard/interviews/${interview.id}`)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Quick Actions */}
             <div className="grid sm:grid-cols-3 gap-4">
@@ -1038,6 +1356,194 @@ ${employer?.companyName || 'Our Company'}`)
           </div>
         )}
 
+        {/* Team Tab */}
+        {activeTab === 'team' && (
+          <div className="space-y-6">
+            {teamLoading ? (
+              <div className="text-center py-12">
+                <div className="w-8 h-8 border-2 border-stone-200 border-t-teal-600 rounded-full animate-spin mx-auto" />
+              </div>
+            ) : !organization ? (
+              /* No Organization - Show Create Flow */
+              <div className="max-w-lg mx-auto text-center py-12">
+                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-stone-900 mb-2">Set Up Your Team</h2>
+                <p className="text-stone-500 mb-6">
+                  Create an organization to collaborate with your team on hiring. Invite recruiters, hiring managers, and interviewers to work together.
+                </p>
+                <Button onClick={() => setShowCreateOrgModal(true)} className="bg-teal-600 hover:bg-teal-700">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Organization
+                </Button>
+              </div>
+            ) : (
+              /* Has Organization - Show Team Management */
+              <>
+                {/* Organization Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {organization.logoUrl ? (
+                      <img src={organization.logoUrl} alt={organization.name} className="w-12 h-12 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                        <span className="text-xl font-bold text-teal-700">{organization.name.charAt(0).toUpperCase()}</span>
+                      </div>
+                    )}
+                    <div>
+                      <h2 className="text-lg font-semibold text-stone-900">{organization.name}</h2>
+                      <p className="text-sm text-stone-500">{teamMembers.length} team member{teamMembers.length !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+                  <Button onClick={() => setShowInviteModal(true)} className="bg-teal-600 hover:bg-teal-700">
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Invite Member
+                  </Button>
+                </div>
+
+                {/* Team Members */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Team Members</CardTitle>
+                    <CardDescription>People who can access your organization&apos;s hiring pipeline</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="divide-y divide-stone-100">
+                      {teamMembers.map((member) => (
+                        <div key={member.id} className="flex items-center justify-between py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-white">
+                                {(member.name || member.email || 'U').charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-stone-900">{member.name || member.email}</p>
+                              <p className="text-sm text-stone-500">{member.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              member.role === 'owner' ? 'bg-purple-100 text-purple-700' :
+                              member.role === 'admin' ? 'bg-blue-100 text-blue-700' :
+                              member.role === 'recruiter' ? 'bg-teal-100 text-teal-700' :
+                              member.role === 'hiring_manager' ? 'bg-amber-100 text-amber-700' :
+                              'bg-stone-100 text-stone-600'
+                            }`}>
+                              {member.role === 'hiring_manager' ? 'Hiring Manager' :
+                               member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                            </span>
+                            {member.role !== 'owner' && member.employerId !== employer?.id && (
+                              <button
+                                onClick={() => handleRemoveMember(member.id)}
+                                className="p-1 text-stone-400 hover:text-red-500 transition-colors"
+                                title="Remove member"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pending Invites */}
+                {teamInvites.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Pending Invites</CardTitle>
+                      <CardDescription>Invitations that haven&apos;t been accepted yet</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="divide-y divide-stone-100">
+                        {teamInvites.map((invite) => (
+                          <div key={invite.id} className="flex items-center justify-between py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center">
+                                <svg className="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="font-medium text-stone-900">{invite.email}</p>
+                                <p className="text-xs text-stone-400">
+                                  Invited as {invite.role === 'hiring_manager' ? 'Hiring Manager' :
+                                   invite.role.charAt(0).toUpperCase() + invite.role.slice(1)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                                Pending
+                              </span>
+                              <button
+                                onClick={() => handleCancelInvite(invite.id)}
+                                className="p-1 text-stone-400 hover:text-red-500 transition-colors"
+                                title="Cancel invite"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Role Permissions Info */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Role Permissions</CardTitle>
+                    <CardDescription>What each role can do in your organization</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="p-4 bg-purple-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700">Owner</span>
+                        </div>
+                        <p className="text-sm text-stone-600">Full access: manage team, billing, and all hiring activities</p>
+                      </div>
+                      <div className="p-4 bg-blue-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700">Admin</span>
+                        </div>
+                        <p className="text-sm text-stone-600">Manage team members, jobs, and all candidates</p>
+                      </div>
+                      <div className="p-4 bg-teal-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-teal-100 text-teal-700">Recruiter</span>
+                        </div>
+                        <p className="text-sm text-stone-600">Create jobs, review candidates, send invites</p>
+                      </div>
+                      <div className="p-4 bg-amber-50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">Hiring Manager</span>
+                        </div>
+                        <p className="text-sm text-stone-600">Review candidates for assigned jobs, leave feedback</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Talent Pool Tab */}
         {activeTab === 'talent' && (
           <div className="space-y-6">
@@ -1195,6 +1701,9 @@ ${employer?.companyName || 'Our Company'}`)
                                 {candidate.completionStatus?.resumeUploaded && (
                                   <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">Resume</span>
                                 )}
+                                {candidate.completionStatus?.transcriptUploaded && (
+                                  <span className="px-1.5 py-0.5 text-xs bg-orange-100 text-orange-700 rounded-full">Transcript</span>
+                                )}
                                 {candidate.completionStatus?.githubConnected && (
                                   <span className="px-1.5 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full">GitHub</span>
                                 )}
@@ -1251,7 +1760,41 @@ ${employer?.companyName || 'Our Company'}`)
                               )}
                             </div>
 
-                            {/* Contact Button */}
+                            {/* Status Dropdown */}
+                            <div className="flex-shrink-0 w-28" onClick={(e) => e.stopPropagation()}>
+                              {(() => {
+                                const currentStatus = getCandidateStatus(candidate)
+                                const statusOption = MATCH_STATUS_OPTIONS.find(s => s.value === currentStatus) || MATCH_STATUS_OPTIONS[0]
+                                const isUpdating = updatingStatus === rowId
+                                return (
+                                  <div className="relative">
+                                    <select
+                                      value={currentStatus}
+                                      onChange={(e) => handleStatusChange(candidate.candidateId, candidate.profileId, e.target.value as MatchStatus)}
+                                      disabled={isUpdating}
+                                      className={`w-full h-8 px-2 pr-7 text-xs font-medium rounded-lg border border-stone-200 ${statusOption.bgColor} ${statusOption.color} appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50`}
+                                    >
+                                      {MATCH_STATUS_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                                      {isUpdating ? (
+                                        <div className="w-3 h-3 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+                                      ) : (
+                                        <svg className="w-3 h-3 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })()}
+                            </div>
+
+                            {/* Interview Button */}
                             <div className="flex-shrink-0">
                               <Button
                                 size="sm"
@@ -1261,7 +1804,7 @@ ${employer?.companyName || 'Our Company'}`)
                                   openContactModal(candidate)
                                 }}
                               >
-                                Contact
+                                Interview
                               </Button>
                             </div>
                           </div>
@@ -1337,7 +1880,7 @@ ${employer?.companyName || 'Our Company'}`)
                                       ? detail.interview.overallConcerns
                                       : detail.profileScore?.concerns || []
                                     const hasAssessment = strengths.length > 0 || concerns.length > 0
-                                    const isFromInterview = detail.interview?.overallStrengths?.length || detail.interview?.overallConcerns?.length
+                                    const isFromInterview = !!(detail.interview?.overallStrengths?.length || detail.interview?.overallConcerns?.length)
 
                                     return hasAssessment ? (
                                       <div>
@@ -1509,18 +2052,29 @@ ${employer?.companyName || 'Our Company'}`)
                                             <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
-                                            <span className="text-sm text-stone-700">Interview Transcript</span>
+                                            <span className="text-sm text-stone-700">Interview</span>
                                             <span className="text-xs text-stone-400">({detail.interview.responses.length} response{detail.interview.responses.length > 1 ? 's' : ''})</span>
                                           </div>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation()
-                                              openTranscriptPreview(detail, candidate.candidateName || 'Candidate')
-                                            }}
-                                            className="px-2 py-1 text-xs font-medium text-teal-600 hover:bg-teal-50 rounded transition-colors"
-                                          >
-                                            Preview
-                                          </button>
+                                          <div className="flex items-center gap-1">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                openTranscriptPreview(detail, candidate.candidateName || 'Candidate')
+                                              }}
+                                              className="px-2 py-1 text-xs font-medium text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                                            >
+                                              Preview
+                                            </button>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                downloadTranscript(detail, candidate.candidateName || 'Candidate')
+                                              }}
+                                              className="px-2 py-1 text-xs font-medium text-stone-600 hover:bg-stone-100 rounded transition-colors"
+                                            >
+                                              Download
+                                            </button>
+                                          </div>
                                         </div>
                                       )}
 
@@ -1528,6 +2082,12 @@ ${employer?.companyName || 'Our Company'}`)
                                         <p className="text-xs text-stone-400 italic">No documents available</p>
                                       )}
                                     </div>
+
+                                    {/* Notes Section */}
+                                    <CandidateNotes
+                                      candidateId={detail.candidate.id}
+                                      candidateName={candidate.candidateName}
+                                    />
                                   </div>
                                 </div>
                               </div>
@@ -1552,7 +2112,7 @@ ${employer?.companyName || 'Our Company'}`)
           <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <span>Contact {contactCandidate.candidateName}</span>
+                <span>Interview {contactCandidate.candidateName}</span>
                 <button
                   onClick={() => setShowContactModal(false)}
                   className="text-stone-400 hover:text-stone-600"
@@ -1563,10 +2123,54 @@ ${employer?.companyName || 'Our Company'}`)
                 </button>
               </CardTitle>
               <CardDescription>
-                Send an email to {contactCandidate.candidateEmail}
+                Send an interview invitation to {contactCandidate.candidateEmail}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Scheduling Link Selection */}
+              <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
+                <Label className="text-sm font-medium text-stone-700 mb-2 block flex items-center gap-2">
+                  <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Include Scheduling Link
+                </Label>
+                {loadingSchedulingLinks ? (
+                  <div className="flex items-center gap-2 text-sm text-stone-500">
+                    <div className="w-4 h-4 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin" />
+                    Loading scheduling links...
+                  </div>
+                ) : schedulingLinks.length > 0 ? (
+                  <select
+                    value={selectedSchedulingLink}
+                    onChange={(e) => handleSchedulingLinkChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
+                  >
+                    <option value="">No scheduling link (just send message)</option>
+                    {schedulingLinks.map(link => (
+                      <option key={link.id} value={link.id}>
+                        {link.name} ({link.durationMinutes} min)
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="text-sm text-stone-500">
+                    <p>No scheduling links available.</p>
+                    <Link href="/employer/dashboard/scheduling-links" className="text-teal-600 hover:underline">
+                      Create a scheduling link →
+                    </Link>
+                  </div>
+                )}
+                {selectedSchedulingLink && (
+                  <p className="text-xs text-teal-600 mt-2 flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Candidate will be able to pick a time from your availability and receive a Google Meet link
+                  </p>
+                )}
+              </div>
+
               <div>
                 <Label className="text-sm font-medium text-stone-700 mb-1 block">Subject</Label>
                 <Input
@@ -1581,7 +2185,7 @@ ${employer?.companyName || 'Our Company'}`)
                 <textarea
                   value={contactMessage}
                   onChange={(e) => setContactMessage(e.target.value)}
-                  rows={8}
+                  rows={10}
                   className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none text-sm"
                   placeholder="Write your message..."
                 />
@@ -1600,11 +2204,13 @@ ${employer?.companyName || 'Our Company'}`)
                   onClick={sendContactEmail}
                   disabled={isSending || !contactSubject.trim() || !contactMessage.trim()}
                 >
-                  {isSending ? 'Sending...' : 'Send Email'}
+                  {isSending ? 'Sending...' : selectedSchedulingLink ? 'Send with Scheduling Link' : 'Send Email'}
                 </Button>
               </div>
               <p className="text-xs text-stone-500 text-center">
-                The candidate will receive this email and their status will be updated to "Contacted"
+                {selectedSchedulingLink
+                  ? 'The candidate will receive this email with a link to schedule an interview'
+                  : 'The candidate will receive this email and their status will be updated to "Contacted"'}
               </p>
             </CardContent>
           </Card>
@@ -1663,6 +2269,129 @@ ${employer?.companyName || 'Our Company'}`)
         </div>
       )}
 
+      {/* Create Organization Modal */}
+      {showCreateOrgModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Create Organization</span>
+                <button
+                  onClick={() => setShowCreateOrgModal(false)}
+                  className="text-stone-400 hover:text-stone-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </CardTitle>
+              <CardDescription>
+                Create an organization for your company to enable team collaboration
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-stone-700 mb-1 block">Organization Name</Label>
+                <Input
+                  type="text"
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                  placeholder="e.g. Acme Corp"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowCreateOrgModal(false)}
+                  disabled={isCreatingOrg}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-teal-600 hover:bg-teal-700"
+                  onClick={handleCreateOrganization}
+                  disabled={isCreatingOrg || !newOrgName.trim()}
+                >
+                  {isCreatingOrg ? 'Creating...' : 'Create'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Invite Member Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Invite Team Member</span>
+                <button
+                  onClick={() => setShowInviteModal(false)}
+                  className="text-stone-400 hover:text-stone-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </CardTitle>
+              <CardDescription>
+                Send an invitation to join your organization
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-stone-700 mb-1 block">Email Address</Label>
+                <Input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="colleague@company.com"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-stone-700 mb-1 block">Role</Label>
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  className="w-full h-10 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="recruiter">Recruiter</option>
+                  <option value="hiring_manager">Hiring Manager</option>
+                  <option value="interviewer">Interviewer</option>
+                </select>
+                <p className="text-xs text-stone-500 mt-1">
+                  {inviteRole === 'admin' && 'Can manage team members, jobs, and all candidates'}
+                  {inviteRole === 'recruiter' && 'Can create jobs, review candidates, and send invites'}
+                  {inviteRole === 'hiring_manager' && 'Can review candidates for assigned jobs'}
+                  {inviteRole === 'interviewer' && 'Can view assigned candidates and leave feedback'}
+                </p>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowInviteModal(false)}
+                  disabled={isInviting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-teal-600 hover:bg-teal-700"
+                  onClick={handleInviteMember}
+                  disabled={isInviting || !inviteEmail.trim()}
+                >
+                  {isInviting ? 'Sending...' : 'Send Invite'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Transcript Preview Modal */}
       {showTranscriptModal && transcriptData && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1673,16 +2402,27 @@ ${employer?.companyName || 'Our Company'}`)
                 <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <h3 className="text-lg font-semibold text-stone-900">{transcriptCandidateName}&apos;s Interview Transcript</h3>
+                <h3 className="text-lg font-semibold text-stone-900">{transcriptCandidateName}&apos;s Interview</h3>
               </div>
-              <button
-                onClick={() => setShowTranscriptModal(false)}
-                className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => downloadTranscript(transcriptData, transcriptCandidateName)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download
+                </button>
+                <button
+                  onClick={() => setShowTranscriptModal(false)}
+                  className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
             {/* Transcript Content */}
             <div className="flex-1 overflow-y-auto p-6">

@@ -1,1 +1,1 @@
-# ZhiPin AI API
+# Pathway API

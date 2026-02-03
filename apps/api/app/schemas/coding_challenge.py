@@ -25,9 +25,7 @@ class TestCaseResult(BaseModel):
 class CodingChallengeBase(BaseModel):
     """Base schema for coding challenge."""
     title: str
-    title_zh: Optional[str] = None
     description: str  # Problem description
-    description_zh: Optional[str] = None  # Chinese translation
     starter_code: Optional[str] = None
     test_cases: list[TestCase]
     time_limit_seconds: int = 5
@@ -60,7 +58,6 @@ class CodingChallengeInfo(BaseModel):
     """Brief info about a coding challenge (for question lists)."""
     id: str
     title: str
-    title_zh: Optional[str] = None
     difficulty: str
     has_starter_code: bool
 
@@ -117,7 +114,6 @@ class CodingQuestionInfo(BaseModel):
     """Question info for coding challenges."""
     index: int
     text: str  # Brief description
-    text_zh: Optional[str] = None
     category: Optional[str] = None
     question_type: str = "coding"
     coding_challenge: Optional[CodingChallengeResponse] = None
@@ -129,7 +125,6 @@ class CodingQuestionInfo(BaseModel):
 DEFAULT_CODING_CHALLENGES = [
     {
         "title": "FizzBuzz",
-        "title_zh": "FizzBuzz",
         "description": """Write a function `solution(n)` that returns a list of integers from 1 to n, but:
 - For multiples of 3, use the string "Fizz" instead of the number
 - For multiples of 5, use the string "Buzz" instead of the number
@@ -138,15 +133,6 @@ DEFAULT_CODING_CHALLENGES = [
 Example:
 - solution(5) should return [1, 2, "Fizz", 4, "Buzz"]
 - solution(15) should return [1, 2, "Fizz", 4, "Buzz", "Fizz", 7, 8, "Fizz", "Buzz", 11, "Fizz", 13, 14, "FizzBuzz"]
-""",
-        "description_zh": """编写一个函数 `solution(n)` 返回从1到n的列表，但是：
-- 3的倍数用字符串 "Fizz" 代替数字
-- 5的倍数用字符串 "Buzz" 代替数字
-- 同时是3和5的倍数用字符串 "FizzBuzz" 代替
-
-示例：
-- solution(5) 应返回 [1, 2, "Fizz", 4, "Buzz"]
-- solution(15) 应返回 [1, 2, "Fizz", 4, "Buzz", "Fizz", 7, 8, "Fizz", "Buzz", 11, "Fizz", 13, 14, "FizzBuzz"]
 """,
         "starter_code": '''def solution(n):
     """
@@ -173,7 +159,6 @@ Example:
     },
     {
         "title": "Two Sum",
-        "title_zh": "两数之和",
         "description": """Given an array of integers `nums` and an integer `target`, return the indices of the two numbers that add up to `target`.
 
 You may assume that each input has exactly one solution, and you cannot use the same element twice.
@@ -183,16 +168,6 @@ Write a function `solution(nums, target)` that returns a list of two indices.
 Example:
 - solution([2, 7, 11, 15], 9) should return [0, 1] (because nums[0] + nums[1] = 2 + 7 = 9)
 - solution([3, 2, 4], 6) should return [1, 2] (because nums[1] + nums[2] = 2 + 4 = 6)
-""",
-        "description_zh": """给定一个整数数组 `nums` 和一个整数目标值 `target`，返回两个数之和等于目标值的元素下标。
-
-假设每个输入只有一个解，且同一个元素不能使用两次。
-
-编写函数 `solution(nums, target)` 返回包含两个下标的列表。
-
-示例：
-- solution([2, 7, 11, 15], 9) 应返回 [0, 1]（因为 nums[0] + nums[1] = 2 + 7 = 9）
-- solution([3, 2, 4], 6) 应返回 [1, 2]（因为 nums[1] + nums[2] = 2 + 4 = 6）
 """,
         "starter_code": '''def solution(nums, target):
     """
@@ -220,7 +195,6 @@ Example:
     },
     {
         "title": "Reverse Linked List",
-        "title_zh": "反转链表",
         "description": """Given a singly linked list, reverse it and return the reversed list.
 
 For simplicity, the input is given as a Python list, and you should return a reversed list.
@@ -233,19 +207,6 @@ Example:
 - solution([]) should return []
 
 Note: You should implement this without using built-in reverse functions.
-""",
-        "description_zh": """给定一个单向链表，反转它并返回反转后的链表。
-
-为简化问题，输入以Python列表形式给出，你应该返回一个反转后的列表。
-
-编写函数 `solution(nums)` 反转列表。
-
-示例：
-- solution([1, 2, 3, 4, 5]) 应返回 [5, 4, 3, 2, 1]
-- solution([1, 2]) 应返回 [2, 1]
-- solution([]) 应返回 []
-
-注意：请不要使用内置的 reverse 函数。
 """,
         "starter_code": '''def solution(nums):
     """

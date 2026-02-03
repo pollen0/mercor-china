@@ -29,9 +29,9 @@ export function CandidateCard({
       case 'REJECTED':
         return <Badge variant="error">Rejected</Badge>
       case 'HIRED':
-        return <Badge variant="info">Hired</Badge>
+        return <Badge variant="success">Hired</Badge>
       default:
-        return <Badge variant="neutral">Pending</Badge>
+        return <Badge variant="default">Pending</Badge>
     }
   }
 

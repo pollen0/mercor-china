@@ -7,7 +7,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from .config import settings
 from .database import init_db
-from .routers import health, candidates, questions, interviews, employers, auth, admin, courses, activities, public, calendar, employer_calendar
+from .routers import health, candidates, questions, interviews, employers, auth, admin, courses, activities, public, calendar, employer_calendar, team_members, scheduling_links, organizations
 from .utils.rate_limit import limiter, rate_limit_exceeded_handler
 
 # Configure logging
@@ -56,9 +56,25 @@ async def lifespan(app: FastAPI):
     validate_required_env_vars()
     logger.info("Starting Pathway API...")
     init_db()
+
+    # Initialize reminder scheduler
+    try:
+        from .services.reminder_scheduler import init_scheduler, shutdown_scheduler
+        init_scheduler()
+        logger.info("Reminder scheduler initialized")
+    except Exception as e:
+        logger.warning(f"Failed to initialize reminder scheduler: {e}")
+
     logger.info("Pathway API started successfully")
     yield
     logger.info("Shutting down Pathway API...")
+
+    # Shutdown scheduler
+    try:
+        from .services.reminder_scheduler import shutdown_scheduler
+        shutdown_scheduler()
+    except Exception as e:
+        logger.warning(f"Failed to shutdown scheduler: {e}")
 
 
 app = FastAPI(
@@ -80,6 +96,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Add security headers middleware
+from .middleware.security import SecurityHeadersMiddleware
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    enable_hsts=not settings.debug,  # Only enable HSTS in production
 )
 
 # Health check
@@ -118,6 +141,15 @@ app.include_router(activities.router, prefix="/api/activities", tags=["activitie
 # Public endpoints (no auth required)
 app.include_router(public.router, prefix="/api/public", tags=["public"])
 
+# Team member management
+app.include_router(team_members.router, prefix="/api/employers/team-members", tags=["team-members"])
+
+# Scheduling links
+app.include_router(scheduling_links.router, prefix="/api/employers/scheduling-links", tags=["scheduling-links"])
+
+# Organizations (team collaboration)
+app.include_router(organizations.router, tags=["organizations"])
+
 
 @app.get("/")
 async def root():
@@ -133,5 +165,15 @@ async def root():
             "courses": "/api/courses",
             "activities": "/api/activities",
             "calendar": "/api/calendar",
+            "team_members": "/api/employers/team-members",
+            "scheduling_links": "/api/employers/scheduling-links",
         }
     }
+
+
+# Public scheduling endpoint (no auth required)
+@app.get("/api/schedule/{slug}")
+async def public_schedule_redirect(slug: str):
+    """Redirect to the public scheduling endpoint."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url=f"/api/employers/scheduling-links/public/{slug}")

@@ -602,7 +602,7 @@ def process_coding_response(
         # Score the response with AI
         try:
             # Get problem description for scoring context
-            problem_desc = challenge.problem_description_zh or challenge.problem_description
+            problem_desc = challenge.problem_description
 
             if is_practice:
                 # Get detailed feedback for practice mode

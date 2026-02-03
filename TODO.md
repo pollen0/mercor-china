@@ -51,6 +51,7 @@
 - [ ] **Video Introduction** - 60-second pitch video option
 
 ### Employer Features
+- [ ] **Job URL Import** - Paste a job posting URL and auto-extract job details using AI (title, description, requirements, location, salary). Support Lever, Greenhouse, LinkedIn Jobs, and company career pages.
 - [ ] **Saved Searches** - Save talent pool filters
 - [ ] **Candidate Notes** - Private notes on candidates
 - [ ] **Team Collaboration** - Multiple users per employer account
@@ -81,6 +82,23 @@
 
 ---
 
+## Future / Enterprise Features (Deferred)
+
+> These features are premature for current stage. Revisit after GTM validation with 50+ companies.
+
+### University Relations
+- [ ] **University Relationship Management** - Track recruiting success by school, relationship health, key contacts
+- [ ] **Campus Event Management** - Info sessions, career fairs, on-campus interviews
+
+### Intern Program Management
+- [ ] **Internship → FT Conversion Tracking** - Track which interns get return offers
+- [ ] **Intern Class Planning** - Plan cohort sizes, start dates, team assignments
+
+### Network Effects
+- [ ] **Alumni Referral Network** - Connect hired candidates back to refer classmates (requires critical mass of hires)
+
+---
+
 ## Completed
 - [x] Progressive AI Question System
 - [x] GitHub OAuth Integration
@@ -99,6 +117,9 @@
 - [x] Interview Reminder Emails
 - [x] Profile View Notification Emails
 - [x] Weekly Digest Emails
+- [x] **Cohort Comparisons** - "Top X% of [University] [Year]" badges in talent pool
+- [x] **Candidate Watchlist** - Employers can track promising freshmen/sophomores for future
+- [x] **Preference Boost in Matching** - Candidates with matching preferences rank higher
 
 ---
 
@@ -111,4 +132,4 @@
 
 ---
 
-*Last updated: 2026-02-01*
+*Last updated: 2026-02-02*

@@ -65,7 +65,7 @@ class TestBulkActions:
         assert len(data["errors"]) == 2
 
     def test_bulk_action_empty_list(self, client, auth_headers):
-        """Test bulk action with empty interview list."""
+        """Test bulk action with empty interview list returns validation error."""
         response = client.post(
             "/api/employers/interviews/bulk-action",
             headers=auth_headers,
@@ -75,10 +75,8 @@ class TestBulkActions:
             }
         )
 
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data["processed"] == 0
-        assert data["success"] is True
+        # Schema validates that at least one interview_id is required
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_bulk_action_unauthorized(self, client, completed_interview):
         """Test bulk action without authentication."""
@@ -158,9 +156,9 @@ class TestCSVExport:
         assert response.status_code == status.HTTP_200_OK
         assert response.headers["content-type"] == "text/csv; charset=utf-8"
 
-    def test_export_csv_empty(self, client, auth_headers, test_employer):
+    def test_export_csv_empty(self, client, auth_headers, test_job):
         """Test CSV export with no interviews."""
-        # Employer has a job but no interviews
+        # Employer has a job but no interviews (test_job creates a job for test_employer)
         response = client.get(
             "/api/employers/interviews/export",
             headers=auth_headers

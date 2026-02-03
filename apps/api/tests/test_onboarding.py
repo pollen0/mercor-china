@@ -424,6 +424,7 @@ class TestGitHubOAuth:
         """Test GitHub OAuth callback for authenticated user."""
         from app.models import Candidate
         from app.utils.auth import create_token
+        from unittest.mock import AsyncMock
         import uuid
 
         # Create authenticated candidate
@@ -438,30 +439,34 @@ class TestGitHubOAuth:
 
         token = create_token(candidate.id, "candidate", 24)
 
-        # Mock GitHub service
-        with patch("app.services.github.github_service.is_configured", return_value=True):
-            with patch("app.services.github.github_service.exchange_code_for_token", return_value="mock_access_token"):
-                with patch("app.services.github.github_service.get_full_profile", return_value={
-                    "username": "testuser",
-                    "public_repos": 10,
-                    "languages": {"Python": 50000, "JavaScript": 30000},
-                    "top_repos": [{"name": "awesome-project", "stars": 100}],
-                }):
-                    response = client.post(
-                        "/api/candidates/auth/github/callback",
-                        json={"code": "mock_code"},
-                        headers={"Authorization": f"Bearer {token}"}
-                    )
+        # Mock GitHub service and CSRF validation
+        with patch("app.routers.candidates.github_service") as mock_gh, \
+             patch("app.routers.candidates.validate_csrf_token", return_value=True):
+            mock_gh.is_configured.return_value = True
+            # Use AsyncMock for async methods
+            mock_gh.exchange_code_for_token = AsyncMock(return_value="mock_access_token")
+            mock_gh.get_full_profile = AsyncMock(return_value={
+                "username": "testuser",
+                "public_repos": 10,
+                "languages": {"Python": 50000, "JavaScript": 30000},
+                "top_repos": [{"name": "awesome-project", "stars": 100}],
+            })
+            response = client.post(
+                "/api/candidates/auth/github/callback",
+                json={"code": "mock_code", "state": "mock_state"},
+                headers={"Authorization": f"Bearer {token}"}
+            )
 
-                    assert response.status_code == status.HTTP_200_OK
-                    data = response.json()
-                    assert data["success"] is True
-                    assert data["github_username"] == "testuser"
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["success"] is True
+            assert data["github_username"] == "testuser"
 
     def test_github_callback_duplicate_account(self, client, db_session):
         """Test GitHub callback when account already connected to another user."""
         from app.models import Candidate
         from app.utils.auth import create_token
+        from unittest.mock import AsyncMock
         import uuid
 
         # Create first user with GitHub connected
@@ -486,18 +491,20 @@ class TestGitHubOAuth:
 
         token = create_token(new_user.id, "candidate", 24)
 
-        with patch("app.services.github.github_service.is_configured", return_value=True):
-            with patch("app.services.github.github_service.exchange_code_for_token", return_value="mock_token"):
-                with patch("app.services.github.github_service.get_full_profile", return_value={
-                    "username": "testuser",  # Same username as existing
-                }):
-                    response = client.post(
-                        "/api/candidates/auth/github/callback",
-                        json={"code": "mock_code"},
-                        headers={"Authorization": f"Bearer {token}"}
-                    )
+        with patch("app.routers.candidates.github_service") as mock_gh, \
+             patch("app.routers.candidates.validate_csrf_token", return_value=True):
+            mock_gh.is_configured.return_value = True
+            mock_gh.exchange_code_for_token = AsyncMock(return_value="mock_token")
+            mock_gh.get_full_profile = AsyncMock(return_value={
+                "username": "testuser",  # Same username as existing
+            })
+            response = client.post(
+                "/api/candidates/auth/github/callback",
+                json={"code": "mock_code", "state": "mock_state"},
+                headers={"Authorization": f"Bearer {token}"}
+            )
 
-                    assert response.status_code == status.HTTP_409_CONFLICT
+            assert response.status_code == status.HTTP_409_CONFLICT
 
 
 class TestAuthenticatedAccess:

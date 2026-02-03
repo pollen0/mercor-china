@@ -348,12 +348,17 @@ async def upload_transcript(
     Upload and analyze a transcript PDF.
     Parses courses, grades, and calculates transcript score.
     """
-    # Validate file type
-    if not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    # Get filename
+    filename = file.filename or "transcript.pdf"
 
     # Read file
     file_bytes = await file.read()
+
+    # Comprehensive file validation (extension, size, and magic bytes)
+    from ..utils.file_validation import validate_transcript_file
+    is_valid, error = validate_transcript_file(file_bytes, filename)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=error)
 
     # Extract text from PDF
     try:

@@ -24,7 +24,7 @@ class TestPracticeMode:
         assert "Practice" in data["job_title"]
 
     def test_practice_interview_not_reused(
-        self, client, db_session, test_candidate, test_job, test_questions
+        self, client, db_session, test_candidate, test_job, test_questions, candidate_auth_headers
     ):
         """Test that practice sessions are not reused (new session each time)."""
         # Start first practice interview
@@ -36,7 +36,10 @@ class TestPracticeMode:
         session_id_1 = response1.json()["session_id"]
 
         # Complete the first session
-        client.post(f"/api/interviews/{session_id_1}/complete")
+        client.post(
+            f"/api/interviews/{session_id_1}/complete",
+            headers=candidate_auth_headers
+        )
 
         # Start second practice interview
         response2 = client.post("/api/interviews/start", json={
@@ -67,27 +70,29 @@ class TestPracticeFeedback:
     """Tests for practice mode immediate feedback."""
 
     def test_get_practice_feedback_not_practice_session(
-        self, client, completed_interview, mock_storage_service
+        self, client, completed_interview, mock_storage_service, candidate_auth_headers
     ):
         """Test that practice feedback fails for non-practice sessions."""
         # completed_interview is not a practice session
         response = client.get(
-            f"/api/interviews/{completed_interview.id}/practice-feedback/fake_response_id"
+            f"/api/interviews/{completed_interview.id}/practice-feedback/fake_response_id",
+            headers=candidate_auth_headers
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "practice" in response.json()["detail"].lower()
 
-    def test_get_practice_feedback_session_not_found(self, client):
+    def test_get_practice_feedback_session_not_found(self, client, candidate_auth_headers):
         """Test practice feedback for nonexistent session."""
         response = client.get(
-            "/api/interviews/nonexistent_session/practice-feedback/fake_response_id"
+            "/api/interviews/nonexistent_session/practice-feedback/fake_response_id",
+            headers=candidate_auth_headers
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_get_practice_feedback_response_not_found(
-        self, client, db_session, test_candidate, test_job, test_questions
+        self, client, db_session, test_candidate, test_job, test_questions, candidate_auth_headers
     ):
         """Test practice feedback for nonexistent response."""
         from app.models import InterviewSession, InterviewStatus
@@ -105,7 +110,8 @@ class TestPracticeFeedback:
         db_session.commit()
 
         response = client.get(
-            f"/api/interviews/{practice_session.id}/practice-feedback/nonexistent_response"
+            f"/api/interviews/{practice_session.id}/practice-feedback/nonexistent_response",
+            headers=candidate_auth_headers
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND

@@ -38,6 +38,21 @@ AI-powered career platform for US college students. Interview monthly to show yo
 - View complete profiles: GitHub, resume, transcript, interview videos
 - Track candidate improvement over time
 - Auto-matching to relevant job postings
+- **Status Management**: Track candidates through pipeline (New → Contacted → In Review → Shortlisted → Hired/Rejected)
+- **Private Notes**: Add internal notes on candidates
+
+### Interview Scheduling System
+- **Self-Scheduling Links**: Create shareable links for candidates to book interviews
+- **Google Calendar Integration**: Automatic Google Meet creation and calendar sync
+- **Availability Management**: Set weekly availability windows and exceptions
+- **Scheduled Interviews Dashboard**: View upcoming/past interviews, reschedule, cancel
+
+### GitHub Code Analysis
+- **Originality Score**: Unique, self-driven projects vs forks
+- **Activity Score**: Contribution consistency and recency
+- **Depth Score**: Code complexity and quality indicators
+- **Collaboration Score**: Team contributions and PRs
+- Quality indicators: tests, CI/CD, documentation
 
 ## Target Verticals
 
@@ -102,10 +117,17 @@ pathway/
 │   │   ├── app/
 │   │   │   ├── (candidate)/    # Student dashboard, interviews
 │   │   │   ├── (employer)/     # Employer dashboard, talent pool, admin
+│   │   │   │   └── employer/dashboard/
+│   │   │   │       ├── scheduled-interviews/  # Interview management
+│   │   │   │       ├── scheduling-links/      # Self-scheduling links
+│   │   │   │       └── team/                  # Team management
+│   │   │   ├── schedule/[slug] # Public self-scheduling page
 │   │   │   └── page.tsx        # Landing page
 │   │   ├── components/
 │   │   │   ├── interview/      # Video recorder, question display
-│   │   │   ├── dashboard/      # Progress charts, profile cards
+│   │   │   ├── dashboard/      # Progress charts, profile cards, GitHub analysis
+│   │   │   ├── employer/       # Candidate notes, match alerts
+│   │   │   ├── scheduling/     # Availability grid, slot picker
 │   │   │   └── layout/         # Navbar, footer
 │   │   └── lib/
 │   │       └── api.ts          # API client with TypeScript types
@@ -217,10 +239,14 @@ npm run dev
 ### Employer Journey
 
 1. **Register/Login** (`/employer/login`)
-2. **Create Job Posting** - Select vertical and role type
-3. **Browse Talent Pool** - Filter by vertical, school, graduation year, score
-4. **View Candidate Profiles** - See progress charts, GitHub, interview videos
-5. **Contact Candidates** - Reach out to promising students
+2. **Connect Google Calendar** - Enable interview scheduling
+3. **Create Job Posting** - Select vertical and role type
+4. **Create Scheduling Links** - Generate self-booking links for interviews
+5. **Browse Talent Pool** - Filter by vertical, school, graduation year, score
+6. **View Candidate Profiles** - See progress charts, GitHub, interview videos
+7. **Update Status** - Track candidates through pipeline (New → Contacted → Shortlisted → Hired)
+8. **Add Notes** - Keep private notes on promising candidates
+9. **Schedule Interviews** - Send scheduling links, candidates self-book with Google Meet
 
 ### Admin Dashboard
 

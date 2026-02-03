@@ -246,10 +246,26 @@ async def update_my_profile(
     db: Session = Depends(get_db),
 ):
     """Update the current student's profile."""
+    from ..utils.sanitize import sanitize_name, sanitize_text_content, sanitize_url, sanitize_string
+
     update_dict = update_data.model_dump(exclude_unset=True)
+
+    # Sanitize string fields to prevent XSS
+    sanitize_fields = {
+        'name': sanitize_name,
+        'phone': lambda x: sanitize_string(x, allow_newlines=False, max_length=20),
+        'university': lambda x: sanitize_string(x, allow_newlines=False, max_length=200),
+        'major': lambda x: sanitize_string(x, allow_newlines=False, max_length=200),
+        'bio': sanitize_text_content,
+        'linkedin_url': sanitize_url,
+        'portfolio_url': sanitize_url,
+    }
 
     for field, value in update_dict.items():
         if hasattr(current_candidate, field):
+            # Apply sanitization if available
+            if field in sanitize_fields and value is not None:
+                value = sanitize_fields[field](value)
             setattr(current_candidate, field, value)
 
     db.commit()
@@ -364,13 +380,8 @@ async def upload_resume(
 
     candidate = current_candidate
 
-    # Validate file type
+    # Get filename
     filename = file.filename or "resume"
-    if not (filename.lower().endswith('.pdf') or filename.lower().endswith('.docx')):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please upload a PDF or DOCX file"
-        )
 
     # Read file content
     try:
@@ -381,11 +392,13 @@ async def upload_resume(
             detail=f"Failed to read file: {str(e)}"
         )
 
-    # Check file size (max 10MB)
-    if len(file_bytes) > 10 * 1024 * 1024:
+    # Comprehensive file validation (extension, size, and magic bytes)
+    from ..utils.file_validation import validate_resume_file
+    is_valid, error = validate_resume_file(file_bytes, filename)
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size cannot exceed 10MB"
+            detail=error
         )
 
     # Extract text from resume
@@ -436,15 +449,21 @@ async def upload_resume(
         logger.error(f"Resume AI parsing error for student {candidate_id}: {e}")
         parsed_data = ParsedResume()
 
-    # Update candidate record
+    # Sanitize parsed data and raw text to prevent XSS
+    from ..utils.sanitize import sanitize_resume_data, sanitize_text_content, sanitize_name
+
+    sanitized_raw_text = sanitize_text_content(raw_text)
+    sanitized_parsed_data = sanitize_resume_data(parsed_data.model_dump()) if parsed_data else None
+
+    # Update candidate record with sanitized data
     candidate.resume_url = resume_url
-    candidate.resume_raw_text = raw_text
-    candidate.resume_parsed_data = parsed_data.model_dump() if parsed_data else None
+    candidate.resume_raw_text = sanitized_raw_text
+    candidate.resume_parsed_data = sanitized_parsed_data
     candidate.resume_uploaded_at = datetime.utcnow()
 
     # Auto-update candidate name if parsed and missing
     if parsed_data.name and not candidate.name:
-        candidate.name = parsed_data.name
+        candidate.name = sanitize_name(parsed_data.name)
 
     db.commit()
 
@@ -603,13 +622,8 @@ async def upload_transcript(
 
     candidate = current_candidate
 
-    # Validate file type (PDF only for transcripts)
+    # Get filename
     filename = file.filename or "transcript.pdf"
-    if not filename.lower().endswith('.pdf'):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Please upload a PDF file"
-        )
 
     # Read file content
     try:
@@ -620,11 +634,13 @@ async def upload_transcript(
             detail=f"Failed to read file: {str(e)}"
         )
 
-    # Check file size (max 10MB)
-    if len(file_bytes) > 10 * 1024 * 1024:
+    # Comprehensive file validation (extension, size, and magic bytes)
+    from ..utils.file_validation import validate_transcript_file
+    is_valid, error = validate_transcript_file(file_bytes, filename)
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size cannot exceed 10MB"
+            detail=error
         )
 
     # Extract text from transcript
@@ -784,7 +800,7 @@ Respond with JSON in this format:
 # ==================== GITHUB OAUTH ENDPOINTS ====================
 
 from ..services.github import github_service
-import secrets
+from ..utils.csrf import generate_csrf_token, validate_csrf_token
 
 @router.get("/auth/github/url", response_model=GitHubAuthUrlResponse)
 async def get_github_auth_url(
@@ -799,8 +815,8 @@ async def get_github_auth_url(
             detail="GitHub OAuth is not configured"
         )
 
-    # Generate CSRF state token
-    state = secrets.token_urlsafe(16)
+    # Generate CSRF state token with proper storage
+    state = generate_csrf_token(oauth_type="github")
 
     # Default redirect URI
     from ..config import settings
@@ -834,6 +850,19 @@ async def github_callback(
             detail="GitHub OAuth is not configured"
         )
 
+    # Validate CSRF state token
+    if not data.state:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing state token. Please restart the OAuth flow."
+        )
+
+    if not validate_csrf_token(data.state, expected_type="github"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired state token. Please restart the OAuth flow."
+        )
+
     try:
         # Exchange code for access token
         access_token = await github_service.exchange_code_for_token(data.code)
@@ -853,10 +882,14 @@ async def github_callback(
                 detail="This GitHub account is already connected to another user"
             )
 
-        # Update candidate with GitHub data
-        current_candidate.github_username = github_data["username"]
+        # Sanitize GitHub data before storage to prevent XSS
+        from ..utils.sanitize import sanitize_github_data, sanitize_string
+        sanitized_github_data = sanitize_github_data(github_data)
+
+        # Update candidate with sanitized GitHub data
+        current_candidate.github_username = sanitize_string(github_data["username"], allow_newlines=False, max_length=100)
         current_candidate.github_access_token = encrypt_token(access_token)  # Encrypted for security
-        current_candidate.github_data = github_data
+        current_candidate.github_data = sanitized_github_data
         current_candidate.github_connected_at = datetime.utcnow()
 
         db.commit()
@@ -1623,3 +1656,122 @@ async def update_sharing_preferences(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update sharing preferences"
         )
+
+
+# ============================================================================
+# SKILL GAP ANALYSIS FOR CANDIDATES
+# ============================================================================
+
+from ..services.skill_gap import skill_gap_service
+
+
+class CandidateSkillGapRequest(PydanticBaseModel):
+    """Request for candidate's skill gap analysis."""
+    job_id: Optional[str] = None
+    job_requirements: Optional[list[str]] = None  # If no job_id provided
+
+
+class CandidateSkillGapResponse(PydanticBaseModel):
+    """Skill gap analysis for a candidate."""
+    overall_match_score: float
+    total_requirements: int
+    matched_requirements: int
+    critical_gaps: list[str]
+    proficiency_distribution: dict[str, int]
+    avg_proficiency_score: float
+    learning_priorities: list[dict]
+    bonus_skills: list[str]
+    strongest_areas: list[str]
+
+
+@router.post("/me/skill-gap", response_model=CandidateSkillGapResponse)
+async def get_my_skill_gap(
+    data: CandidateSkillGapRequest,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Analyze the current student's skill gap against a job or custom requirements.
+
+    Returns:
+    - Overall match score
+    - Critical skill gaps
+    - Learning priorities with estimated effort
+    - Strongest areas
+    """
+    from ..models import Job
+
+    # Get job requirements
+    job_requirements = data.job_requirements
+    if data.job_id:
+        job = db.query(Job).filter(Job.id == data.job_id).first()
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Job not found"
+            )
+        job_requirements = job.required_skills or []
+
+    if not job_requirements:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please provide job_id or job_requirements"
+        )
+
+    # Get candidate skills
+    candidate_skills = []
+    parsed_resume = None
+
+    if current_candidate.resume_parsed_data:
+        try:
+            import json
+            resume_data = current_candidate.resume_parsed_data if isinstance(current_candidate.resume_parsed_data, dict) else json.loads(current_candidate.resume_parsed_data)
+            candidate_skills = resume_data.get('skills', [])
+
+            from ..schemas.candidate import ParsedResume, ExperienceItem, ProjectItem
+            parsed_resume = ParsedResume(
+                name=resume_data.get('name'),
+                email=resume_data.get('email'),
+                skills=candidate_skills,
+                experience=[
+                    ExperienceItem(**exp) if isinstance(exp, dict) else exp
+                    for exp in resume_data.get('experience', [])
+                ],
+                projects=[
+                    ProjectItem(**proj) if isinstance(proj, dict) else proj
+                    for proj in resume_data.get('projects', [])
+                ],
+            )
+        except Exception as e:
+            logger.warning(f"Failed to parse resume data: {e}")
+
+    # Get GitHub data
+    github_data = None
+    if current_candidate.github_data:
+        try:
+            import json
+            github_data = current_candidate.github_data if isinstance(current_candidate.github_data, dict) else json.loads(current_candidate.github_data)
+        except Exception:
+            pass
+
+    # Run skill gap analysis
+    analysis = skill_gap_service.analyze_skill_gap(
+        candidate_skills=candidate_skills,
+        job_requirements=job_requirements,
+        parsed_resume=parsed_resume,
+        github_data=github_data,
+    )
+
+    logger.info(f"Candidate skill gap analysis: candidate={current_candidate.id}, score={analysis.overall_match_score}")
+
+    return CandidateSkillGapResponse(
+        overall_match_score=analysis.overall_match_score,
+        total_requirements=analysis.total_requirements,
+        matched_requirements=analysis.matched_requirements,
+        critical_gaps=analysis.critical_gaps,
+        proficiency_distribution=analysis.proficiency_distribution,
+        avg_proficiency_score=analysis.avg_proficiency_score,
+        learning_priorities=analysis.learning_priorities,
+        bonus_skills=analysis.bonus_skills,
+        strongest_areas=analysis.strongest_areas,
+    )

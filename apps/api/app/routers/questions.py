@@ -62,7 +62,6 @@ async def list_questions(
         {
             "id": q.id,
             "text": q.text,
-            "text_zh": q.text_zh,
             "category": q.category,
             "order": q.order,
             "is_default": q.is_default,
@@ -92,7 +91,6 @@ async def get_default_questions(db: Session = Depends(get_db)):
         {
             "id": q.id,
             "text": q.text,
-            "text_zh": q.text_zh,
             "category": q.category,
             "order": q.order,
             "is_default": q.is_default,
@@ -137,7 +135,6 @@ async def get_job_questions(job_id: str, db: Session = Depends(get_db)):
             {
                 "id": q.id,
                 "text": q.text,
-                "text_zh": q.text_zh,
                 "category": q.category,
                 "order": q.order,
                 "is_default": q.is_default,
@@ -153,7 +150,6 @@ async def get_job_questions(job_id: str, db: Session = Depends(get_db)):
         {
             "id": q.id,
             "text": q.text,
-            "text_zh": q.text_zh,
             "category": q.category,
             "order": q.order,
             "is_default": q.is_default,
@@ -184,7 +180,6 @@ async def create_question(
     question = InterviewQuestion(
         id=generate_cuid(),
         text=question_data.text,
-        text_zh=question_data.text_zh,
         category=question_data.category,
         order=question_data.order,
         is_default=False,
@@ -294,7 +289,6 @@ async def seed_default_questions(db: Session = Depends(get_db)):
         question = InterviewQuestion(
             id=generate_cuid(),
             text=q_data["text"],
-            text_zh=q_data["text_zh"],
             category=q_data["category"],
             order=q_data["order"],
             is_default=True,
@@ -366,9 +360,7 @@ async def seed_coding_challenges(db: Session = Depends(get_db)):
         challenge = CodingChallenge(
             id=generate_challenge_cuid(),
             title=c_data["title"],
-            title_zh=c_data.get("title_zh"),
             description=c_data["description"],
-            description_zh=c_data.get("description_zh"),
             starter_code=c_data.get("starter_code"),
             test_cases=test_cases,
             time_limit_seconds=c_data.get("time_limit_seconds", 5),
@@ -417,7 +409,6 @@ async def create_coding_question(
     question = InterviewQuestion(
         id=generate_cuid(),
         text=f"Coding Challenge: {challenge.title}",
-        text_zh=f"Coding Challenge: {challenge.title_zh or challenge.title}",
         category="technical",
         order=order,
         is_default=False,

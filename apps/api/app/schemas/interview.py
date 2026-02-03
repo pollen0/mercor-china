@@ -43,7 +43,6 @@ class InterviewStatusUpdate(BaseModel):
 class QuestionInfo(BaseModel):
     index: int
     text: str
-    text_zh: Optional[str] = None
     category: Optional[str] = None
     question_type: str = "video"  # "video" or "coding"
     coding_challenge_id: Optional[str] = None
@@ -137,7 +136,7 @@ class UploadUrlResponse(BaseModel):
 
 # Invite Token schemas
 class InviteTokenCreate(BaseModel):
-    job_id: str
+    job_id: Optional[str] = None  # Optional since job_id can come from URL path
     max_uses: int = 0  # 0 = unlimited
     expires_in_days: Optional[int] = None
 

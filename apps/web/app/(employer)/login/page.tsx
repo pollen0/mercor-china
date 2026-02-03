@@ -13,6 +13,7 @@ type Mode = 'login' | 'register'
 export default function EmployerLoginPage() {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>('login')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [companyName, setCompanyName] = useState('')
@@ -32,6 +33,7 @@ export default function EmployerLoginPage() {
         router.push('/dashboard')
       } else {
         const result = await employerApi.register({
+          name: name || undefined,
           companyName,
           email,
           password,
@@ -113,19 +115,34 @@ export default function EmployerLoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {mode === 'register' && (
-                <div>
-                  <Label htmlFor="companyName" className="text-sm font-medium text-stone-700">
-                    Company Name
-                  </Label>
-                  <Input
-                    id="companyName"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="Your company name"
-                    className="mt-2"
-                    required
-                  />
-                </div>
+                <>
+                  <div>
+                    <Label htmlFor="name" className="text-sm font-medium text-stone-700">
+                      Your Name
+                    </Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="John Smith"
+                      className="mt-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="companyName" className="text-sm font-medium text-stone-700">
+                      Company Name
+                    </Label>
+                    <Input
+                      id="companyName"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="Your company name"
+                      className="mt-2"
+                      required
+                    />
+                  </div>
+                </>
               )}
 
               <div>
@@ -167,7 +184,7 @@ export default function EmployerLoginPage() {
 
               <Button
                 type="submit"
-                variant="brand"
+                variant="default"
                 className="w-full"
                 disabled={isLoading}
                 loading={isLoading}

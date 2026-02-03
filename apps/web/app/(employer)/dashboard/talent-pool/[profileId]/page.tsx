@@ -396,7 +396,7 @@ ${companyName}`)
 
               {/* Action Buttons */}
               <Button
-                variant="brand"
+                variant="default"
                 onClick={() => {
                   if (calendarStatus?.connected) {
                     setShowScheduleModal(true)
@@ -835,7 +835,7 @@ ${companyName}`)
                   Cancel
                 </Button>
                 <Button
-                  variant="brand"
+                  variant="default"
                   className="flex-1"
                   onClick={sendContactEmail}
                   disabled={isSending || !contactSubject.trim() || !contactMessage.trim()}
@@ -923,7 +923,7 @@ ${companyName}`)
                   Cancel
                 </Button>
                 <Button
-                  variant="brand"
+                  variant="default"
                   className="flex-1"
                   onClick={async () => {
                     try {

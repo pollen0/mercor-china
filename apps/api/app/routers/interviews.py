@@ -130,7 +130,6 @@ async def start_interview(
                 QuestionInfo(
                     index=i,
                     text=q.text,
-                    text_zh=q.text_zh,
                     category=q.category,
                     question_type=q.question_type or "video",
                     coding_challenge_id=q.coding_challenge_id,
@@ -182,7 +181,6 @@ async def start_interview(
             question = InterviewQuestion(
                 id=f"q{uuid.uuid4().hex[:24]}",
                 text=q_data["text"],
-                text_zh=q_data["text_zh"],
                 category=q_data["category"],
                 order=q_data["order"],
                 is_default=True,
@@ -198,7 +196,6 @@ async def start_interview(
         question_list.append(QuestionInfo(
             index=i,
             text=q.text,
-            text_zh=q.text_zh,
             category=q.category,
             question_type=q.question_type or "video",
             coding_challenge_id=q.coding_challenge_id,
@@ -297,7 +294,6 @@ async def start_interview(
                 question_list.append(QuestionInfo(
                     index=len(question_list),
                     text=pq.text,
-                    text_zh=pq.text_zh,
                     category=pq.category,
                     question_type="video",
                     coding_challenge_id=None,
@@ -313,7 +309,6 @@ async def start_interview(
                 question_list.append(QuestionInfo(
                     index=i,
                     text=q.text,
-                    text_zh=q.text_zh,
                     category=q.category,
                     question_type=q.question_type or "video",
                     coding_challenge_id=q.coding_challenge_id,
@@ -325,7 +320,6 @@ async def start_interview(
             question_list.append(QuestionInfo(
                 index=i,
                 text=q.text,
-                text_zh=q.text_zh,
                 category=q.category,
                 question_type=q.question_type or "video",
                 coding_challenge_id=q.coding_challenge_id,
@@ -422,7 +416,6 @@ async def start_vertical_interview(
                     question_list.append(QuestionInfo(
                         index=i,
                         text=qh.question_text,
-                        text_zh=None,  # Recorded questions may not have translations
                         category=qh.category,
                         question_type="video",
                         coding_challenge_id=None,
@@ -435,7 +428,6 @@ async def start_vertical_interview(
                         question_list.append(QuestionInfo(
                             index=i,
                             text=q["text"],
-                            text_zh=q.get("text_zh"),
                             category=q.get("category"),
                             question_type="video",
                             coding_challenge_id=None,
@@ -448,7 +440,6 @@ async def start_vertical_interview(
                         question_list.append(QuestionInfo(
                             index=len(question_list),
                             text=f"Coding Challenge: {coding_challenge.title}",
-                            text_zh=coding_challenge.title_zh,
                             category="coding",
                             question_type="coding",
                             coding_challenge_id=coding_challenge.id,
@@ -521,7 +512,6 @@ async def start_vertical_interview(
         progressive_questions = [
             {
                 "text": q["text"],
-                "text_zh": q.get("text_zh"),
                 "category": q.get("category"),
                 "topic": q.get("question_key", "general"),
             }
@@ -573,7 +563,6 @@ async def start_vertical_interview(
             question_list.append(QuestionInfo(
                 index=i,
                 text=q.get("text", ""),
-                text_zh=q.get("text_zh"),
                 category=q.get("category"),
                 question_type="video",
                 coding_challenge_id=None,
@@ -583,7 +572,6 @@ async def start_vertical_interview(
             question_list.append(QuestionInfo(
                 index=i,
                 text=getattr(q, 'text', str(q)),
-                text_zh=getattr(q, 'text_zh', None),
                 category=getattr(q, 'category', None),
                 question_type="video",
                 coding_challenge_id=None,
@@ -596,7 +584,6 @@ async def start_vertical_interview(
             question_list.append(QuestionInfo(
                 index=len(question_list),
                 text=f"Coding Challenge: {coding_challenge.title}",
-                text_zh=coding_challenge.title_zh,
                 category="coding",
                 question_type="coding",
                 coding_challenge_id=coding_challenge.id,
@@ -665,19 +652,21 @@ async def get_interview(
         if resp.ai_analysis:
             try:
                 analysis_data = json.loads(resp.ai_analysis)
-                if "scores" in analysis_data:
+                # Check for new ScoreDetails format
+                if "communication" in analysis_data and "problem_solving" in analysis_data:
                     score_details = ScoreDetails(
-                        relevance=analysis_data["scores"]["relevance"],
-                        clarity=analysis_data["scores"]["clarity"],
-                        depth=analysis_data["scores"]["depth"],
-                        communication=analysis_data["scores"]["communication"],
-                        job_fit=analysis_data["scores"]["job_fit"],
-                        overall=resp.ai_score or 0,
+                        communication=analysis_data["communication"],
+                        problem_solving=analysis_data["problem_solving"],
+                        domain_knowledge=analysis_data["domain_knowledge"],
+                        motivation=analysis_data["motivation"],
+                        culture_fit=analysis_data["culture_fit"],
+                        overall=analysis_data.get("overall", resp.ai_score or 0),
                         analysis=analysis_data.get("analysis", ""),
                         strengths=analysis_data.get("strengths", []),
-                        improvements=analysis_data.get("improvements", []),
+                        concerns=analysis_data.get("concerns", []),
+                        highlight_quotes=analysis_data.get("highlight_quotes", []),
                     )
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, KeyError):
                 pass
 
         responses.append(ResponseDetail(
@@ -816,6 +805,17 @@ async def submit_response(
     storage_key = video_key
     if video and not video_key:
         content = await video.read()
+        filename = video.filename or "video.webm"
+
+        # Validate video file (extension, size, and magic bytes)
+        from ..utils.file_validation import validate_video_file
+        is_valid, error = validate_video_file(content, filename)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error
+            )
+
         storage_key = await storage_service.upload_video_bytes(
             data=content,
             session_id=session_id,
@@ -1024,19 +1024,21 @@ async def get_interview_results(
         if resp.ai_analysis:
             try:
                 analysis_data = json.loads(resp.ai_analysis)
-                if "scores" in analysis_data:
+                # Check for new ScoreDetails format
+                if "communication" in analysis_data and "problem_solving" in analysis_data:
                     score_details = ScoreDetails(
-                        relevance=analysis_data["scores"]["relevance"],
-                        clarity=analysis_data["scores"]["clarity"],
-                        depth=analysis_data["scores"]["depth"],
-                        communication=analysis_data["scores"]["communication"],
-                        job_fit=analysis_data["scores"]["job_fit"],
-                        overall=resp.ai_score or 0,
+                        communication=analysis_data["communication"],
+                        problem_solving=analysis_data["problem_solving"],
+                        domain_knowledge=analysis_data["domain_knowledge"],
+                        motivation=analysis_data["motivation"],
+                        culture_fit=analysis_data["culture_fit"],
+                        overall=analysis_data.get("overall", resp.ai_score or 0),
                         analysis=analysis_data.get("analysis", ""),
                         strengths=analysis_data.get("strengths", []),
-                        improvements=analysis_data.get("improvements", []),
+                        concerns=analysis_data.get("concerns", []),
+                        highlight_quotes=analysis_data.get("highlight_quotes", []),
                     )
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, KeyError):
                 pass
 
         response_details.append(ResponseDetail(
@@ -1462,6 +1464,17 @@ async def submit_followup_response(
     storage_key = video_key
     if video and not video_key:
         content = await video.read()
+        filename = video.filename or "video.webm"
+
+        # Validate video file (extension, size, and magic bytes)
+        from ..utils.file_validation import validate_video_file
+        is_valid, error = validate_video_file(content, filename)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error
+            )
+
         # Use a distinct key for follow-up responses
         storage_key = await storage_service.upload_video_bytes(
             data=content,
@@ -1591,7 +1604,7 @@ async def register_and_start_interview(
             name=data.name,
             email=data.email,
             phone=data.phone,
-            target_roles=[],
+            target_roles=None,  # None for SQLite compatibility in tests
         )
         db.add(candidate)
         db.flush()
@@ -1622,7 +1635,6 @@ async def register_and_start_interview(
                 QuestionInfo(
                     index=i,
                     text=q.text,
-                    text_zh=q.text_zh,
                     category=q.category,
                     question_type=q.question_type or "video",
                     coding_challenge_id=q.coding_challenge_id,
@@ -1662,7 +1674,6 @@ async def register_and_start_interview(
             question = InterviewQuestion(
                 id=generate_cuid("q"),
                 text=q_data["text"],
-                text_zh=q_data["text_zh"],
                 category=q_data["category"],
                 order=q_data["order"],
                 is_default=True,
@@ -1678,7 +1689,6 @@ async def register_and_start_interview(
             QuestionInfo(
                 index=i,
                 text=q.text,
-                text_zh=q.text_zh,
                 category=q.category,
                 question_type=q.question_type or "video",
                 coding_challenge_id=q.coding_challenge_id,
@@ -1992,15 +2002,12 @@ async def get_coding_challenge(
     return CodingQuestionInfo(
         index=question_index,
         text=question.text,
-        text_zh=question.text_zh,
         category=question.category,
         question_type="coding",
         coding_challenge=CodingChallengeResponse(
             id=challenge.id,
             title=challenge.title,
-            title_zh=challenge.title_zh,
             description=challenge.description,
-            description_zh=challenge.description_zh,
             starter_code=challenge.starter_code,
             test_cases=visible_test_cases,
             time_limit_seconds=challenge.time_limit_seconds,

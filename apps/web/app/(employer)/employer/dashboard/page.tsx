@@ -422,7 +422,7 @@ function EmployerDashboardContent() {
                 {recentInterviews.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-gray-500 mb-4">No interviews yet</p>
-                    <Button variant="brand" size="sm" onClick={() => handleTabChange('jobs')}>
+                    <Button variant="default" size="sm" onClick={() => handleTabChange('jobs')}>
                       Create Job Posting
                     </Button>
                   </div>

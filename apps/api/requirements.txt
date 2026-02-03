@@ -25,3 +25,5 @@ slowapi>=0.1.9
 # Redis caching
 redis>=5.0.0
 aioredis>=2.0.0
+# Scheduling
+apscheduler>=3.10.0

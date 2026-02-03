@@ -1,9 +1,31 @@
 from sqlalchemy import Column, String, DateTime, Integer, Boolean, ForeignKey, ARRAY, Text, Enum, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import JSONB
 import enum
 from ..database import Base
 
+
+# ==================== ORGANIZATION/TEAM ENUMS ====================
+
+class OrganizationRole(str, enum.Enum):
+    """Roles within an organization for team collaboration."""
+    OWNER = "owner"  # Full access, billing, can delete org
+    ADMIN = "admin"  # Manage members, jobs, settings
+    RECRUITER = "recruiter"  # Manage jobs, candidates, contact
+    HIRING_MANAGER = "hiring_manager"  # View candidates, leave feedback
+    INTERVIEWER = "interviewer"  # View assigned candidates only
+
+
+class InviteStatus(str, enum.Enum):
+    """Status of organization invites."""
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+
+
+# ==================== VERTICAL/ROLE ENUMS ====================
 
 class Vertical(str, enum.Enum):
     """Career verticals for student job seekers - based on actual new grad job market."""
@@ -42,6 +64,7 @@ class Employer(Base):
     __tablename__ = "employers"
 
     id = Column(String, primary_key=True)
+    name = Column(String, nullable=True)  # Employer's personal name
     company_name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
@@ -65,8 +88,29 @@ class Employer(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # Relationships
     jobs = relationship("Job", back_populates="employer")
     messages = relationship("Message", back_populates="employer")
+    organization_memberships = relationship(
+        "OrganizationMember",
+        foreign_keys="OrganizationMember.employer_id",
+        back_populates="employer",
+        cascade="all, delete-orphan"
+    )
+
+    @property
+    def organization(self):
+        """Get the employer's primary organization (first membership)."""
+        if self.organization_memberships:
+            return self.organization_memberships[0].organization
+        return None
+
+    @property
+    def organization_role(self):
+        """Get the employer's role in their primary organization."""
+        if self.organization_memberships:
+            return self.organization_memberships[0].role
+        return None
 
 
 class Job(Base):
@@ -100,7 +144,6 @@ class InterviewQuestion(Base):
 
     id = Column(String, primary_key=True)
     text = Column(Text, nullable=False)
-    text_zh = Column(Text, nullable=True)  # Chinese translation
     category = Column(String, nullable=True)  # "behavioral", "technical", "culture"
     order = Column(Integer, default=0)
     is_default = Column(Boolean, default=False)
@@ -158,3 +201,82 @@ class InviteToken(Base):
 
     job_id = Column(String, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     job = relationship("Job", back_populates="invite_tokens")
+
+
+# ==================== ORGANIZATION/TEAM MODELS ====================
+
+class Organization(Base):
+    """
+    Company/Organization entity for team collaboration.
+    Multiple employers can belong to one organization.
+    """
+    __tablename__ = "organizations"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)  # Company name
+    slug = Column(String, unique=True, nullable=False)  # URL-friendly identifier
+    logo_url = Column(String, nullable=True)
+    website = Column(String, nullable=True)
+    industry = Column(String, nullable=True)
+    company_size = Column(String, nullable=True)  # 'startup', 'smb', 'enterprise'
+    description = Column(Text, nullable=True)
+
+    # Settings
+    settings = Column(JSONB, nullable=True)  # {require_approval_to_contact, etc.}
+
+    # Plan/Billing (for future)
+    plan = Column(String, default="free")  # 'free', 'pro', 'enterprise'
+    plan_expires_at = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    members = relationship("OrganizationMember", back_populates="organization", cascade="all, delete-orphan")
+    invites = relationship("OrganizationInvite", back_populates="organization", cascade="all, delete-orphan")
+
+
+class OrganizationMember(Base):
+    """
+    Links employers to organizations with specific roles.
+    """
+    __tablename__ = "organization_members"
+
+    id = Column(String, primary_key=True)
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    employer_id = Column(String, ForeignKey("employers.id", ondelete="CASCADE"), nullable=False)
+    role = Column(Enum(OrganizationRole), default=OrganizationRole.RECRUITER)
+
+    # Permissions override (optional fine-grained control)
+    permissions = Column(JSONB, nullable=True)  # {can_contact: true, can_manage_jobs: false, etc.}
+
+    invited_by_id = Column(String, ForeignKey("employers.id", ondelete="SET NULL"), nullable=True)
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="members")
+    employer = relationship("Employer", foreign_keys=[employer_id], back_populates="organization_memberships")
+    invited_by = relationship("Employer", foreign_keys=[invited_by_id])
+
+
+class OrganizationInvite(Base):
+    """
+    Pending invites to join an organization.
+    """
+    __tablename__ = "organization_invites"
+
+    id = Column(String, primary_key=True)
+    organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    email = Column(String, nullable=False)  # Email of person being invited
+    role = Column(Enum(OrganizationRole), default=OrganizationRole.RECRUITER)
+    token = Column(String, unique=True, nullable=False)  # Invite token for the link
+    status = Column(Enum(InviteStatus), default=InviteStatus.PENDING)
+
+    invited_by_id = Column(String, ForeignKey("employers.id", ondelete="SET NULL"), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    organization = relationship("Organization", back_populates="invites")
+    invited_by = relationship("Employer", foreign_keys=[invited_by_id])

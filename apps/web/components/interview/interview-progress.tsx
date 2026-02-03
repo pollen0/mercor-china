@@ -4,12 +4,14 @@ interface InterviewProgressProps {
   currentQuestion: number
   totalQuestions: number
   completedQuestions: number[]
+  onQuestionClick?: (questionIndex: number) => void
 }
 
 export function InterviewProgress({
   currentQuestion,
   totalQuestions,
   completedQuestions,
+  onQuestionClick,
 }: InterviewProgressProps) {
   const progress = (completedQuestions.length / totalQuestions) * 100
 
@@ -37,10 +39,13 @@ export function InterviewProgress({
           const questionNum = i + 1
           const isCompleted = completedQuestions.includes(i)
           const isCurrent = currentQuestion === i
+          const canNavigate = onQuestionClick && (isCompleted || i <= currentQuestion)
 
           return (
-            <div
+            <button
               key={i}
+              onClick={() => canNavigate && onQuestionClick?.(i)}
+              disabled={!canNavigate}
               className={`
                 w-8 h-8 rounded-full flex items-center justify-center
                 text-sm font-medium transition-all
@@ -51,7 +56,9 @@ export function InterviewProgress({
                   ? 'bg-teal-500 text-white'
                   : 'bg-slate-700 text-slate-400'
                 }
+                ${canNavigate ? 'cursor-pointer hover:scale-110 hover:ring-2 hover:ring-teal-400/50' : 'cursor-default'}
               `}
+              title={canNavigate ? `Go to question ${questionNum}${isCompleted ? ' (re-record)' : ''}` : undefined}
             >
               {isCompleted ? (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,10 +67,17 @@ export function InterviewProgress({
               ) : (
                 questionNum
               )}
-            </div>
+            </button>
           )
         })}
       </div>
+
+      {/* Retake hint */}
+      {onQuestionClick && completedQuestions.length > 0 && (
+        <p className="text-xs text-slate-500 text-center">
+          Click a completed question to re-record it
+        </p>
+      )}
     </div>
   )
 }

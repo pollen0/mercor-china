@@ -22,9 +22,7 @@ class CodingChallenge(Base):
 
     # Problem content
     title = Column(String, nullable=False)
-    title_zh = Column(String, nullable=True)  # Chinese translation
     description = Column(Text, nullable=False)  # Problem description
-    description_zh = Column(Text, nullable=True)  # Chinese translation
 
     # Starter code template
     starter_code = Column(Text, nullable=True)  # e.g., "def solution(n):\n    pass"
@@ -58,11 +56,7 @@ class CodingChallenge(Base):
     # Relationship to questions that use this challenge
     questions = relationship("InterviewQuestion", back_populates="coding_challenge")
 
-    # Alias properties for backward compatibility with code using problem_description
+    # Alias property for backward compatibility with code using problem_description
     @property
     def problem_description(self):
         return self.description
-
-    @property
-    def problem_description_zh(self):
-        return self.description_zh
