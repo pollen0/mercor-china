@@ -198,8 +198,8 @@ export function GitHubAnalysis({ hasGitHub }: GitHubAnalysisProps) {
               </span>
             )}
             {analysis.primaryLanguages?.slice(0, 3).map(lang => (
-              <span key={lang} className="text-xs px-2 py-1 bg-stone-100 text-stone-600 rounded-full">
-                {lang}
+              <span key={lang.language} className="text-xs px-2 py-1 bg-stone-100 text-stone-600 rounded-full">
+                {lang.language}
               </span>
             ))}
           </div>
@@ -210,7 +210,7 @@ export function GitHubAnalysis({ hasGitHub }: GitHubAnalysisProps) {
               <p className="text-xs font-medium text-amber-700 mb-1">Notes</p>
               <ul className="text-xs text-amber-600 space-y-0.5">
                 {analysis.flags.map((flag, i) => (
-                  <li key={i}>• {flag}</li>
+                  <li key={i}>• {flag.detail}{flag.repo ? ` (${flag.repo})` : ''}</li>
                 ))}
               </ul>
             </div>
