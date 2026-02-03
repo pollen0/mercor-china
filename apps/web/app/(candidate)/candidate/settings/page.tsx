@@ -54,13 +54,11 @@ export default function SettingsPage() {
     emailEmployerContact: true,
     emailInterviewReminder: true,
     emailWeeklyDigest: true,
-    emailMatchAlerts: true,
     emailProductUpdates: false,
     smsEnabled: false,
     smsInterviewReminder: false,
     pushEnabled: false,
     pushEmployerContact: false,
-    pushMatchAlerts: false,
   })
 
   useEffect(() => {
@@ -414,19 +412,7 @@ export default function SettingsPage() {
                 />
                 <div>
                   <span className="font-medium text-stone-900 block">Weekly Digest</span>
-                  <span className="text-sm text-stone-500">Summary of profile views and new opportunities</span>
-                </div>
-              </label>
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors">
-                <input
-                  type="checkbox"
-                  checked={notificationPrefs.emailMatchAlerts}
-                  onChange={(e) => setNotificationPrefs(prev => ({ ...prev, emailMatchAlerts: e.target.checked }))}
-                  className="mt-0.5 h-4 w-4 text-teal-600 focus:ring-teal-500 border-stone-300 rounded accent-teal-600"
-                />
-                <div>
-                  <span className="font-medium text-stone-900 block">Job Match Alerts</span>
-                  <span className="text-sm text-stone-500">Get notified when new jobs match your profile</span>
+                  <span className="text-sm text-stone-500">Summary of profile views and employer interest</span>
                 </div>
               </label>
               <label className="flex items-start gap-3 p-3 rounded-xl border border-stone-200 hover:bg-stone-50 cursor-pointer transition-colors">
