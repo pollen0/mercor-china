@@ -52,7 +52,13 @@ class SelfSchedulingService:
     ) -> SelfSchedulingLink:
         """Create a new self-scheduling link."""
         # Verify all interviewers exist and belong to this employer
+        # The employer themselves can also be an interviewer (their ID is valid)
         for interviewer_id in interviewer_ids:
+            # Check if it's the employer themselves
+            if interviewer_id == employer_id:
+                continue  # Employer can interview
+
+            # Check if it's a valid team member
             member = db.query(EmployerTeamMember).filter(
                 EmployerTeamMember.id == interviewer_id,
                 EmployerTeamMember.employer_id == employer_id,

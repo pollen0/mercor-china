@@ -230,8 +230,26 @@ export default function SchedulingLinksPage() {
     })
   }
 
-  // Active team members for selection
+  // Active team members for selection - include employer themselves as an option
   const activeTeamMembers = teamMembers.filter(m => m.isActive)
+
+  // Create a "self" option for the employer
+  const selfAsInterviewer: TeamMember = {
+    id: employer?.id || 'self',
+    employerId: employer?.id || '',
+    email: employer?.email || '',
+    name: employer?.name || employer?.companyName || 'Me',
+    role: 'admin' as const,
+    isActive: true,
+    googleCalendarConnected: !!employer?.googleCalendarConnectedAt,
+    maxInterviewsPerDay: 8,
+    maxInterviewsPerWeek: 30,
+    interviewsThisWeek: 0,
+    createdAt: new Date().toISOString(),
+  }
+
+  // Combine self + team members for selection
+  const allInterviewers = [selfAsInterviewer, ...activeTeamMembers]
 
   if (isLoading) {
     return (
@@ -494,10 +512,11 @@ export default function SchedulingLinksPage() {
                       <div className="border-t border-stone-100 pt-4 mt-4">
                         <h3 className="font-medium text-stone-900 mb-4">Interviewers</h3>
                         <InterviewerSelect
-                          teamMembers={activeTeamMembers}
+                          teamMembers={allInterviewers}
                           selectedIds={formData.interviewerIds}
                           onChange={ids => setFormData({ ...formData, interviewerIds: ids })}
                           showLoadInfo={true}
+                          selfId={employer?.id}
                         />
                       </div>
 
@@ -564,23 +583,21 @@ export default function SchedulingLinksPage() {
                 <div className="space-y-4">
                   <h3 className="font-medium text-stone-900">Select Interviewers</h3>
                   <p className="text-sm text-stone-500">
-                    Choose who will be available to conduct interviews. Candidates will be matched with available interviewers.
+                    Choose who will be available to conduct interviews. You can select yourself and/or team members.
                   </p>
 
-                  {activeTeamMembers.length === 0 ? (
-                    <div className="text-center py-8 bg-stone-50 rounded-lg">
-                      <p className="text-stone-600 mb-2">No team members available</p>
-                      <p className="text-sm text-stone-400">
-                        Add team members in the Team Management page first
-                      </p>
-                    </div>
-                  ) : (
-                    <InterviewerSelect
-                      teamMembers={activeTeamMembers}
-                      selectedIds={formData.interviewerIds}
-                      onChange={ids => setFormData({ ...formData, interviewerIds: ids })}
-                      showLoadInfo={true}
-                    />
+                  <InterviewerSelect
+                    teamMembers={allInterviewers}
+                    selectedIds={formData.interviewerIds}
+                    onChange={ids => setFormData({ ...formData, interviewerIds: ids })}
+                    showLoadInfo={true}
+                    selfId={employer?.id}
+                  />
+
+                  {activeTeamMembers.length === 0 && (
+                    <p className="text-xs text-stone-400">
+                      Tip: Add team members in Team Management to enable load balancing across multiple interviewers.
+                    </p>
                   )}
                 </div>
               )}

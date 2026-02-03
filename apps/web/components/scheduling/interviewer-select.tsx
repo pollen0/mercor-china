@@ -9,6 +9,7 @@ interface InterviewerSelectProps {
   onChange: (ids: string[]) => void
   maxSelection?: number
   showLoadInfo?: boolean
+  selfId?: string // The employer's own ID to show "Me" label
 }
 
 export function InterviewerSelect({
@@ -17,6 +18,7 @@ export function InterviewerSelect({
   onChange,
   maxSelection,
   showLoadInfo = true,
+  selfId,
 }: InterviewerSelectProps) {
   const [search, setSearch] = useState('')
 
@@ -94,6 +96,7 @@ export function InterviewerSelect({
           filteredMembers.map(member => {
             const isSelected = selectedIds.includes(member.id)
             const loadStatus = showLoadInfo ? getLoadStatus(member) : null
+            const isSelf = selfId && member.id === selfId
 
             return (
               <button
@@ -106,6 +109,7 @@ export function InterviewerSelect({
                     ? 'border-stone-900 bg-stone-50'
                     : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50'
                   }
+                  ${isSelf ? 'ring-1 ring-teal-200' : ''}
                 `}
               >
                 {/* Checkbox indicator */}
@@ -123,7 +127,12 @@ export function InterviewerSelect({
                 {/* Member info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-stone-900 truncate">{member.name}</span>
+                    <span className="font-medium text-stone-900 truncate">
+                      {isSelf ? 'Me' : member.name}
+                    </span>
+                    {isSelf && (
+                      <span className="text-xs px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded">You</span>
+                    )}
                     {member.googleCalendarConnected && (
                       <span className="text-xs text-teal-600" title="Calendar connected">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -131,10 +140,19 @@ export function InterviewerSelect({
                         </svg>
                       </span>
                     )}
+                    {!member.googleCalendarConnected && isSelf && (
+                      <span className="text-xs text-amber-600" title="Connect your calendar for better availability">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-stone-500 truncate">{member.email}</span>
-                    <span className="text-xs text-stone-400 capitalize">{member.role.replace('_', ' ')}</span>
+                    {!isSelf && (
+                      <span className="text-xs text-stone-400 capitalize">{member.role.replace('_', ' ')}</span>
+                    )}
                   </div>
                 </div>
 
