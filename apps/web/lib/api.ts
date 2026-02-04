@@ -71,6 +71,24 @@ export interface SharingPreferencesResponse {
   preferences?: SharingPreferences
 }
 
+export interface Activity {
+  id: string
+  activityName: string
+  organization?: string
+  role?: string
+  description?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface Award {
+  id: string
+  name: string
+  issuer?: string
+  date?: string
+  description?: string
+}
+
 export interface Candidate {
   id: string
   name: string
@@ -1401,6 +1419,264 @@ export const candidateApi = {
       learningPriorities: data.learning_priorities,
       bonusSkills: data.bonus_skills,
       strongestAreas: data.strongest_areas,
+    }
+  },
+
+  // Activities API
+  getActivities: async (token?: string): Promise<Activity[]> => {
+    const url = `${API_BASE_URL}/api/candidates/me/activities`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const response = await fetch(url, { headers })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to get activities')
+    }
+
+    const data = await response.json()
+    return data.map((item: { id: string; activity_name: string; organization?: string; role?: string; description?: string; start_date?: string; end_date?: string }) => ({
+      id: item.id,
+      activityName: item.activity_name,
+      organization: item.organization,
+      role: item.role,
+      description: item.description,
+      startDate: item.start_date,
+      endDate: item.end_date,
+    }))
+  },
+
+  createActivity: async (activity: Omit<Activity, 'id'>, token?: string): Promise<Activity> => {
+    const url = `${API_BASE_URL}/api/candidates/me/activities`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        activity_name: activity.activityName,
+        organization: activity.organization,
+        role: activity.role,
+        description: activity.description,
+        start_date: activity.startDate,
+        end_date: activity.endDate,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to create activity')
+    }
+
+    const data = await response.json()
+    return {
+      id: data.id,
+      activityName: data.activity_name,
+      organization: data.organization,
+      role: data.role,
+      description: data.description,
+      startDate: data.start_date,
+      endDate: data.end_date,
+    }
+  },
+
+  updateActivity: async (id: string, activity: Partial<Omit<Activity, 'id'>>, token?: string): Promise<Activity> => {
+    const url = `${API_BASE_URL}/api/candidates/me/activities/${id}`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const body: Record<string, unknown> = {}
+    if (activity.activityName !== undefined) body.activity_name = activity.activityName
+    if (activity.organization !== undefined) body.organization = activity.organization
+    if (activity.role !== undefined) body.role = activity.role
+    if (activity.description !== undefined) body.description = activity.description
+    if (activity.startDate !== undefined) body.start_date = activity.startDate
+    if (activity.endDate !== undefined) body.end_date = activity.endDate
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to update activity')
+    }
+
+    const data = await response.json()
+    return {
+      id: data.id,
+      activityName: data.activity_name,
+      organization: data.organization,
+      role: data.role,
+      description: data.description,
+      startDate: data.start_date,
+      endDate: data.end_date,
+    }
+  },
+
+  deleteActivity: async (id: string, token?: string): Promise<void> => {
+    const url = `${API_BASE_URL}/api/candidates/me/activities/${id}`
+    const headers: Record<string, string> = {}
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to delete activity')
+    }
+  },
+
+  // Awards API
+  getAwards: async (token?: string): Promise<Award[]> => {
+    const url = `${API_BASE_URL}/api/candidates/me/awards`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const response = await fetch(url, { headers })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to get awards')
+    }
+
+    const data = await response.json()
+    return data.map((item: { id: string; name: string; issuer?: string; date?: string; description?: string }) => ({
+      id: item.id,
+      name: item.name,
+      issuer: item.issuer,
+      date: item.date,
+      description: item.description,
+    }))
+  },
+
+  createAward: async (award: Omit<Award, 'id'>, token?: string): Promise<Award> => {
+    const url = `${API_BASE_URL}/api/candidates/me/awards`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        name: award.name,
+        issuer: award.issuer,
+        date: award.date,
+        description: award.description,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to create award')
+    }
+
+    const data = await response.json()
+    return {
+      id: data.id,
+      name: data.name,
+      issuer: data.issuer,
+      date: data.date,
+      description: data.description,
+    }
+  },
+
+  updateAward: async (id: string, award: Partial<Omit<Award, 'id'>>, token?: string): Promise<Award> => {
+    const url = `${API_BASE_URL}/api/candidates/me/awards/${id}`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const body: Record<string, unknown> = {}
+    if (award.name !== undefined) body.name = award.name
+    if (award.issuer !== undefined) body.issuer = award.issuer
+    if (award.date !== undefined) body.date = award.date
+    if (award.description !== undefined) body.description = award.description
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to update award')
+    }
+
+    const data = await response.json()
+    return {
+      id: data.id,
+      name: data.name,
+      issuer: data.issuer,
+      date: data.date,
+      description: data.description,
+    }
+  },
+
+  deleteAward: async (id: string, token?: string): Promise<void> => {
+    const url = `${API_BASE_URL}/api/candidates/me/awards/${id}`
+    const headers: Record<string, string> = {}
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to delete award')
     }
   },
 }

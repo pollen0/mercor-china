@@ -857,6 +857,263 @@ Respond with JSON in this format:
     return {"courses": [], "gpa": None}
 
 
+# ==================== ACTIVITIES ENDPOINTS ====================
+
+from ..models.activity import CandidateActivity, CandidateAward
+
+class ActivityCreate(PydanticBaseModel):
+    activity_name: str
+    organization: Optional[str] = None
+    role: Optional[str] = None
+    description: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+class ActivityResponse(PydanticBaseModel):
+    id: str
+    activity_name: str
+    organization: Optional[str]
+    role: Optional[str]
+    description: Optional[str]
+    start_date: Optional[str]
+    end_date: Optional[str]
+    created_at: Optional[datetime]
+
+class AwardCreate(PydanticBaseModel):
+    name: str
+    issuer: Optional[str] = None
+    date: Optional[str] = None
+    description: Optional[str] = None
+
+class AwardResponse(PydanticBaseModel):
+    id: str
+    name: str
+    issuer: Optional[str]
+    date: Optional[str]
+    description: Optional[str]
+    created_at: Optional[datetime]
+
+
+@router.get("/me/activities", response_model=list[ActivityResponse])
+async def get_my_activities(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Get all activities for the current candidate."""
+    activities = db.query(CandidateActivity).filter(
+        CandidateActivity.candidate_id == current_candidate.id
+    ).order_by(CandidateActivity.created_at.desc()).all()
+
+    return [ActivityResponse(
+        id=a.id,
+        activity_name=a.activity_name,
+        organization=a.organization,
+        role=a.role,
+        description=a.description,
+        start_date=a.start_date,
+        end_date=a.end_date,
+        created_at=a.created_at,
+    ) for a in activities]
+
+
+@router.post("/me/activities", response_model=ActivityResponse)
+async def create_activity(
+    activity_data: ActivityCreate,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Create a new activity for the current candidate."""
+    activity = CandidateActivity(
+        id=f"act_{uuid.uuid4().hex[:16]}",
+        candidate_id=current_candidate.id,
+        activity_name=activity_data.activity_name,
+        organization=activity_data.organization,
+        role=activity_data.role,
+        description=activity_data.description,
+        start_date=activity_data.start_date,
+        end_date=activity_data.end_date,
+    )
+    db.add(activity)
+    db.commit()
+    db.refresh(activity)
+
+    return ActivityResponse(
+        id=activity.id,
+        activity_name=activity.activity_name,
+        organization=activity.organization,
+        role=activity.role,
+        description=activity.description,
+        start_date=activity.start_date,
+        end_date=activity.end_date,
+        created_at=activity.created_at,
+    )
+
+
+@router.put("/me/activities/{activity_id}", response_model=ActivityResponse)
+async def update_activity(
+    activity_id: str,
+    activity_data: ActivityCreate,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Update an existing activity."""
+    activity = db.query(CandidateActivity).filter(
+        CandidateActivity.id == activity_id,
+        CandidateActivity.candidate_id == current_candidate.id
+    ).first()
+
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    activity.activity_name = activity_data.activity_name
+    activity.organization = activity_data.organization
+    activity.role = activity_data.role
+    activity.description = activity_data.description
+    activity.start_date = activity_data.start_date
+    activity.end_date = activity_data.end_date
+
+    db.commit()
+    db.refresh(activity)
+
+    return ActivityResponse(
+        id=activity.id,
+        activity_name=activity.activity_name,
+        organization=activity.organization,
+        role=activity.role,
+        description=activity.description,
+        start_date=activity.start_date,
+        end_date=activity.end_date,
+        created_at=activity.created_at,
+    )
+
+
+@router.delete("/me/activities/{activity_id}")
+async def delete_activity(
+    activity_id: str,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Delete an activity."""
+    activity = db.query(CandidateActivity).filter(
+        CandidateActivity.id == activity_id,
+        CandidateActivity.candidate_id == current_candidate.id
+    ).first()
+
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    db.delete(activity)
+    db.commit()
+
+    return {"success": True, "message": "Activity deleted"}
+
+
+# ==================== AWARDS ENDPOINTS ====================
+
+@router.get("/me/awards", response_model=list[AwardResponse])
+async def get_my_awards(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Get all awards for the current candidate."""
+    awards = db.query(CandidateAward).filter(
+        CandidateAward.candidate_id == current_candidate.id
+    ).order_by(CandidateAward.created_at.desc()).all()
+
+    return [AwardResponse(
+        id=a.id,
+        name=a.name,
+        issuer=a.issuer,
+        date=a.date,
+        description=a.description,
+        created_at=a.created_at,
+    ) for a in awards]
+
+
+@router.post("/me/awards", response_model=AwardResponse)
+async def create_award(
+    award_data: AwardCreate,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Create a new award for the current candidate."""
+    award = CandidateAward(
+        id=f"awd_{uuid.uuid4().hex[:16]}",
+        candidate_id=current_candidate.id,
+        name=award_data.name,
+        issuer=award_data.issuer,
+        date=award_data.date,
+        description=award_data.description,
+    )
+    db.add(award)
+    db.commit()
+    db.refresh(award)
+
+    return AwardResponse(
+        id=award.id,
+        name=award.name,
+        issuer=award.issuer,
+        date=award.date,
+        description=award.description,
+        created_at=award.created_at,
+    )
+
+
+@router.put("/me/awards/{award_id}", response_model=AwardResponse)
+async def update_award(
+    award_id: str,
+    award_data: AwardCreate,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Update an existing award."""
+    award = db.query(CandidateAward).filter(
+        CandidateAward.id == award_id,
+        CandidateAward.candidate_id == current_candidate.id
+    ).first()
+
+    if not award:
+        raise HTTPException(status_code=404, detail="Award not found")
+
+    award.name = award_data.name
+    award.issuer = award_data.issuer
+    award.date = award_data.date
+    award.description = award_data.description
+
+    db.commit()
+    db.refresh(award)
+
+    return AwardResponse(
+        id=award.id,
+        name=award.name,
+        issuer=award.issuer,
+        date=award.date,
+        description=award.description,
+        created_at=award.created_at,
+    )
+
+
+@router.delete("/me/awards/{award_id}")
+async def delete_award(
+    award_id: str,
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Delete an award."""
+    award = db.query(CandidateAward).filter(
+        CandidateAward.id == award_id,
+        CandidateAward.candidate_id == current_candidate.id
+    ).first()
+
+    if not award:
+        raise HTTPException(status_code=404, detail="Award not found")
+
+    db.delete(award)
+    db.commit()
+
+    return {"success": True, "message": "Award deleted"}
+
+
 # ==================== GITHUB OAUTH ENDPOINTS ====================
 
 from ..services.github import github_service

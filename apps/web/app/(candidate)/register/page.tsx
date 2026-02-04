@@ -27,7 +27,8 @@ export default function RegisterPage() {
     major: '',
     targetRoles: [],
   })
-  const [errors, setErrors] = useState<FormErrors>({})
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [errors, setErrors] = useState<FormErrors & { confirmPassword?: string }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -54,6 +55,12 @@ export default function RegisterPage() {
     setErrors({})
     setSubmitStatus('idle')
     setErrorMessage('')
+
+    // Check passwords match
+    if (formData.password !== confirmPassword) {
+      setErrors({ confirmPassword: 'Passwords do not match' })
+      return
+    }
 
     const result = candidateRegistrationSchema.safeParse(formData)
 
@@ -207,6 +214,29 @@ export default function RegisterPage() {
               />
               {errors.password && (
                 <p className="text-xs text-red-500">{errors.password}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword" className="text-stone-600 text-sm">
+                Confirm Password
+              </Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value)
+                  if (errors.confirmPassword) {
+                    setErrors(prev => ({ ...prev, confirmPassword: undefined }))
+                  }
+                }}
+                placeholder="Confirm your password"
+                className={`border-stone-200 focus:border-stone-400 focus:ring-0 ${errors.confirmPassword ? 'border-red-300' : ''}`}
+              />
+              {errors.confirmPassword && (
+                <p className="text-xs text-red-500">{errors.confirmPassword}</p>
               )}
             </div>
 

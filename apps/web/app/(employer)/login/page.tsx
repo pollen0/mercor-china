@@ -16,6 +16,7 @@ export default function EmployerLoginPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,6 +24,13 @@ export default function EmployerLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Check passwords match for registration
+    if (mode === 'register' && password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -176,6 +184,24 @@ export default function EmployerLoginPage() {
                 />
               </div>
 
+              {mode === 'register' && (
+                <div>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-stone-700">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="mt-2"
+                    required
+                    minLength={8}
+                  />
+                </div>
+              )}
+
               {error && (
                 <div className="p-4 bg-error-light border border-error/20 rounded-xl">
                   <p className="text-sm text-error-dark">{error}</p>
@@ -203,6 +229,7 @@ export default function EmployerLoginPage() {
                 onClick={() => {
                   setMode(mode === 'login' ? 'register' : 'login')
                   setError(null)
+                  setConfirmPassword('')
                 }}
                 className="text-sm text-teal-600 hover:text-teal-700 font-medium"
               >

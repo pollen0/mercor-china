@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UploadProgress } from '@/components/ui/upload-progress'
 import { DocumentPreview } from '@/components/ui/document-preview'
-import { candidateApi, type GitHubData, type GitHubAnalysis as GitHubAnalysisType } from '@/lib/api'
+import { candidateApi, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward } from '@/lib/api'
 import { useDashboardData } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
 
@@ -22,25 +22,9 @@ interface Candidate {
   token?: string
 }
 
-interface Activity {
-  id: string
-  title: string
-  organization: string
-  role?: string
-  startDate?: string
-  endDate?: string
-  description?: string
-}
-
-interface Award {
-  id: string
-  title: string
-  issuer?: string
-  date?: string
-  description?: string
-  fileUrl?: string
-  fileName?: string
-}
+// Use API types for activities and awards (synced to backend)
+type Activity = ApiActivity
+type Award = ApiAward
 
 const VERTICAL_CONFIG: Record<string, { name: string; icon: string }> = {
   software_engineering: { name: 'Software Engineering', icon: '💻' },
@@ -163,14 +147,30 @@ function DashboardContent() {
     setCandidate({ ...candidateInfo, token: storedToken })
     setToken(storedToken)
 
-    // Load activities, awards, and transcript from localStorage (would be API in production)
-    const storedActivities = localStorage.getItem(`activities_${candidateInfo.id}`)
-    const storedAwards = localStorage.getItem(`awards_${candidateInfo.id}`)
+    // Load transcript from localStorage (activities and awards now use API)
     const storedTranscript = localStorage.getItem(`transcript_${candidateInfo.id}`)
-    if (storedActivities) setActivities(JSON.parse(storedActivities))
-    if (storedAwards) setAwards(JSON.parse(storedAwards))
     if (storedTranscript) setTranscriptData(JSON.parse(storedTranscript))
   }, [router])
+
+  // Fetch activities and awards from API
+  useEffect(() => {
+    const fetchActivitiesAndAwards = async () => {
+      if (!token) return
+
+      try {
+        const [activitiesData, awardsData] = await Promise.all([
+          candidateApi.getActivities(token),
+          candidateApi.getAwards(token),
+        ])
+        setActivities(activitiesData)
+        setAwards(awardsData)
+      } catch (error) {
+        console.error('Failed to fetch activities/awards:', error)
+      }
+    }
+
+    fetchActivitiesAndAwards()
+  }, [token])
 
   // Fetch sharing preferences to show opt-in banner
   useEffect(() => {
@@ -512,42 +512,64 @@ function DashboardContent() {
     }
   }
 
-  // Activity handlers
-  const saveActivity = (activity: Activity) => {
-    if (!candidate) return
-    const newActivities = editingActivity
-      ? activities.map(a => a.id === activity.id ? activity : a)
-      : [...activities, { ...activity, id: Date.now().toString() }]
-    setActivities(newActivities)
-    localStorage.setItem(`activities_${candidate.id}`, JSON.stringify(newActivities))
-    setShowActivityForm(false)
-    setEditingActivity(null)
+  // Activity handlers (using API)
+  const saveActivity = async (activity: Activity) => {
+    if (!candidate || !token) return
+    try {
+      if (editingActivity) {
+        // Update existing activity
+        const updated = await candidateApi.updateActivity(activity.id, activity, token)
+        setActivities(activities.map(a => a.id === activity.id ? updated : a))
+      } else {
+        // Create new activity
+        const created = await candidateApi.createActivity(activity, token)
+        setActivities([...activities, created])
+      }
+      setShowActivityForm(false)
+      setEditingActivity(null)
+    } catch (error) {
+      console.error('Failed to save activity:', error)
+    }
   }
 
-  const deleteActivity = (id: string) => {
-    if (!candidate) return
-    const newActivities = activities.filter(a => a.id !== id)
-    setActivities(newActivities)
-    localStorage.setItem(`activities_${candidate.id}`, JSON.stringify(newActivities))
+  const deleteActivity = async (id: string) => {
+    if (!candidate || !token) return
+    try {
+      await candidateApi.deleteActivity(id, token)
+      setActivities(activities.filter(a => a.id !== id))
+    } catch (error) {
+      console.error('Failed to delete activity:', error)
+    }
   }
 
-  // Award handlers
-  const saveAward = (award: Award) => {
-    if (!candidate) return
-    const newAwards = editingAward
-      ? awards.map(a => a.id === award.id ? award : a)
-      : [...awards, { ...award, id: Date.now().toString() }]
-    setAwards(newAwards)
-    localStorage.setItem(`awards_${candidate.id}`, JSON.stringify(newAwards))
-    setShowAwardForm(false)
-    setEditingAward(null)
+  // Award handlers (using API)
+  const saveAward = async (award: Award) => {
+    if (!candidate || !token) return
+    try {
+      if (editingAward) {
+        // Update existing award
+        const updated = await candidateApi.updateAward(award.id, award, token)
+        setAwards(awards.map(a => a.id === award.id ? updated : a))
+      } else {
+        // Create new award
+        const created = await candidateApi.createAward(award, token)
+        setAwards([...awards, created])
+      }
+      setShowAwardForm(false)
+      setEditingAward(null)
+    } catch (error) {
+      console.error('Failed to save award:', error)
+    }
   }
 
-  const deleteAward = (id: string) => {
-    if (!candidate) return
-    const newAwards = awards.filter(a => a.id !== id)
-    setAwards(newAwards)
-    localStorage.setItem(`awards_${candidate.id}`, JSON.stringify(newAwards))
+  const deleteAward = async (id: string) => {
+    if (!candidate || !token) return
+    try {
+      await candidateApi.deleteAward(id, token)
+      setAwards(awards.filter(a => a.id !== id))
+    } catch (error) {
+      console.error('Failed to delete award:', error)
+    }
   }
 
   const getProfileForVertical = (vertical: string) => {
@@ -1234,8 +1256,8 @@ function DashboardContent() {
                       <div key={activity.id} className="p-3 bg-gray-50 rounded-lg">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium text-gray-900">{activity.title}</p>
-                            <p className="text-sm text-gray-600">{activity.organization}</p>
+                            <p className="font-medium text-gray-900">{activity.activityName}</p>
+                            {activity.organization && <p className="text-sm text-gray-600">{activity.organization}</p>}
                             {activity.role && <p className="text-xs text-gray-500">{activity.role}</p>}
                             {activity.description && (
                               <p className="text-sm text-gray-500 mt-1">{activity.description}</p>
@@ -1297,12 +1319,7 @@ function DashboardContent() {
                       <div key={award.id} className="p-3 bg-gray-50 rounded-lg">
                         <div className="flex justify-between items-start">
                           <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-gray-900">{award.title}</p>
-                              {award.fileUrl && (
-                                <Badge variant="outline" className="text-xs">Has Certificate</Badge>
-                              )}
-                            </div>
+                            <p className="font-medium text-gray-900">{award.name}</p>
                             {award.issuer && <p className="text-sm text-gray-600">{award.issuer}</p>}
                             {award.date && <p className="text-xs text-gray-500">{award.date}</p>}
                             {award.description && (
@@ -1571,7 +1588,7 @@ const ActivityFormModal = memo(function ActivityFormModal({
   onClose: () => void
 }) {
   const [form, setForm] = useState<Activity>(
-    activity || { id: '', title: '', organization: '', role: '', description: '' }
+    activity || { id: '', activityName: '', organization: '', role: '', description: '' }
   )
 
   return (
@@ -1582,19 +1599,19 @@ const ActivityFormModal = memo(function ActivityFormModal({
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="title">Activity/Organization Name *</Label>
+            <Label htmlFor="activityName">Activity/Organization Name *</Label>
             <Input
-              id="title"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              id="activityName"
+              value={form.activityName}
+              onChange={(e) => setForm({ ...form, activityName: e.target.value })}
               placeholder="e.g., Computer Science Club"
             />
           </div>
           <div>
-            <Label htmlFor="organization">Institution/Affiliation *</Label>
+            <Label htmlFor="organization">Institution/Affiliation</Label>
             <Input
               id="organization"
-              value={form.organization}
+              value={form.organization || ''}
               onChange={(e) => setForm({ ...form, organization: e.target.value })}
               placeholder="e.g., UC Berkeley"
             />
@@ -1621,8 +1638,8 @@ const ActivityFormModal = memo(function ActivityFormModal({
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button
-              onClick={() => form.title && form.organization && onSave(form)}
-              disabled={!form.title || !form.organization}
+              onClick={() => form.activityName && onSave(form)}
+              disabled={!form.activityName}
               className="bg-gray-900 hover:bg-gray-800 text-white"
             >
               {activity ? 'Save Changes' : 'Add Activity'}
@@ -1645,26 +1662,8 @@ const AwardFormModal = memo(function AwardFormModal({
   onClose: () => void
 }) {
   const [form, setForm] = useState<Award>(
-    award || { id: '', title: '', issuer: '', date: '', description: '' }
+    award || { id: '', name: '', issuer: '', date: '', description: '' }
   )
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      setForm({ ...form, fileName: file.name })
-    }
-  }
-
-  const handleSave = () => {
-    // In production, upload the file to storage and get URL
-    // For now, we just save the file name
-    onSave({
-      ...form,
-      fileUrl: selectedFile ? URL.createObjectURL(selectedFile) : form.fileUrl,
-    })
-  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1674,11 +1673,11 @@ const AwardFormModal = memo(function AwardFormModal({
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="title">Award/Achievement Name *</Label>
+            <Label htmlFor="name">Award/Achievement Name *</Label>
             <Input
-              id="title"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              id="name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="e.g., Dean's List, Hackathon Winner"
             />
           </div>
@@ -1710,31 +1709,11 @@ const AwardFormModal = memo(function AwardFormModal({
               className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm resize-none h-20"
             />
           </div>
-          <div>
-            <Label>Certificate/Proof (optional)</Label>
-            <div className="mt-1">
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <div className="border border-dashed border-gray-200 rounded-md p-3 text-center hover:bg-gray-50">
-                  {selectedFile || form.fileName ? (
-                    <p className="text-sm text-gray-600">{selectedFile?.name || form.fileName}</p>
-                  ) : (
-                    <p className="text-sm text-gray-400">Click to upload certificate</p>
-                  )}
-                </div>
-              </label>
-            </div>
-          </div>
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
             <Button
-              onClick={handleSave}
-              disabled={!form.title}
+              onClick={() => form.name && onSave(form)}
+              disabled={!form.name}
               className="bg-gray-900 hover:bg-gray-800 text-white"
             >
               {award ? 'Save Changes' : 'Add Award'}
