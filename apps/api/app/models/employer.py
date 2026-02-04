@@ -34,6 +34,9 @@ class Vertical(str, enum.Enum):
     PRODUCT = "product"  # Product Management
     DESIGN = "design"  # UX/UI, Product Design
     FINANCE = "finance"  # Investment Banking, Finance Analyst
+    # Legacy values for backwards compatibility with existing data
+    ENGINEERING = "engineering"  # Legacy - maps to SOFTWARE_ENGINEERING
+    BUSINESS = "business"  # Legacy - maps to PRODUCT
 
 
 class RoleType(str, enum.Enum):
