@@ -82,6 +82,8 @@ class EmployerResponse(BaseModel):
     company_name: str
     email: str
     logo: Optional[str] = None
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
     is_verified: bool
     created_at: datetime
 

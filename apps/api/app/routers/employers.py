@@ -59,6 +59,54 @@ def generate_cuid(prefix: str = "e") -> str:
     return f"{prefix}{uuid.uuid4().hex[:24]}"
 
 
+# Staleness threshold for GitHub analysis (7 days)
+GITHUB_ANALYSIS_STALE_DAYS = 7
+
+
+async def trigger_github_analysis_if_stale(
+    candidate_id: str,
+    background_tasks: BackgroundTasks,
+    db: Session,
+):
+    """
+    Check if a candidate's GitHub analysis is stale or missing and trigger a refresh.
+    Called when an employer views a candidate's profile.
+    """
+    from ..models.github_analysis import GitHubAnalysis
+
+    # Get the candidate
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate or not candidate.github_access_token:
+        return  # No GitHub connected, nothing to analyze
+
+    # Check if analysis exists and is recent
+    analysis = db.query(GitHubAnalysis).filter(
+        GitHubAnalysis.candidate_id == candidate_id
+    ).first()
+
+    should_analyze = False
+    if not analysis:
+        # No analysis exists, trigger one
+        should_analyze = True
+        logger.info(f"No GitHub analysis exists for candidate {candidate_id}, triggering analysis")
+    elif analysis.analyzed_at:
+        # Check if analysis is stale
+        stale_threshold = datetime.utcnow() - timedelta(days=GITHUB_ANALYSIS_STALE_DAYS)
+        if analysis.analyzed_at < stale_threshold:
+            should_analyze = True
+            logger.info(f"GitHub analysis for candidate {candidate_id} is stale, triggering refresh")
+
+    if should_analyze:
+        # Import the background analysis function from candidates router
+        from .candidates import run_github_analysis_background
+        import asyncio
+
+        background_tasks.add_task(
+            asyncio.create_task,
+            run_github_analysis_background(candidate_id)
+        )
+
+
 async def get_current_employer(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
@@ -1939,6 +1987,7 @@ async def browse_talent_pool(
 @router.get("/talent-pool/candidate/{candidate_id}")
 async def get_talent_candidate_detail(
     candidate_id: str,
+    background_tasks: BackgroundTasks,
     employer: Employer = Depends(get_current_employer),
     db: Session = Depends(get_db)
 ):
@@ -1946,6 +1995,7 @@ async def get_talent_candidate_detail(
     Get detailed view of a talent pool candidate by candidate ID.
     Works for candidates with or without completed interviews.
     Includes full resume data, GitHub data, education, and any interview details.
+    Automatically triggers GitHub analysis refresh if stale or missing.
     """
     from ..models.interview import InterviewResponse
     from ..services.scoring import scoring_service
@@ -1957,6 +2007,9 @@ async def get_talent_candidate_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Candidate not found"
         )
+
+    # Trigger GitHub analysis refresh if stale or missing
+    await trigger_github_analysis_if_stale(candidate_id, background_tasks, db)
 
     # Check if they have any vertical profile
     profile = db.query(CandidateVerticalProfile).filter(
@@ -2160,6 +2213,7 @@ async def get_talent_candidate_detail(
 @router.get("/talent-pool/{profile_id}")
 async def get_talent_profile_detail(
     profile_id: str,
+    background_tasks: BackgroundTasks,
     employer: Employer = Depends(get_current_employer),
     db: Session = Depends(get_db)
 ):
@@ -2167,6 +2221,7 @@ async def get_talent_profile_detail(
     Get detailed view of a talent pool candidate profile.
     Includes full resume data, interview details, and video playback URLs.
     Now also works for candidates without completed interviews.
+    Automatically triggers GitHub analysis refresh if stale or missing.
     """
     from ..models.interview import InterviewResponse
 
@@ -2180,13 +2235,16 @@ async def get_talent_profile_detail(
         candidate = db.query(Candidate).filter(Candidate.id == profile_id).first()
         if candidate:
             # Redirect to the candidate detail endpoint
-            return await get_talent_candidate_detail(profile_id, employer, db)
+            return await get_talent_candidate_detail(profile_id, background_tasks, employer, db)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Candidate profile not found"
         )
 
     candidate = profile.candidate
+
+    # Trigger GitHub analysis refresh if stale or missing
+    await trigger_github_analysis_if_stale(candidate.id, background_tasks, db)
 
     # Get interview session details if available
     interview_data = None

@@ -199,8 +199,11 @@ export interface Employer {
   companyName: string
   email: string
   logo?: string
+  industry?: string
+  companySize?: string
   isVerified: boolean
   createdAt: string
+  googleCalendarConnectedAt?: string
 }
 
 export interface QuestionInfo {
@@ -1558,15 +1561,31 @@ export const interviewApi = {
   },
 }
 
+// Helper to transform employer response from snake_case to camelCase
+function transformEmployerResponse(response: Record<string, unknown>): Employer {
+  return {
+    id: response.id as string,
+    name: response.name as string | undefined,
+    companyName: (response.company_name || response.companyName) as string,
+    email: response.email as string,
+    logo: response.logo as string | undefined,
+    industry: response.industry as string | undefined,
+    companySize: (response.company_size || response.companySize) as string | undefined,
+    isVerified: (response.is_verified ?? response.isVerified ?? false) as boolean,
+    createdAt: (response.created_at || response.createdAt || new Date().toISOString()) as string,
+    googleCalendarConnectedAt: (response.google_calendar_connected_at || response.googleCalendarConnectedAt) as string | undefined,
+  }
+}
+
 // Employer API
 export const employerApi = {
-  register: (data: {
+  register: async (data: {
     name?: string
     companyName: string
     email: string
     password: string
-  }): Promise<EmployerWithToken> =>
-    apiRequest('/api/employers/register', {
+  }): Promise<EmployerWithToken> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/employers/register', {
       method: 'POST',
       body: JSON.stringify({
         name: data.name,
@@ -1574,24 +1593,38 @@ export const employerApi = {
         email: data.email,
         password: data.password,
       }),
-    }),
+    })
+    return {
+      employer: transformEmployerResponse(response.employer as Record<string, unknown>),
+      token: response.token as string,
+      tokenType: (response.token_type || response.tokenType || 'bearer') as string,
+    }
+  },
 
-  login: (email: string, password: string): Promise<EmployerWithToken> =>
-    apiRequest('/api/employers/login', {
+  login: async (email: string, password: string): Promise<EmployerWithToken> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/employers/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
-    }),
+    })
+    return {
+      employer: transformEmployerResponse(response.employer as Record<string, unknown>),
+      token: response.token as string,
+      tokenType: (response.token_type || response.tokenType || 'bearer') as string,
+    }
+  },
 
-  getMe: (): Promise<Employer> =>
-    apiRequest('/api/employers/me'),
+  getMe: async (): Promise<Employer> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/employers/me')
+    return transformEmployerResponse(response)
+  },
 
-  updateProfile: (data: {
+  updateProfile: async (data: {
     name?: string
     companyName?: string
     industry?: string
     companySize?: string
-  }): Promise<Employer> =>
-    apiRequest('/api/employers/me', {
+  }): Promise<Employer> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/employers/me', {
       method: 'PATCH',
       body: JSON.stringify({
         name: data.name,
@@ -1599,7 +1632,9 @@ export const employerApi = {
         industry: data.industry,
         company_size: data.companySize,
       }),
-    }),
+    })
+    return transformEmployerResponse(response)
+  },
 
   getDashboard: (): Promise<DashboardStats> =>
     apiRequest('/api/employers/dashboard'),

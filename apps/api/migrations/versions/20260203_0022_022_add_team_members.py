@@ -116,10 +116,10 @@ def upgrade() -> None:
         )
         op.create_index('ix_exceptions_team_member_date', 'availability_exceptions', ['team_member_id', 'date'])
 
-    # Create scheduling_links table
-    if not table_exists('scheduling_links'):
+    # Create self_scheduling_links table
+    if not table_exists('self_scheduling_links'):
         op.create_table(
-            'scheduling_links',
+            'self_scheduling_links',
             sa.Column('id', sa.String(), nullable=False),
             sa.Column('employer_id', sa.String(), nullable=False),
             sa.Column('job_id', sa.String(), nullable=True),
@@ -142,12 +142,12 @@ def upgrade() -> None:
             sa.ForeignKeyConstraint(['job_id'], ['jobs.id'], ondelete='SET NULL'),
             sa.PrimaryKeyConstraint('id')
         )
-        op.create_index('ix_scheduling_links_employer', 'scheduling_links', ['employer_id'])
-        op.create_index('ix_scheduling_links_slug', 'scheduling_links', ['slug'], unique=True)
+        op.create_index('ix_self_scheduling_links_employer', 'self_scheduling_links', ['employer_id'])
+        op.create_index('ix_self_scheduling_links_slug', 'self_scheduling_links', ['slug'], unique=True)
 
 
 def downgrade() -> None:
-    op.drop_table('scheduling_links')
+    op.drop_table('self_scheduling_links')
     op.drop_table('availability_exceptions')
     op.drop_table('interviewer_availability')
     op.drop_table('employer_team_members')

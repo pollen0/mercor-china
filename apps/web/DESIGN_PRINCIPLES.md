@@ -139,6 +139,69 @@ className="px-3 py-2 border border-stone-200 rounded-lg text-sm
                 rounded-full animate-spin" />
 ```
 
+### Dropdowns & Select Menus
+
+**IMPORTANT: Never use native browser `<select>` elements.** The default Apple/browser dropdowns look inconsistent and break the design aesthetic. Always use custom-styled dropdown components.
+
+```tsx
+// ❌ DON'T - Native select (looks like default Apple/browser dropdown)
+<select className="...">
+  <option value="a">Option A</option>
+</select>
+
+// ✅ DO - Custom dropdown component
+<div className="relative">
+  <button
+    onClick={() => setIsOpen(!isOpen)}
+    className="w-full flex items-center justify-between px-3 py-2
+               border border-stone-200 rounded-lg text-sm text-left
+               hover:border-stone-300 focus:outline-none
+               focus:ring-2 focus:ring-stone-900/10"
+  >
+    <span className="text-stone-900">{selectedLabel}</span>
+    <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  {isOpen && (
+    <div className="absolute z-10 mt-1 w-full bg-white border border-stone-200
+                    rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
+      {options.map(option => (
+        <button
+          key={option.value}
+          onClick={() => { setSelected(option.value); setIsOpen(false); }}
+          className={`w-full px-3 py-2 text-left text-sm transition-colors
+            ${selected === option.value
+              ? 'bg-stone-50 text-stone-900 font-medium'
+              : 'text-stone-700 hover:bg-stone-50'
+            }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  )}
+</div>
+```
+
+**Custom Dropdown Styling Requirements:**
+- Trigger button: `border-stone-200`, `rounded-lg`, includes chevron icon
+- Dropdown panel: `bg-white`, `border-stone-200`, `rounded-lg`, `shadow-lg`
+- Options: `hover:bg-stone-50`, selected state with `bg-stone-50 font-medium`
+- Use `z-10` or higher for dropdown positioning
+- Include smooth transitions for open/close states
+
+**For status/action dropdowns (like candidate status):**
+```tsx
+// Status dropdown with colored indicators
+<button className="flex items-center gap-2 px-2 py-1 rounded text-sm ...">
+  <span className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
+  <span>{statusLabel}</span>
+  <ChevronIcon />
+</button>
+```
+
 ---
 
 ## 5. Icons
@@ -225,6 +288,7 @@ className={selected
 - Bold font weights (`font-bold`)
 - Large icons (> 24px) in UI elements
 - Saturated colors for non-status elements
+- **Native browser `<select>` elements** (looks like default Apple dropdown, breaks design consistency)
 
 ### Do This Instead
 - Monochromatic stone palette with teal accents
@@ -234,6 +298,7 @@ className={selected
 - `stone-*` for all neutral colors
 - `font-medium` or `font-semibold` maximum
 - Proportional icons that match text
+- **Custom-styled dropdown components** with proper hover states and consistent styling
 
 ---
 
@@ -259,6 +324,7 @@ When building a new component, verify:
 - [ ] Typography follows the scale
 - [ ] Icons are proportional and use stroke style
 - [ ] No more than 2 colors in the component
+- [ ] Uses custom dropdowns (no native `<select>` elements)
 
 ---
 

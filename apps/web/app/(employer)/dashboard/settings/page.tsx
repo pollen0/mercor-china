@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,28 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { employerApi, type Employer } from '@/lib/api'
+
+const INDUSTRY_OPTIONS = [
+  { value: '', label: 'Select industry' },
+  { value: 'tech', label: 'Technology' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'healthcare', label: 'Healthcare' },
+  { value: 'retail', label: 'Retail' },
+  { value: 'manufacturing', label: 'Manufacturing' },
+  { value: 'education', label: 'Education' },
+  { value: 'consulting', label: 'Consulting' },
+  { value: 'other', label: 'Other' },
+]
+
+const COMPANY_SIZE_OPTIONS = [
+  { value: '', label: 'Select size' },
+  { value: '1-10', label: '1-10 employees' },
+  { value: '11-50', label: '11-50 employees' },
+  { value: '51-200', label: '51-200 employees' },
+  { value: '201-500', label: '201-500 employees' },
+  { value: '501-1000', label: '501-1000 employees' },
+  { value: '1000+', label: '1000+ employees' },
+]
 
 export default function EmployerSettingsPage() {
   const router = useRouter()
@@ -23,6 +45,27 @@ export default function EmployerSettingsPage() {
   const [industry, setIndustry] = useState('')
   const [companySize, setCompanySize] = useState('')
 
+  // Dropdown state
+  const [industryOpen, setIndustryOpen] = useState(false)
+  const [companySizeOpen, setCompanySizeOpen] = useState(false)
+  const industryRef = useRef<HTMLDivElement>(null)
+  const companySizeRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (industryRef.current && !industryRef.current.contains(event.target as Node)) {
+        setIndustryOpen(false)
+      }
+      if (companySizeRef.current && !companySizeRef.current.contains(event.target as Node)) {
+        setCompanySizeOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   useEffect(() => {
     const loadProfile = async () => {
       try {
@@ -36,6 +79,8 @@ export default function EmployerSettingsPage() {
         setEmployer(data)
         setName(data.name || '')
         setCompanyName(data.companyName || '')
+        setIndustry(data.industry || '')
+        setCompanySize(data.companySize || '')
       } catch (err) {
         console.error('Failed to load profile:', err)
         if (err instanceof Error && err.message.includes('401')) {
@@ -144,45 +189,82 @@ export default function EmployerSettingsPage() {
               </div>
 
               <div className="grid sm:grid-cols-2 gap-5">
+                {/* Custom Industry Dropdown */}
                 <div>
                   <Label htmlFor="industry" className="text-sm font-medium text-stone-700">
                     Industry
                   </Label>
-                  <select
-                    id="industry"
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                    className="mt-2 w-full h-10 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="">Select industry</option>
-                    <option value="tech">Technology</option>
-                    <option value="finance">Finance</option>
-                    <option value="healthcare">Healthcare</option>
-                    <option value="retail">Retail</option>
-                    <option value="manufacturing">Manufacturing</option>
-                    <option value="education">Education</option>
-                    <option value="consulting">Consulting</option>
-                    <option value="other">Other</option>
-                  </select>
+                  <div ref={industryRef} className="relative mt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setIndustryOpen(!industryOpen); setCompanySizeOpen(false) }}
+                      className="w-full h-10 px-3 flex items-center justify-between rounded-lg border border-stone-200 text-sm bg-white hover:border-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-colors"
+                    >
+                      <span className={industry ? 'text-stone-900' : 'text-stone-400'}>
+                        {INDUSTRY_OPTIONS.find(o => o.value === industry)?.label || 'Select industry'}
+                      </span>
+                      <svg className={`w-4 h-4 text-stone-400 transition-transform ${industryOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {industryOpen && (
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
+                        {INDUSTRY_OPTIONS.map(option => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => { setIndustry(option.value); setIndustryOpen(false) }}
+                            className={`w-full px-3 py-2 text-left text-sm transition-colors
+                              ${industry === option.value
+                                ? 'bg-stone-50 text-stone-900 font-medium'
+                                : 'text-stone-700 hover:bg-stone-50'
+                              }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Custom Company Size Dropdown */}
                 <div>
                   <Label htmlFor="companySize" className="text-sm font-medium text-stone-700">
                     Company Size
                   </Label>
-                  <select
-                    id="companySize"
-                    value={companySize}
-                    onChange={(e) => setCompanySize(e.target.value)}
-                    className="mt-2 w-full h-10 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="">Select size</option>
-                    <option value="1-10">1-10 employees</option>
-                    <option value="11-50">11-50 employees</option>
-                    <option value="51-200">51-200 employees</option>
-                    <option value="201-500">201-500 employees</option>
-                    <option value="501-1000">501-1000 employees</option>
-                    <option value="1000+">1000+ employees</option>
-                  </select>
+                  <div ref={companySizeRef} className="relative mt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setCompanySizeOpen(!companySizeOpen); setIndustryOpen(false) }}
+                      className="w-full h-10 px-3 flex items-center justify-between rounded-lg border border-stone-200 text-sm bg-white hover:border-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10 transition-colors"
+                    >
+                      <span className={companySize ? 'text-stone-900' : 'text-stone-400'}>
+                        {COMPANY_SIZE_OPTIONS.find(o => o.value === companySize)?.label || 'Select size'}
+                      </span>
+                      <svg className={`w-4 h-4 text-stone-400 transition-transform ${companySizeOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {companySizeOpen && (
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
+                        {COMPANY_SIZE_OPTIONS.map(option => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => { setCompanySize(option.value); setCompanySizeOpen(false) }}
+                            className={`w-full px-3 py-2 text-left text-sm transition-colors
+                              ${companySize === option.value
+                                ? 'bg-stone-50 text-stone-900 font-medium'
+                                : 'text-stone-700 hover:bg-stone-50'
+                              }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

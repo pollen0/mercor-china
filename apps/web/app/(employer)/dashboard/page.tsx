@@ -11,9 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CandidateCard } from '@/components/dashboard/candidate-card'
 import { MatchAlerts } from '@/components/employer/match-alerts'
 import { CandidateNotes } from '@/components/employer/candidate-notes'
-import { employerApi, inviteApi, talentPoolApi, organizationApi, schedulingLinkApi, type Employer, type DashboardStats, type InterviewSession, type Job, type InviteTokenResponse, type TalentPoolCandidate, type TalentProfileDetail, type Vertical, type RoleType, type Organization, type OrganizationMember, type OrganizationInvite, type SchedulingLink, type MatchStatus } from '@/lib/api'
+import { EmployerVerificationBanner } from '@/components/verification/employer-verification-banner'
+import { employerApi, inviteApi, talentPoolApi, organizationApi, schedulingLinkApi, teamMemberApi, type Employer, type DashboardStats, type InterviewSession, type Job, type InviteTokenResponse, type TalentPoolCandidate, type TalentProfileDetail, type Vertical, type RoleType, type Organization, type OrganizationMember, type OrganizationInvite, type SchedulingLink, type TeamMember, type MatchStatus } from '@/lib/api'
+import { CustomSelect, StatusSelect, type SelectOption } from '@/components/ui/custom-select'
 
-type TabType = 'overview' | 'interviews' | 'jobs' | 'talent' | 'team'
+type TabType = 'overview' | 'interviews' | 'jobs' | 'talent' | 'team' | 'scheduling'
 
 // Vertical and Role Type definitions
 const VERTICALS = [
@@ -81,6 +83,14 @@ const MATCH_STATUS_OPTIONS: { value: MatchStatus; label: string; color: string; 
   { value: 'SHORTLISTED', label: 'Shortlisted', color: 'text-teal-700', bgColor: 'bg-teal-100' },
   { value: 'REJECTED', label: 'Rejected', color: 'text-red-700', bgColor: 'bg-red-100' },
   { value: 'HIRED', label: 'Hired', color: 'text-green-700', bgColor: 'bg-green-100' },
+]
+
+const SCHEDULING_DURATION_OPTIONS = [
+  { value: 15, label: '15 minutes' },
+  { value: 30, label: '30 minutes' },
+  { value: 45, label: '45 minutes' },
+  { value: 60, label: '1 hour' },
+  { value: 90, label: '1.5 hours' },
 ]
 
 function DashboardContent() {
@@ -179,6 +189,26 @@ function DashboardContent() {
   const [showCreateOrgModal, setShowCreateOrgModal] = useState(false)
   const [newOrgName, setNewOrgName] = useState('')
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
+
+  // Scheduling state
+  const [schedulingTeamMembers, setSchedulingTeamMembers] = useState<TeamMember[]>([])
+  const [schedulingLoading, setSchedulingLoading] = useState(false)
+  const [showCreateSchedulingLinkModal, setShowCreateSchedulingLinkModal] = useState(false)
+  const [editingSchedulingLink, setEditingSchedulingLink] = useState<SchedulingLink | null>(null)
+  const [schedulingCopiedSlug, setSchedulingCopiedSlug] = useState<string | null>(null)
+  const [schedulingFormData, setSchedulingFormData] = useState({
+    name: '',
+    description: '',
+    durationMinutes: 30,
+    interviewerIds: [] as string[],
+    bufferBeforeMinutes: 5,
+    bufferAfterMinutes: 5,
+    minNoticeHours: 24,
+    maxDaysAhead: 14,
+  })
+  const [isSavingSchedulingLink, setIsSavingSchedulingLink] = useState(false)
+  const [schedulingError, setSchedulingError] = useState<string | null>(null)
+  const [schedulingWizardStep, setSchedulingWizardStep] = useState(1)
 
   // Initial data load
   useEffect(() => {
@@ -346,6 +376,177 @@ function DashboardContent() {
       console.error('Failed to cancel invite:', err)
     }
   }
+
+  // Scheduling handlers
+  const loadSchedulingData = useCallback(async () => {
+    setSchedulingLoading(true)
+    try {
+      const [linksData, teamData] = await Promise.all([
+        schedulingLinkApi.list(true),
+        teamMemberApi.list(true).catch(() => ({ teamMembers: [] })),
+      ])
+      setSchedulingLinks(linksData.links)
+      setSchedulingTeamMembers(teamData.teamMembers)
+    } catch (err) {
+      console.error('Failed to load scheduling data:', err)
+    } finally {
+      setSchedulingLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab === 'scheduling') {
+      loadSchedulingData()
+    }
+  }, [activeTab, loadSchedulingData])
+
+  const resetSchedulingForm = () => {
+    setSchedulingFormData({
+      name: '',
+      description: '',
+      durationMinutes: 30,
+      interviewerIds: [],
+      bufferBeforeMinutes: 5,
+      bufferAfterMinutes: 5,
+      minNoticeHours: 24,
+      maxDaysAhead: 14,
+    })
+    setSchedulingWizardStep(1)
+    setSchedulingError(null)
+  }
+
+  const handleCreateSchedulingLink = async () => {
+    if (schedulingFormData.interviewerIds.length === 0) {
+      setSchedulingError('Please select at least one interviewer')
+      return
+    }
+
+    setSchedulingError(null)
+    setIsSavingSchedulingLink(true)
+
+    try {
+      const newLink = await schedulingLinkApi.create({
+        name: schedulingFormData.name,
+        description: schedulingFormData.description || undefined,
+        durationMinutes: schedulingFormData.durationMinutes,
+        interviewerIds: schedulingFormData.interviewerIds,
+        bufferBeforeMinutes: schedulingFormData.bufferBeforeMinutes,
+        bufferAfterMinutes: schedulingFormData.bufferAfterMinutes,
+        minNoticeHours: schedulingFormData.minNoticeHours,
+        maxDaysAhead: schedulingFormData.maxDaysAhead,
+      })
+
+      setSchedulingLinks([newLink, ...schedulingLinks])
+      setShowCreateSchedulingLinkModal(false)
+      resetSchedulingForm()
+    } catch (err) {
+      console.error('Failed to create link:', err)
+      setSchedulingError(err instanceof Error ? err.message : 'Failed to create scheduling link')
+    } finally {
+      setIsSavingSchedulingLink(false)
+    }
+  }
+
+  const handleUpdateSchedulingLink = async () => {
+    if (!editingSchedulingLink) return
+    if (schedulingFormData.interviewerIds.length === 0) {
+      setSchedulingError('Please select at least one interviewer')
+      return
+    }
+
+    setSchedulingError(null)
+    setIsSavingSchedulingLink(true)
+
+    try {
+      const updated = await schedulingLinkApi.update(editingSchedulingLink.id, {
+        name: schedulingFormData.name,
+        description: schedulingFormData.description || undefined,
+        durationMinutes: schedulingFormData.durationMinutes,
+        interviewerIds: schedulingFormData.interviewerIds,
+        bufferBeforeMinutes: schedulingFormData.bufferBeforeMinutes,
+        bufferAfterMinutes: schedulingFormData.bufferAfterMinutes,
+        minNoticeHours: schedulingFormData.minNoticeHours,
+        maxDaysAhead: schedulingFormData.maxDaysAhead,
+      })
+
+      setSchedulingLinks(schedulingLinks.map(l => l.id === updated.id ? updated : l))
+      setEditingSchedulingLink(null)
+      resetSchedulingForm()
+    } catch (err) {
+      console.error('Failed to update link:', err)
+      setSchedulingError(err instanceof Error ? err.message : 'Failed to update scheduling link')
+    } finally {
+      setIsSavingSchedulingLink(false)
+    }
+  }
+
+  const handleToggleSchedulingLinkActive = async (link: SchedulingLink) => {
+    try {
+      const updated = await schedulingLinkApi.update(link.id, {
+        isActive: !link.isActive,
+      })
+      setSchedulingLinks(schedulingLinks.map(l => l.id === updated.id ? updated : l))
+    } catch (err) {
+      console.error('Failed to toggle link status:', err)
+    }
+  }
+
+  const handleDeleteSchedulingLink = async (linkId: string) => {
+    if (!confirm('Are you sure you want to delete this scheduling link?')) return
+
+    try {
+      await schedulingLinkApi.delete(linkId)
+      setSchedulingLinks(schedulingLinks.filter(l => l.id !== linkId))
+    } catch (err) {
+      console.error('Failed to delete link:', err)
+    }
+  }
+
+  const startEditSchedulingLink = (link: SchedulingLink) => {
+    setSchedulingFormData({
+      name: link.name,
+      description: link.description || '',
+      durationMinutes: link.durationMinutes,
+      interviewerIds: link.interviewerIds,
+      bufferBeforeMinutes: link.bufferBeforeMinutes,
+      bufferAfterMinutes: link.bufferAfterMinutes,
+      minNoticeHours: link.minNoticeHours,
+      maxDaysAhead: link.maxDaysAhead,
+    })
+    setEditingSchedulingLink(link)
+    setSchedulingWizardStep(1)
+  }
+
+  const copySchedulingLinkToClipboard = async (link: SchedulingLink) => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const url = `${baseUrl}/schedule/${link.slug}`
+
+    try {
+      await navigator.clipboard.writeText(url)
+      setSchedulingCopiedSlug(link.slug)
+      setTimeout(() => setSchedulingCopiedSlug(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
+  // Get all interviewers (self + team members) for scheduling
+  const allSchedulingInterviewers: TeamMember[] = employer ? [
+    {
+      id: employer.id,
+      employerId: employer.id,
+      email: employer.email,
+      name: employer.name || employer.companyName || 'Me',
+      role: 'admin' as const,
+      isActive: true,
+      googleCalendarConnected: !!employer.googleCalendarConnectedAt,
+      maxInterviewsPerDay: 8,
+      maxInterviewsPerWeek: 30,
+      interviewsThisWeek: 0,
+      createdAt: new Date().toISOString(),
+    },
+    ...schedulingTeamMembers.filter(m => m.isActive),
+  ] : []
 
   const handleLogout = () => {
     localStorage.removeItem('employer_token')
@@ -797,6 +998,7 @@ ${employer?.companyName || 'Our Company'}`)
               { key: 'jobs', label: 'Jobs' },
               { key: 'talent', label: 'Talent Pool' },
               { key: 'team', label: 'Team' },
+              { key: 'scheduling', label: 'Scheduling' },
             ].map(tab => (
               <button
                 key={tab.key}
@@ -815,6 +1017,11 @@ ${employer?.companyName || 'Our Company'}`)
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Email Verification Banner */}
+        {employer && !employer.isVerified && (
+          <EmployerVerificationBanner email={employer.email} />
+        )}
+
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -965,29 +1172,29 @@ ${employer?.companyName || 'Our Company'}`)
                 <div className="flex flex-wrap gap-4 items-end">
                   <div className="w-40">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Job</Label>
-                    <select
+                    <CustomSelect
                       value={selectedJob}
-                      onChange={(e) => setSelectedJob(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value="">All Jobs</option>
-                      {jobs.map((job) => (
-                        <option key={job.id} value={job.id}>{job.title}</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedJob}
+                      options={[
+                        { value: '', label: 'All Jobs' },
+                        ...jobs.map(job => ({ value: job.id, label: job.title }))
+                      ]}
+                      size="sm"
+                    />
                   </div>
                   <div className="w-40">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Status</Label>
-                    <select
+                    <CustomSelect
                       value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value="">All Statuses</option>
-                      <option value="PENDING">Pending</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                      <option value="COMPLETED">Completed</option>
-                    </select>
+                      onChange={setStatusFilter}
+                      options={[
+                        { value: '', label: 'All Statuses' },
+                        { value: 'PENDING', label: 'Pending' },
+                        { value: 'IN_PROGRESS', label: 'In Progress' },
+                        { value: 'COMPLETED', label: 'Completed' },
+                      ]}
+                      size="sm"
+                    />
                   </div>
                   <div className="w-24">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Min Score</Label>
@@ -1579,44 +1786,43 @@ ${employer?.companyName || 'Our Company'}`)
                 <div className="flex flex-wrap gap-4 items-end">
                   <div className="w-44">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Industry Vertical</Label>
-                    <select
+                    <CustomSelect
                       value={talentVertical}
-                      onChange={(e) => handleTalentVerticalChange(e.target.value)}
-                      className="w-full h-9 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value="">All Verticals</option>
-                      {VERTICALS.map((v) => (
-                        <option key={v.value} value={v.value}>{v.label}</option>
-                      ))}
-                    </select>
+                      onChange={handleTalentVerticalChange}
+                      options={[
+                        { value: '', label: 'All Verticals' },
+                        ...VERTICALS.map(v => ({ value: v.value, label: v.label }))
+                      ]}
+                      size="sm"
+                    />
                   </div>
                   <div className="w-40">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Role Type</Label>
-                    <select
+                    <CustomSelect
                       value={talentRole}
-                      onChange={(e) => setTalentRole(e.target.value as RoleType | '')}
+                      onChange={(val) => setTalentRole(val as RoleType | '')}
+                      options={[
+                        { value: '', label: 'All Roles' },
+                        ...availableTalentRoles.map(r => ({ value: r.value, label: r.label }))
+                      ]}
                       disabled={!talentVertical}
-                      className="w-full h-9 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-stone-50"
-                    >
-                      <option value="">All Roles</option>
-                      {availableTalentRoles.map((r) => (
-                        <option key={r.value} value={r.value}>{r.label}</option>
-                      ))}
-                    </select>
+                      size="sm"
+                    />
                   </div>
                   <div className="w-32">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Min Score</Label>
-                    <select
-                      value={talentMinScore}
-                      onChange={(e) => setTalentMinScore(Number(e.target.value))}
-                      className="w-full h-9 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    >
-                      <option value={0}>Any Score</option>
-                      <option value={5}>5+ / 10</option>
-                      <option value={6}>6+ / 10</option>
-                      <option value={7}>7+ / 10</option>
-                      <option value={8}>8+ / 10</option>
-                    </select>
+                    <CustomSelect
+                      value={String(talentMinScore)}
+                      onChange={(val) => setTalentMinScore(Number(val))}
+                      options={[
+                        { value: '0', label: 'Any Score' },
+                        { value: '5', label: '5+ / 10' },
+                        { value: '6', label: '6+ / 10' },
+                        { value: '7', label: '7+ / 10' },
+                        { value: '8', label: '8+ / 10' },
+                      ]}
+                      size="sm"
+                    />
                   </div>
                   <Button
                     variant="outline"
@@ -1764,32 +1970,14 @@ ${employer?.companyName || 'Our Company'}`)
                             <div className="flex-shrink-0 w-28" onClick={(e) => e.stopPropagation()}>
                               {(() => {
                                 const currentStatus = getCandidateStatus(candidate)
-                                const statusOption = MATCH_STATUS_OPTIONS.find(s => s.value === currentStatus) || MATCH_STATUS_OPTIONS[0]
                                 const isUpdating = updatingStatus === rowId
                                 return (
-                                  <div className="relative">
-                                    <select
-                                      value={currentStatus}
-                                      onChange={(e) => handleStatusChange(candidate.candidateId, candidate.profileId, e.target.value as MatchStatus)}
-                                      disabled={isUpdating}
-                                      className={`w-full h-8 px-2 pr-7 text-xs font-medium rounded-lg border border-stone-200 ${statusOption.bgColor} ${statusOption.color} appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50`}
-                                    >
-                                      {MATCH_STATUS_OPTIONS.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                          {option.label}
-                                        </option>
-                                      ))}
-                                    </select>
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                                      {isUpdating ? (
-                                        <div className="w-3 h-3 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
-                                      ) : (
-                                        <svg className="w-3 h-3 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                      )}
-                                    </div>
-                                  </div>
+                                  <StatusSelect
+                                    value={currentStatus}
+                                    onChange={(val) => handleStatusChange(candidate.candidateId, candidate.profileId, val as MatchStatus)}
+                                    options={MATCH_STATUS_OPTIONS}
+                                    disabled={isUpdating}
+                                  />
                                 )
                               })()}
                             </div>
@@ -2104,7 +2292,549 @@ ${employer?.companyName || 'Our Company'}`)
             )}
           </div>
         )}
+
+        {/* Scheduling Tab */}
+        {activeTab === 'scheduling' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-stone-900">Scheduling Links</h2>
+                <p className="text-sm text-stone-500">Create shareable links for candidates to book interviews</p>
+              </div>
+              <Button onClick={() => { resetSchedulingForm(); setShowCreateSchedulingLinkModal(true) }}>
+                Create Link
+              </Button>
+            </div>
+
+            {/* Links List */}
+            {schedulingLoading ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <div className="w-8 h-8 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin mx-auto mb-3" />
+                  <p className="text-stone-500 text-sm">Loading scheduling links...</p>
+                </CardContent>
+              </Card>
+            ) : schedulingLinks.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <div className="w-12 h-12 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-6 h-6 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-medium text-stone-900 mb-1">No scheduling links yet</h3>
+                  <p className="text-stone-500 text-sm mb-4">
+                    Create a scheduling link to let candidates book interviews with your team
+                  </p>
+                  <Button onClick={() => { resetSchedulingForm(); setShowCreateSchedulingLinkModal(true) }}>
+                    Create Your First Link
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {schedulingLinks.map(link => (
+                  <Card key={link.id} className={!link.isActive ? 'opacity-60' : ''}>
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-stone-900">{link.name}</h3>
+                            <span className={`px-2 py-0.5 text-xs rounded-full ${
+                              link.isActive ? 'bg-teal-50 text-teal-700' : 'bg-stone-100 text-stone-500'
+                            }`}>
+                              {link.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                          </div>
+
+                          {link.description && (
+                            <p className="text-sm text-stone-500 mb-2">{link.description}</p>
+                          )}
+
+                          <div className="flex items-center gap-4 text-sm text-stone-500">
+                            <span>{link.durationMinutes} min</span>
+                            <span>{link.interviewerIds.length} interviewer{link.interviewerIds.length !== 1 ? 's' : ''}</span>
+                            <span>Up to {link.maxDaysAhead} days ahead</span>
+                          </div>
+
+                          {/* Interviewers */}
+                          {link.interviewers && link.interviewers.length > 0 && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-stone-400">Assigned:</span>
+                              <div className="flex -space-x-1.5">
+                                {link.interviewers.slice(0, 3).map(interviewer => (
+                                  <div
+                                    key={interviewer.id}
+                                    className="w-6 h-6 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center text-xs font-medium border-2 border-white"
+                                    title={interviewer.name}
+                                  >
+                                    {interviewer.name.charAt(0).toUpperCase()}
+                                  </div>
+                                ))}
+                                {link.interviewers.length > 3 && (
+                                  <div className="w-6 h-6 rounded-full bg-stone-100 text-stone-500 flex items-center justify-center text-xs font-medium border-2 border-white">
+                                    +{link.interviewers.length - 3}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Stats */}
+                          <div className="flex items-center gap-4 mt-3 text-xs text-stone-400">
+                            <span>{link.viewCount} views</span>
+                            <span>{link.bookingCount} bookings</span>
+                            <span>Created {new Date(link.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copySchedulingLinkToClipboard(link)}
+                            className={schedulingCopiedSlug === link.slug ? 'bg-teal-50 text-teal-700 border-teal-200' : ''}
+                          >
+                            {schedulingCopiedSlug === link.slug ? (
+                              <>
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
+                                Copy Link
+                              </>
+                            )}
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startEditSchedulingLink(link)}
+                          >
+                            Edit
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleSchedulingLinkActive(link)}
+                          >
+                            {link.isActive ? 'Deactivate' : 'Activate'}
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteSchedulingLink(link.id)}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Create/Edit Scheduling Link Modal */}
+      {(showCreateSchedulingLinkModal || editingSchedulingLink) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-semibold">
+                {editingSchedulingLink ? 'Edit Scheduling Link' : 'Create Scheduling Link'}
+              </h2>
+              {!editingSchedulingLink && (
+                <div className="flex items-center gap-2 mt-4">
+                  {[1, 2, 3].map(step => (
+                    <div
+                      key={step}
+                      className={`flex items-center ${step < 3 ? 'flex-1' : ''}`}
+                    >
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-medium ${
+                          step <= schedulingWizardStep
+                            ? 'bg-stone-900 text-white'
+                            : 'bg-stone-100 text-stone-400'
+                        }`}
+                      >
+                        {step}
+                      </div>
+                      {step < 3 && (
+                        <div
+                          className={`flex-1 h-0.5 mx-2 ${
+                            step < schedulingWizardStep ? 'bg-stone-900' : 'bg-stone-100'
+                          }`}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6">
+              {schedulingError && (
+                <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm mb-4">
+                  {schedulingError}
+                </div>
+              )}
+
+              {/* Step 1: Basic Info */}
+              {(schedulingWizardStep === 1 || editingSchedulingLink) && (
+                <div className="space-y-4">
+                  {!editingSchedulingLink && (
+                    <h3 className="font-medium text-stone-900">Basic Information</h3>
+                  )}
+
+                  <div>
+                    <Label htmlFor="scheduling-name">Name *</Label>
+                    <Input
+                      id="scheduling-name"
+                      value={schedulingFormData.name}
+                      onChange={e => setSchedulingFormData({ ...schedulingFormData, name: e.target.value })}
+                      placeholder="e.g., Engineering Phone Screen"
+                      required
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="scheduling-description">Description</Label>
+                    <textarea
+                      id="scheduling-description"
+                      value={schedulingFormData.description}
+                      onChange={e => setSchedulingFormData({ ...schedulingFormData, description: e.target.value })}
+                      placeholder="Brief description shown to candidates..."
+                      rows={2}
+                      className="mt-1 w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Duration *</Label>
+                    <div className="grid grid-cols-5 gap-2 mt-2">
+                      {SCHEDULING_DURATION_OPTIONS.map(option => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setSchedulingFormData({ ...schedulingFormData, durationMinutes: option.value })}
+                          className={`py-2 px-3 rounded-lg border text-sm transition-colors ${
+                            schedulingFormData.durationMinutes === option.value
+                              ? 'border-stone-900 bg-stone-50 text-stone-900'
+                              : 'border-stone-200 text-stone-600 hover:border-stone-300'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {editingSchedulingLink && (
+                    <>
+                      {/* Show all sections for edit mode */}
+                      <div className="border-t border-stone-100 pt-4 mt-4">
+                        <h3 className="font-medium text-stone-900 mb-4">Interviewers</h3>
+                        <div className="space-y-2">
+                          {allSchedulingInterviewers.map(member => (
+                            <label
+                              key={member.id}
+                              className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                                schedulingFormData.interviewerIds.includes(member.id)
+                                  ? 'border-stone-900 bg-stone-50'
+                                  : 'border-stone-200 hover:border-stone-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={schedulingFormData.interviewerIds.includes(member.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSchedulingFormData({
+                                      ...schedulingFormData,
+                                      interviewerIds: [...schedulingFormData.interviewerIds, member.id]
+                                    })
+                                  } else {
+                                    setSchedulingFormData({
+                                      ...schedulingFormData,
+                                      interviewerIds: schedulingFormData.interviewerIds.filter(id => id !== member.id)
+                                    })
+                                  }
+                                }}
+                                className="w-4 h-4 text-stone-900 rounded border-stone-300"
+                              />
+                              <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm font-medium">
+                                {member.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-stone-900">{member.name}</p>
+                                <p className="text-xs text-stone-500">{member.email}</p>
+                              </div>
+                              {member.googleCalendarConnected && (
+                                <span className="text-xs text-teal-600">Calendar connected</span>
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="border-t border-stone-100 pt-4 mt-4">
+                        <h3 className="font-medium text-stone-900 mb-4">Booking Settings</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="edit-bufferBefore">Buffer Before (minutes)</Label>
+                            <Input
+                              id="edit-bufferBefore"
+                              type="number"
+                              min={0}
+                              max={60}
+                              value={schedulingFormData.bufferBeforeMinutes}
+                              onChange={e => setSchedulingFormData({ ...schedulingFormData, bufferBeforeMinutes: parseInt(e.target.value) || 0 })}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-bufferAfter">Buffer After (minutes)</Label>
+                            <Input
+                              id="edit-bufferAfter"
+                              type="number"
+                              min={0}
+                              max={60}
+                              value={schedulingFormData.bufferAfterMinutes}
+                              onChange={e => setSchedulingFormData({ ...schedulingFormData, bufferAfterMinutes: parseInt(e.target.value) || 0 })}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-minNotice">Min Notice (hours)</Label>
+                            <Input
+                              id="edit-minNotice"
+                              type="number"
+                              min={1}
+                              max={168}
+                              value={schedulingFormData.minNoticeHours}
+                              onChange={e => setSchedulingFormData({ ...schedulingFormData, minNoticeHours: parseInt(e.target.value) || 24 })}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-maxDays">Max Days Ahead</Label>
+                            <Input
+                              id="edit-maxDays"
+                              type="number"
+                              min={1}
+                              max={90}
+                              value={schedulingFormData.maxDaysAhead}
+                              onChange={e => setSchedulingFormData({ ...schedulingFormData, maxDaysAhead: parseInt(e.target.value) || 14 })}
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Step 2: Select Interviewers (create mode only) */}
+              {schedulingWizardStep === 2 && !editingSchedulingLink && (
+                <div className="space-y-4">
+                  <h3 className="font-medium text-stone-900">Select Interviewers</h3>
+                  <p className="text-sm text-stone-500">
+                    Choose who will be available to conduct interviews. You can select yourself and/or team members.
+                  </p>
+
+                  <div className="space-y-2">
+                    {allSchedulingInterviewers.map(member => (
+                      <label
+                        key={member.id}
+                        className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                          schedulingFormData.interviewerIds.includes(member.id)
+                            ? 'border-stone-900 bg-stone-50'
+                            : 'border-stone-200 hover:border-stone-300'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={schedulingFormData.interviewerIds.includes(member.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSchedulingFormData({
+                                ...schedulingFormData,
+                                interviewerIds: [...schedulingFormData.interviewerIds, member.id]
+                              })
+                            } else {
+                              setSchedulingFormData({
+                                ...schedulingFormData,
+                                interviewerIds: schedulingFormData.interviewerIds.filter(id => id !== member.id)
+                              })
+                            }
+                          }}
+                          className="w-4 h-4 text-stone-900 rounded border-stone-300"
+                        />
+                        <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-sm font-medium">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-stone-900">{member.name}</p>
+                          <p className="text-xs text-stone-500">{member.email}</p>
+                        </div>
+                        {member.googleCalendarConnected && (
+                          <span className="text-xs text-teal-600">Calendar connected</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+
+                  {schedulingTeamMembers.length === 0 && (
+                    <p className="text-xs text-stone-400">
+                      Tip: Add team members in Team tab to enable load balancing across multiple interviewers.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3: Booking Settings (create mode only) */}
+              {schedulingWizardStep === 3 && !editingSchedulingLink && (
+                <div className="space-y-4">
+                  <h3 className="font-medium text-stone-900">Booking Settings</h3>
+                  <p className="text-sm text-stone-500">
+                    Configure how far in advance candidates can book and buffer times between interviews.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="create-bufferBefore">Buffer Before (minutes)</Label>
+                      <Input
+                        id="create-bufferBefore"
+                        type="number"
+                        min={0}
+                        max={60}
+                        value={schedulingFormData.bufferBeforeMinutes}
+                        onChange={e => setSchedulingFormData({ ...schedulingFormData, bufferBeforeMinutes: parseInt(e.target.value) || 0 })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-stone-400 mt-1">Time before interview starts</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="create-bufferAfter">Buffer After (minutes)</Label>
+                      <Input
+                        id="create-bufferAfter"
+                        type="number"
+                        min={0}
+                        max={60}
+                        value={schedulingFormData.bufferAfterMinutes}
+                        onChange={e => setSchedulingFormData({ ...schedulingFormData, bufferAfterMinutes: parseInt(e.target.value) || 0 })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-stone-400 mt-1">Time after interview ends</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="create-minNotice">Minimum Notice (hours)</Label>
+                      <Input
+                        id="create-minNotice"
+                        type="number"
+                        min={1}
+                        max={168}
+                        value={schedulingFormData.minNoticeHours}
+                        onChange={e => setSchedulingFormData({ ...schedulingFormData, minNoticeHours: parseInt(e.target.value) || 24 })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-stone-400 mt-1">How far in advance to book</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="create-maxDays">Maximum Days Ahead</Label>
+                      <Input
+                        id="create-maxDays"
+                        type="number"
+                        min={1}
+                        max={90}
+                        value={schedulingFormData.maxDaysAhead}
+                        onChange={e => setSchedulingFormData({ ...schedulingFormData, maxDaysAhead: parseInt(e.target.value) || 14 })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-stone-400 mt-1">How far out candidates can book</p>
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="mt-6 p-4 bg-stone-50 rounded-lg border border-stone-100">
+                    <h4 className="font-medium text-stone-900 mb-2">Summary</h4>
+                    <ul className="text-sm text-stone-600 space-y-1">
+                      <li><span className="text-stone-400">Name:</span> {schedulingFormData.name}</li>
+                      <li><span className="text-stone-400">Duration:</span> {schedulingFormData.durationMinutes} minutes</li>
+                      <li><span className="text-stone-400">Interviewers:</span> {schedulingFormData.interviewerIds.length} selected</li>
+                      <li><span className="text-stone-400">Booking window:</span> {schedulingFormData.minNoticeHours}h notice, up to {schedulingFormData.maxDaysAhead} days ahead</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t flex justify-between">
+              <div>
+                {!editingSchedulingLink && schedulingWizardStep > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSchedulingWizardStep(schedulingWizardStep - 1)}
+                  >
+                    Back
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreateSchedulingLinkModal(false)
+                    setEditingSchedulingLink(null)
+                    resetSchedulingForm()
+                  }}
+                >
+                  Cancel
+                </Button>
+
+                {editingSchedulingLink ? (
+                  <Button onClick={handleUpdateSchedulingLink} disabled={isSavingSchedulingLink || !schedulingFormData.name}>
+                    {isSavingSchedulingLink ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                ) : schedulingWizardStep < 3 ? (
+                  <Button
+                    onClick={() => setSchedulingWizardStep(schedulingWizardStep + 1)}
+                    disabled={
+                      (schedulingWizardStep === 1 && !schedulingFormData.name) ||
+                      (schedulingWizardStep === 2 && schedulingFormData.interviewerIds.length === 0)
+                    }
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <Button onClick={handleCreateSchedulingLink} disabled={isSavingSchedulingLink}>
+                    {isSavingSchedulingLink ? 'Creating...' : 'Create Link'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contact Modal */}
       {showContactModal && contactCandidate && (
@@ -2141,24 +2871,30 @@ ${employer?.companyName || 'Our Company'}`)
                     Loading scheduling links...
                   </div>
                 ) : schedulingLinks.length > 0 ? (
-                  <select
+                  <CustomSelect
                     value={selectedSchedulingLink}
-                    onChange={(e) => handleSchedulingLinkChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
-                  >
-                    <option value="">No scheduling link (just send message)</option>
-                    {schedulingLinks.map(link => (
-                      <option key={link.id} value={link.id}>
-                        {link.name} ({link.durationMinutes} min)
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleSchedulingLinkChange}
+                    options={[
+                      { value: '', label: 'No scheduling link (just send message)' },
+                      ...schedulingLinks.map(link => ({
+                        value: link.id,
+                        label: `${link.name} (${link.durationMinutes} min)`
+                      }))
+                    ]}
+                  />
                 ) : (
                   <div className="text-sm text-stone-500">
                     <p>No scheduling links available.</p>
-                    <Link href="/employer/dashboard/scheduling-links" className="text-teal-600 hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowContactModal(false)
+                        setActiveTab('scheduling')
+                      }}
+                      className="text-teal-600 hover:underline"
+                    >
                       Create a scheduling link →
-                    </Link>
+                    </button>
                   </div>
                 )}
                 {selectedSchedulingLink && (
@@ -2353,16 +3089,16 @@ ${employer?.companyName || 'Our Company'}`)
               </div>
               <div>
                 <Label className="text-sm font-medium text-stone-700 mb-1 block">Role</Label>
-                <select
+                <CustomSelect
                   value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="recruiter">Recruiter</option>
-                  <option value="hiring_manager">Hiring Manager</option>
-                  <option value="interviewer">Interviewer</option>
-                </select>
+                  onChange={setInviteRole}
+                  options={[
+                    { value: 'admin', label: 'Admin' },
+                    { value: 'recruiter', label: 'Recruiter' },
+                    { value: 'hiring_manager', label: 'Hiring Manager' },
+                    { value: 'interviewer', label: 'Interviewer' },
+                  ]}
+                />
                 <p className="text-xs text-stone-500 mt-1">
                   {inviteRole === 'admin' && 'Can manage team members, jobs, and all candidates'}
                   {inviteRole === 'recruiter' && 'Can create jobs, review candidates, and send invites'}

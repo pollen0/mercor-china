@@ -659,6 +659,7 @@ async def upload_transcript(
         )
 
     # Upload transcript file to storage
+    transcript_key = None
     transcript_url = None
     try:
         storage_key = f"transcripts/{candidate_id}/{uuid.uuid4().hex[:8]}.pdf"
@@ -672,10 +673,13 @@ async def upload_transcript(
             storage_key,
             ExtraArgs={"ContentType": "application/pdf"}
         )
-        transcript_url = storage_key
+        transcript_key = storage_key
+        # Generate a signed URL valid for 24 hours (86400 seconds)
+        transcript_url = storage_service.get_signed_url(storage_key, expiration=86400)
     except Exception as e:
         logger.error(f"Transcript upload error for student {candidate_id}: {e}")
-        transcript_url = None  # Continue without storage
+        transcript_key = None
+        transcript_url = None
 
     # Parse transcript with AI (using a modified prompt for transcripts)
     try:
@@ -689,14 +693,70 @@ async def upload_transcript(
         candidate.courses = parsed_data.get("courses", [])
         if parsed_data.get("gpa"):
             candidate.gpa = parsed_data.get("gpa")
-        db.commit()
+
+    # Store transcript storage key for later retrieval
+    if transcript_key:
+        candidate.transcript_key = transcript_key
+    db.commit()
 
     return {
         "success": True,
         "message": "Transcript uploaded and parsed successfully",
         "parsed_data": parsed_data,
-        "transcript_url": transcript_url
+        "transcript_url": transcript_url,
+        "transcript_key": transcript_key
     }
+
+
+@router.get("/me/transcript/url")
+async def get_transcript_url(
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """
+    Get a fresh signed URL for viewing the student's transcript.
+    Returns a URL valid for 1 hour.
+    """
+    if not current_candidate.transcript_key:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No transcript uploaded"
+        )
+
+    try:
+        # Generate a signed URL valid for 1 hour
+        signed_url = storage_service.get_signed_url(
+            current_candidate.transcript_key,
+            expiration=3600
+        )
+        return {
+            "transcript_url": signed_url,
+            "transcript_key": current_candidate.transcript_key
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate transcript URL: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate transcript URL"
+        )
+
+
+@router.delete("/me/transcript")
+async def delete_transcript(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """Delete the current student's transcript."""
+    if current_candidate.transcript_key:
+        try:
+            # Try to delete from storage
+            await storage_service.delete_video(current_candidate.transcript_key)
+        except Exception as e:
+            logger.warning(f"Failed to delete transcript from storage: {e}")
+
+    current_candidate.transcript_key = None
+    db.commit()
+
+    return {"success": True, "message": "Transcript deleted successfully"}
 
 
 async def parse_transcript(raw_text: str) -> dict:
@@ -837,6 +897,7 @@ async def get_github_auth_url(
 @router.post("/auth/github/callback", response_model=GitHubConnectResponse)
 async def github_callback(
     data: GitHubCallbackRequest,
+    background_tasks: BackgroundTasks,
     current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
@@ -893,6 +954,14 @@ async def github_callback(
         current_candidate.github_connected_at = datetime.utcnow()
 
         db.commit()
+
+        # Trigger background GitHub analysis automatically
+        import asyncio
+        background_tasks.add_task(
+            asyncio.create_task,
+            run_github_analysis_background(current_candidate.id)
+        )
+        logger.info(f"Scheduled background GitHub analysis for candidate {current_candidate.id}")
 
         return GitHubConnectResponse(
             success=True,
@@ -1014,6 +1083,104 @@ async def refresh_github_data(
 
 from ..services.github_analysis import github_analysis_service, GitHubProfileAnalysis
 from ..models.github_analysis import GitHubAnalysis
+
+
+async def run_github_analysis_background(candidate_id: str):
+    """
+    Background task to run GitHub analysis for a candidate.
+    Called automatically after GitHub OAuth connect.
+    """
+    from ..database import SessionLocal
+    import asyncio
+
+    logger.info(f"Starting background GitHub analysis for candidate {candidate_id}")
+
+    db = SessionLocal()
+    try:
+        # Fetch candidate
+        candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+        if not candidate or not candidate.github_access_token:
+            logger.warning(f"Cannot run analysis: candidate {candidate_id} not found or no GitHub token")
+            return
+
+        # Decrypt the stored token
+        decrypted_token = decrypt_token(candidate.github_access_token)
+
+        # Perform the analysis
+        analysis = await github_analysis_service.analyze_profile(
+            access_token=decrypted_token,
+            username=candidate.github_username,
+            include_private=True,
+            max_repos=15,
+        )
+
+        # Store analysis in database
+        existing_analysis = db.query(GitHubAnalysis).filter(
+            GitHubAnalysis.candidate_id == candidate_id
+        ).first()
+
+        if existing_analysis:
+            # Update existing
+            existing_analysis.overall_score = analysis.overall_score
+            existing_analysis.originality_score = analysis.originality_score
+            existing_analysis.activity_score = analysis.activity_score
+            existing_analysis.depth_score = analysis.depth_score
+            existing_analysis.collaboration_score = analysis.collaboration_score
+            existing_analysis.total_repos_analyzed = analysis.total_repos_analyzed
+            existing_analysis.total_commits_by_user = analysis.total_commits_by_user
+            existing_analysis.total_lines_added = analysis.total_lines_added
+            existing_analysis.total_lines_removed = analysis.total_lines_removed
+            existing_analysis.personal_projects_count = analysis.personal_projects_count
+            existing_analysis.class_projects_count = analysis.class_projects_count
+            existing_analysis.fork_contributions_count = analysis.fork_contributions_count
+            existing_analysis.organic_code_ratio = analysis.organic_code_ratio
+            existing_analysis.ai_assisted_repos = analysis.ai_assisted_repos
+            existing_analysis.has_tests = analysis.has_tests
+            existing_analysis.has_ci_cd = analysis.has_ci_cd
+            existing_analysis.has_documentation = analysis.has_documentation
+            existing_analysis.primary_languages = analysis.primary_languages
+            existing_analysis.flags = analysis.flags
+            existing_analysis.requires_review = analysis.requires_review
+            existing_analysis.repo_analyses = analysis.repo_analyses
+            existing_analysis.analyzed_at = datetime.utcnow()
+        else:
+            # Create new
+            new_analysis = GitHubAnalysis(
+                id=f"gha_{uuid.uuid4().hex[:16]}",
+                candidate_id=candidate_id,
+                overall_score=analysis.overall_score,
+                originality_score=analysis.originality_score,
+                activity_score=analysis.activity_score,
+                depth_score=analysis.depth_score,
+                collaboration_score=analysis.collaboration_score,
+                total_repos_analyzed=analysis.total_repos_analyzed,
+                total_commits_by_user=analysis.total_commits_by_user,
+                total_lines_added=analysis.total_lines_added,
+                total_lines_removed=analysis.total_lines_removed,
+                personal_projects_count=analysis.personal_projects_count,
+                class_projects_count=analysis.class_projects_count,
+                fork_contributions_count=analysis.fork_contributions_count,
+                organic_code_ratio=analysis.organic_code_ratio,
+                ai_assisted_repos=analysis.ai_assisted_repos,
+                has_tests=analysis.has_tests,
+                has_ci_cd=analysis.has_ci_cd,
+                has_documentation=analysis.has_documentation,
+                primary_languages=analysis.primary_languages,
+                flags=analysis.flags,
+                requires_review=analysis.requires_review,
+                repo_analyses=analysis.repo_analyses,
+            )
+            db.add(new_analysis)
+
+        db.commit()
+        logger.info(f"Completed background GitHub analysis for candidate {candidate_id}, score={analysis.overall_score}")
+
+    except Exception as e:
+        logger.error(f"Background GitHub analysis failed for {candidate_id}: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
 
 class GitHubAnalysisResponse(PydanticBaseModel):
     """Response for GitHub analysis results."""

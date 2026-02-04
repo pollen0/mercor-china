@@ -103,6 +103,9 @@ class Candidate(Base):
     resume_parsed_data = Column(JSONB, nullable=True)  # Parsed structured data
     resume_uploaded_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Transcript
+    transcript_key = Column(String, nullable=True)  # Storage key for transcript PDF
+
     # Email verification
     email_verified = Column(Boolean, default=False)
     email_verification_token = Column(String, nullable=True)

@@ -12,7 +12,6 @@ import { Label } from '@/components/ui/label'
 import { UploadProgress } from '@/components/ui/upload-progress'
 import { DocumentPreview } from '@/components/ui/document-preview'
 import { candidateApi, type GitHubData, type GitHubAnalysis as GitHubAnalysisType } from '@/lib/api'
-import { GitHubAnalysis } from '@/components/dashboard/github-analysis'
 import { useDashboardData } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
 
@@ -133,7 +132,9 @@ function DashboardContent() {
     uploadedAt: string
     courses?: string[]
     transcriptUrl?: string
+    transcriptKey?: string
   } | null>(null)
+  const [isLoadingTranscriptUrl, setIsLoadingTranscriptUrl] = useState(false)
   const [showTranscriptDeleteConfirm, setShowTranscriptDeleteConfirm] = useState(false)
   const [githubError, setGithubError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -395,11 +396,13 @@ function DashboardContent() {
         await new Promise(resolve => setTimeout(resolve, 300))
         setTranscriptProgress(100)
 
-        // Parse response to get transcript URL
+        // Parse response to get transcript URL and key
         let transcriptUrl: string | undefined
+        let transcriptKey: string | undefined
         try {
           const response = JSON.parse(xhr.responseText)
           transcriptUrl = response.transcript_url
+          transcriptKey = response.transcript_key
         } catch {
           // Response parsing failed, continue without URL
         }
@@ -410,6 +413,7 @@ function DashboardContent() {
           uploadedAt: new Date().toISOString(),
           courses: [],
           transcriptUrl,
+          transcriptKey,
         }
         setTranscriptData(transcriptInfo)
         localStorage.setItem(`transcript_${candidate.id}`, JSON.stringify(transcriptInfo))
@@ -440,11 +444,72 @@ function DashboardContent() {
     xhr.send(formData)
   }
 
-  const handleDeleteTranscript = () => {
-    if (!candidate) return
+  const handleDeleteTranscript = async () => {
+    if (!candidate || !token) return
+
+    try {
+      // Call backend to delete transcript
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      await fetch(`${apiUrl}/api/candidates/me/transcript`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+    } catch (e) {
+      console.error('Failed to delete transcript from server:', e)
+    }
+
     localStorage.removeItem(`transcript_${candidate.id}`)
     setTranscriptData(null)
     setShowTranscriptDeleteConfirm(false)
+  }
+
+  const handlePreviewTranscript = async () => {
+    if (!transcriptData || !token) return
+
+    // If we have a stored URL, try to use it first
+    if (transcriptData.transcriptUrl) {
+      setPreviewDocument({
+        url: transcriptData.transcriptUrl,
+        fileName: transcriptData.fileName
+      })
+      return
+    }
+
+    // If we have a transcript key but no URL, fetch a fresh signed URL
+    if (transcriptData.transcriptKey) {
+      setIsLoadingTranscriptUrl(true)
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+        const response = await fetch(`${apiUrl}/api/candidates/me/transcript/url`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          // Update stored data with fresh URL
+          const updatedData = { ...transcriptData, transcriptUrl: data.transcript_url }
+          setTranscriptData(updatedData)
+          if (candidate) {
+            localStorage.setItem(`transcript_${candidate.id}`, JSON.stringify(updatedData))
+          }
+          setPreviewDocument({
+            url: data.transcript_url,
+            fileName: transcriptData.fileName
+          })
+        } else {
+          setTranscriptError('Failed to load transcript preview')
+        }
+      } catch (e) {
+        console.error('Failed to get transcript URL:', e)
+        setTranscriptError('Failed to load transcript preview')
+      } finally {
+        setIsLoadingTranscriptUrl(false)
+      }
+    }
   }
 
   // Activity handlers
@@ -1018,8 +1083,6 @@ function DashboardContent() {
                       </div>
                     )}
 
-                    {/* GitHub Analysis Section */}
-                    <GitHubAnalysis hasGitHub={hasGitHub} />
                   </div>
                 ) : (
                   <div className="text-center py-4">
@@ -1109,20 +1172,22 @@ function DashboardContent() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {transcriptData.transcriptUrl && (
+                      {(transcriptData.transcriptUrl || transcriptData.transcriptKey) && (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                          onClick={() => setPreviewDocument({
-                            url: transcriptData.transcriptUrl!,
-                            fileName: transcriptData.fileName
-                          })}
+                          onClick={handlePreviewTranscript}
+                          disabled={isLoadingTranscriptUrl}
                         >
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
+                          {isLoadingTranscriptUrl ? (
+                            <div className="w-4 h-4 mr-1 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                          ) : (
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
                           Preview
                         </Button>
                       )}
