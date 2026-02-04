@@ -40,8 +40,8 @@ class InterviewSession(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Vertical interview fields (for talent pool model)
-    vertical = Column(Enum(Vertical), nullable=True)  # 'new_energy' or 'sales'
-    role_type = Column(Enum(RoleType), nullable=True)  # e.g., 'battery_engineer'
+    vertical = Column(Enum(Vertical, values_callable=lambda x: [e.value for e in x]), nullable=True)  # 'new_energy' or 'sales'
+    role_type = Column(Enum(RoleType, values_callable=lambda x: [e.value for e in x]), nullable=True)  # e.g., 'battery_engineer'
     is_vertical_interview = Column(Boolean, default=False)  # True for talent pool interviews
 
     candidate_id = Column(String, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)

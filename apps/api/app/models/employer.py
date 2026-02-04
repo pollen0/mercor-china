@@ -119,8 +119,8 @@ class Job(Base):
     id = Column(String, primary_key=True)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    vertical = Column(Enum(Vertical), nullable=True)  # engineering, data, business, design
-    role_type = Column(Enum(RoleType), nullable=True)  # Specific role within vertical
+    vertical = Column(Enum(Vertical, values_callable=lambda x: [e.value for e in x]), nullable=True)  # engineering, data, business, design
+    role_type = Column(Enum(RoleType, values_callable=lambda x: [e.value for e in x]), nullable=True)  # Specific role within vertical
     requirements = Column(ARRAY(String), nullable=True)  # No default for SQLite compatibility
     location = Column(String, nullable=True)
     salary_min = Column(Integer, nullable=True)
@@ -154,7 +154,7 @@ class InterviewQuestion(Base):
 
     # Progressive difficulty system
     difficulty_level = Column(Integer, default=1)  # 1=foundational, 2=intermediate, 3=advanced
-    vertical = Column(Enum(Vertical), nullable=True)  # Which vertical this question belongs to
+    vertical = Column(Enum(Vertical, values_callable=lambda x: [e.value for e in x]), nullable=True)  # Which vertical this question belongs to
     skill_tags = Column(ARRAY(String), nullable=True)  # e.g., ["system_design", "algorithms"]
     question_key = Column(String, nullable=True)  # Unique key for deduplication, e.g., "swe_l1_intro"
 
@@ -174,7 +174,7 @@ class CandidateQuestionHistory(Base):
     candidate_id = Column(String, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
     question_key = Column(String, nullable=False)  # The unique question identifier
     question_text = Column(Text, nullable=False)  # Store the actual question text
-    vertical = Column(Enum(Vertical), nullable=True)
+    vertical = Column(Enum(Vertical, values_callable=lambda x: [e.value for e in x]), nullable=True)
     difficulty_level = Column(Integer, default=1)
     category = Column(String, nullable=True)
 
