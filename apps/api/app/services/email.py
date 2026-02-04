@@ -75,7 +75,7 @@ class EmailService:
         score_html = ""
         if score is not None:
             score_html = f"""
-            <p style="font-size: 24px; color: #2563eb; font-weight: bold;">
+            <p style="font-size: 24px; color: #0d9488; font-weight: bold;">
                 Overall Score: {score:.1f}/10
             </p>
             """
@@ -86,12 +86,12 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -142,11 +142,11 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -201,12 +201,12 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -284,12 +284,12 @@ class EmailService:
         """
         # Determine header color based on message type
         header_colors = {
-            "interview_request": "#2563eb",  # Blue
-            "shortlist_notice": "#10b981",   # Green
-            "rejection": "#6b7280",          # Gray
-            "custom": "#2563eb",             # Blue
+            "interview_request": "#0d9488",  # Teal
+            "shortlist_notice": "#0d9488",   # Teal
+            "rejection": "#78716c",          # Stone-500
+            "custom": "#0d9488",             # Teal
         }
-        header_color = header_colors.get(message_type, "#2563eb")
+        header_color = header_colors.get(message_type, "#0d9488")
 
         # Determine header title based on message type
         header_titles = {
@@ -308,12 +308,12 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
                 .header {{ background: {header_color}; color: white; padding: 30px; border-radius: 8px 8px 0 0; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .message-box {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .message-box {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e7e5e3; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -327,7 +327,7 @@ class EmailService:
                     <p><strong>{employer_name}</strong> has sent you a message{job_info}:</p>
 
                     <div class="message-box">
-                        <h3 style="margin-top: 0; color: #374151;">{subject}</h3>
+                        <h3 style="margin-top: 0; color: #292524;">{subject}</h3>
                         <div style="white-space: pre-wrap;">{body}</div>
                     </div>
 
@@ -368,21 +368,18 @@ class EmailService:
         """
         verify_url = f"{settings.frontend_url}/verify-email?token={verification_token}&type={user_type}"
 
-        # Use indigo/purple gradient for Pathway branding
-        header_color = "#6366f1"
-
         html = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -400,12 +397,12 @@ class EmailService:
                         <a href="{verify_url}" class="button">Verify Email</a>
                     </p>
 
-                    <p style="color: #6b7280; font-size: 14px;">
+                    <p style="color: #78716c; font-size: 14px;">
                         If the button doesn't work, copy this link to your browser:<br>
-                        <a href="{verify_url}" style="color: {header_color}; word-break: break-all;">{verify_url}</a>
+                        <a href="{verify_url}" style="color: #0d9488; word-break: break-all;">{verify_url}</a>
                     </p>
 
-                    <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+                    <p style="color: #78716c; font-size: 14px; margin-top: 20px;">
                         This link will expire in 24 hours.
                     </p>
 
@@ -450,12 +447,12 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
                 .warning {{ background: #fef3c7; border: 1px solid #f59e0b; padding: 12px; border-radius: 6px; margin: 20px 0; }}
             </style>
         </head>
@@ -478,9 +475,9 @@ class EmailService:
                         If you didn't request a password reset, you can safely ignore this email.
                     </div>
 
-                    <p style="color: #6b7280; font-size: 14px;">
+                    <p style="color: #78716c; font-size: 14px;">
                         If the button doesn't work, copy this link to your browser:<br>
-                        <a href="{reset_url}" style="color: #6366f1; word-break: break-all;">{reset_url}</a>
+                        <a href="{reset_url}" style="color: #0d9488; word-break: break-all;">{reset_url}</a>
                     </p>
 
                     <p>Best regards,<br>The Pathway Team</p>
@@ -566,14 +563,14 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 40px 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 40px 30px; border-radius: 8px 8px 0 0; text-align: center; }}
                 .logo {{ font-size: 32px; font-weight: bold; margin-bottom: 10px; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
-                .tip {{ background: #ecfdf5; border: 1px solid #10b981; padding: 12px; border-radius: 6px; margin: 20px 0; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
+                .tip {{ background: #f0fdfa; border: 1px solid #0d9488; padding: 12px; border-radius: 6px; margin: 20px 0; }}
             </style>
         </head>
         <body>
@@ -620,14 +617,14 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
                 .stat {{ text-align: center; padding: 20px; background: white; border-radius: 8px; margin: 20px 0; }}
-                .stat-number {{ font-size: 48px; font-weight: bold; color: #6366f1; }}
+                .stat-number {{ font-size: 48px; font-weight: bold; color: #0d9488; }}
             </style>
         </head>
         <body>
@@ -659,7 +656,7 @@ class EmailService:
                     <p>Best regards,<br>The Pathway Team</p>
                 </div>
                 <div class="footer">
-                    <p>Don't want these reminders? <a href="{settings.frontend_url}/unsubscribe">Unsubscribe</a></p>
+                    <p>Don't want these reminders? <a href="{settings.frontend_url}/unsubscribe" style="color: #0d9488;">Unsubscribe</a></p>
                 </div>
             </div>
         </body>
@@ -691,12 +688,12 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -718,7 +715,7 @@ class EmailService:
                     <p>Best regards,<br>The Pathway Team</p>
                 </div>
                 <div class="footer">
-                    <p>Manage notification preferences in your <a href="{settings.frontend_url}/candidate/settings">settings</a>.</p>
+                    <p>Manage notification preferences in your <a href="{settings.frontend_url}/candidate/settings" style="color: #0d9488;">settings</a>.</p>
                 </div>
             </div>
         </body>
@@ -747,7 +744,7 @@ class EmailService:
         interview_cta = ""
         if next_interview_eligible:
             interview_cta = """
-            <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <div style="background: #f0fdfa; border: 1px solid #0d9488; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <strong>You're eligible for a new monthly interview!</strong>
                 <p style="margin: 5px 0 0 0;">Take it to show your growth and improve your score.</p>
             </div>
@@ -759,16 +756,16 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
                 .stats {{ display: flex; justify-content: space-around; margin: 20px 0; }}
                 .stat {{ text-align: center; padding: 15px; background: white; border-radius: 8px; flex: 1; margin: 0 5px; }}
-                .stat-number {{ font-size: 32px; font-weight: bold; color: #6366f1; }}
-                .stat-label {{ font-size: 14px; color: #6b7280; }}
+                .stat-number {{ font-size: 32px; font-weight: bold; color: #0d9488; }}
+                .stat-label {{ font-size: 14px; color: #78716c; }}
             </style>
         </head>
         <body>
@@ -802,7 +799,7 @@ class EmailService:
                     <p>Best regards,<br>The Pathway Team</p>
                 </div>
                 <div class="footer">
-                    <p>Manage notification preferences in your <a href="{settings.frontend_url}/candidate/settings">settings</a>.</p>
+                    <p>Manage notification preferences in your <a href="{settings.frontend_url}/candidate/settings" style="color: #0d9488;">settings</a>.</p>
                 </div>
             </div>
         </body>
@@ -839,8 +836,8 @@ class EmailService:
             <p style="text-align: center; margin: 20px 0;">
                 <a href="{google_meet_link}" class="button">Join Google Meet</a>
             </p>
-            <p style="color: #6b7280; font-size: 14px; text-align: center;">
-                Meeting link: <a href="{google_meet_link}" style="color: #6366f1;">{google_meet_link}</a>
+            <p style="color: #78716c; font-size: 14px; text-align: center;">
+                Meeting link: <a href="{google_meet_link}" style="color: #0d9488;">{google_meet_link}</a>
             </p>
             """
 
@@ -850,13 +847,13 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e7e5e3; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -935,13 +932,13 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e7e5e3; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -1003,8 +1000,8 @@ class EmailService:
             <p style="text-align: center; margin: 20px 0;">
                 <a href="{google_meet_link}" class="button">Add to Calendar</a>
             </p>
-            <p style="color: #6b7280; font-size: 14px; text-align: center;">
-                Google Meet link: <a href="{google_meet_link}" style="color: #6366f1;">{google_meet_link}</a>
+            <p style="color: #78716c; font-size: 14px; text-align: center;">
+                Google Meet link: <a href="{google_meet_link}" style="color: #0d9488;">{google_meet_link}</a>
             </p>
             """
 
@@ -1014,13 +1011,13 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e7e5e3; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -1101,13 +1098,13 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .details {{ background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e7e5e3; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -1160,7 +1157,7 @@ class EmailService:
     ) -> Optional[str]:
         """Send self-scheduling link invitation to candidate."""
         job_info = f" for the <strong>{job_title}</strong> position" if job_title else ""
-        custom_message = f'<div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;"><p style="margin: 0; white-space: pre-wrap;">{message}</p></div>' if message else ""
+        custom_message = f'<div style="background: #f5f5f4; padding: 15px; border-radius: 8px; margin: 20px 0;"><p style="margin: 0; white-space: pre-wrap;">{message}</p></div>' if message else ""
 
         html = f"""
         <!DOCTYPE html>
@@ -1168,12 +1165,12 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
+                .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
             </style>
         </head>
         <body>
@@ -1195,8 +1192,8 @@ class EmailService:
                         <a href="{schedule_url}" class="button">Schedule Interview</a>
                     </p>
 
-                    <p style="color: #6b7280; font-size: 14px;">
-                        Or copy this link: <a href="{schedule_url}" style="color: #6366f1;">{schedule_url}</a>
+                    <p style="color: #78716c; font-size: 14px;">
+                        Or copy this link: <a href="{schedule_url}" style="color: #0d9488;">{schedule_url}</a>
                     </p>
 
                     <p>We look forward to speaking with you!</p>
@@ -1243,13 +1240,13 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <style>
-                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #292524; }}
                 .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
                 .header {{ background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }}
-                .content {{ background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
-                .button {{ display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
-                .footer {{ text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }}
-                .role-badge {{ display: inline-block; background: #e0f2fe; color: #0369a1; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 500; }}
+                .content {{ background: #fafaf9; padding: 30px; border-radius: 0 0 8px 8px; }}
+                .button {{ display: inline-block; background: #1c1917; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #78716c; font-size: 14px; }}
+                .role-badge {{ display: inline-block; background: #f0fdfa; color: #0d9488; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 500; }}
             </style>
         </head>
         <body>
@@ -1265,7 +1262,7 @@ class EmailService:
                     <p>
                         Your role: <span class="role-badge">{role.replace('_', ' ').title()}</span>
                         <br>
-                        <small style="color: #6b7280;">{role_desc}</small>
+                        <small style="color: #78716c;">{role_desc}</small>
                     </p>
 
                     <p>Pathway is a collaborative recruiting platform that helps teams find and hire top talent from college students.</p>
@@ -1274,7 +1271,7 @@ class EmailService:
                         <a href="{invite_url}" class="button">Accept Invitation</a>
                     </p>
 
-                    <p style="color: #6b7280; font-size: 14px;">
+                    <p style="color: #78716c; font-size: 14px;">
                         This invitation expires in 7 days. If you didn't expect this email, you can safely ignore it.
                     </p>
                 </div>
