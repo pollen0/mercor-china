@@ -109,6 +109,7 @@ async def create_candidate(
             email=candidate.email,
             phone=candidate.phone,
             target_roles=candidate.target_roles or [],
+            email_verified=candidate.email_verified if candidate.email_verified is not None else False,
             university=candidate.university,
             major=candidate.major,
             graduation_year=candidate.graduation_year,
@@ -166,6 +167,7 @@ async def login_candidate(
             email=candidate.email,
             phone=candidate.phone,
             target_roles=candidate.target_roles or [],
+            email_verified=candidate.email_verified if candidate.email_verified is not None else False,
             university=candidate.university,
             major=candidate.major,
             graduation_year=candidate.graduation_year,
@@ -220,12 +222,21 @@ async def get_current_candidate_profile(
     current_candidate: Candidate = Depends(get_current_candidate),
 ):
     """Get the current authenticated student's profile."""
+    # Generate a signed URL for the resume if it's a storage key
+    resume_url = current_candidate.resume_url
+    if resume_url and not resume_url.startswith('http'):
+        try:
+            resume_url = storage_service.get_signed_url(resume_url, expiration=3600)
+        except Exception:
+            pass
+
     return CandidateResponse(
         id=current_candidate.id,
         name=current_candidate.name,
         email=current_candidate.email,
         phone=current_candidate.phone,
         target_roles=current_candidate.target_roles or [],
+        email_verified=current_candidate.email_verified if current_candidate.email_verified is not None else False,
         university=current_candidate.university,
         major=current_candidate.major,
         graduation_year=current_candidate.graduation_year,
@@ -234,7 +245,7 @@ async def get_current_candidate_profile(
         linkedin_url=current_candidate.linkedin_url,
         portfolio_url=current_candidate.portfolio_url,
         github_username=current_candidate.github_username,
-        resume_url=current_candidate.resume_url,
+        resume_url=resume_url,
         created_at=current_candidate.created_at,
     )
 
@@ -271,12 +282,21 @@ async def update_my_profile(
     db.commit()
     db.refresh(current_candidate)
 
+    # Generate a signed URL for the resume if it's a storage key
+    resume_url = current_candidate.resume_url
+    if resume_url and not resume_url.startswith('http'):
+        try:
+            resume_url = storage_service.get_signed_url(resume_url, expiration=3600)
+        except Exception:
+            pass
+
     return CandidateResponse(
         id=current_candidate.id,
         name=current_candidate.name,
         email=current_candidate.email,
         phone=current_candidate.phone,
         target_roles=current_candidate.target_roles or [],
+        email_verified=current_candidate.email_verified if current_candidate.email_verified is not None else False,
         university=current_candidate.university,
         major=current_candidate.major,
         graduation_year=current_candidate.graduation_year,
@@ -285,7 +305,7 @@ async def update_my_profile(
         linkedin_url=current_candidate.linkedin_url,
         portfolio_url=current_candidate.portfolio_url,
         github_username=current_candidate.github_username,
-        resume_url=current_candidate.resume_url,
+        resume_url=resume_url,
         created_at=current_candidate.created_at,
     )
 
@@ -467,10 +487,18 @@ async def upload_resume(
 
     db.commit()
 
+    # Generate a signed URL for the resume if we have a storage key
+    signed_resume_url = resume_url
+    if resume_url and not resume_url.startswith('http'):
+        try:
+            signed_resume_url = storage_service.get_signed_url(resume_url, expiration=3600)
+        except Exception as e:
+            logger.warning(f"Failed to generate signed URL for resume: {e}")
+
     return ResumeParseResult(
         success=True,
         message="Resume uploaded and parsed successfully",
-        resume_url=resume_url,
+        resume_url=signed_resume_url,
         parsed_data=parsed_data,
         raw_text_preview=raw_text[:500] if raw_text else None
     )
@@ -485,16 +513,52 @@ async def get_my_resume(
     if current_candidate.resume_parsed_data:
         try:
             parsed_data = ParsedResume(**current_candidate.resume_parsed_data)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to reconstruct parsed resume data: {e}")
+
+    # Generate a signed URL if we have a storage key
+    resume_url = current_candidate.resume_url
+    if resume_url and not resume_url.startswith('http'):
+        try:
+            resume_url = storage_service.get_signed_url(resume_url, expiration=3600)
+        except Exception as e:
+            logger.warning(f"Failed to generate signed URL for resume: {e}")
 
     return ResumeResponse(
         candidate_id=current_candidate.id,
-        resume_url=current_candidate.resume_url,
+        resume_url=resume_url,
         raw_text=current_candidate.resume_raw_text,
         parsed_data=parsed_data,
         uploaded_at=current_candidate.resume_uploaded_at
     )
+
+
+@router.get("/me/resume/url")
+async def get_resume_url(
+    current_candidate: Candidate = Depends(get_current_candidate),
+):
+    """Get a fresh signed URL for viewing the student's resume."""
+    if not current_candidate.resume_url:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No resume uploaded"
+        )
+
+    try:
+        signed_url = storage_service.get_signed_url(
+            current_candidate.resume_url,
+            expiration=3600
+        )
+        return {
+            "resume_url": signed_url,
+            "expires_in": 3600
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate signed URL for resume: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate resume URL"
+        )
 
 
 @router.delete("/me/resume")
@@ -532,12 +596,20 @@ async def get_resume(
     if candidate.resume_parsed_data:
         try:
             parsed_data = ParsedResume(**candidate.resume_parsed_data)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to reconstruct parsed resume data for {candidate_id}: {e}")
+
+    # Generate a signed URL if we have a storage key
+    resume_url = candidate.resume_url
+    if resume_url and not resume_url.startswith('http'):
+        try:
+            resume_url = storage_service.get_signed_url(resume_url, expiration=3600)
+        except Exception as e:
+            logger.warning(f"Failed to generate signed URL for resume: {e}")
 
     return ResumeResponse(
         candidate_id=candidate_id,
-        resume_url=candidate.resume_url,
+        resume_url=resume_url,
         raw_text=candidate.resume_raw_text,
         parsed_data=parsed_data,
         uploaded_at=candidate.resume_uploaded_at

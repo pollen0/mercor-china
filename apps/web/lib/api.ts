@@ -870,8 +870,16 @@ export const candidateApi = {
     }
   },
 
-  getResume: (candidateId: string): Promise<ResumeResponse> =>
-    apiRequest(`/api/candidates/${candidateId}/resume`),
+  getResume: async (candidateId: string): Promise<ResumeResponse> => {
+    const data = await apiRequest<Record<string, unknown>>(`/api/candidates/${candidateId}/resume`)
+    return {
+      candidateId: data.candidate_id as string,
+      resumeUrl: data.resume_url as string | undefined,
+      rawText: data.raw_text as string | undefined,
+      parsedData: transformParsedResume(data.parsed_data),
+      uploadedAt: data.uploaded_at as string | undefined,
+    }
+  },
 
   deleteResume: async (token?: string): Promise<{ success: boolean; message: string }> => {
     const url = `${API_BASE_URL}/api/candidates/me/resume`
