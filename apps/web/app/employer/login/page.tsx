@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import { setAuthTokens } from '@/lib/auth'
 
 type Mode = 'login' | 'register'
 
-export default function EmployerLoginPage() {
+function EmployerLoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [mode, setMode] = useState<Mode>('login')
@@ -69,6 +69,148 @@ export default function EmployerLoginPage() {
   }
 
   return (
+    <div className="bg-white rounded-3xl shadow-soft-lg border border-stone-100 p-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-stone-900">
+          {mode === 'login' ? 'Welcome back' : 'Create your account'}
+        </h2>
+        <p className="text-stone-500 mt-2">
+          {mode === 'login'
+            ? 'Sign in to access your employer dashboard'
+            : 'Start screening candidates smarter'}
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {mode === 'register' && (
+          <>
+            <div>
+              <Label htmlFor="name" className="text-sm font-medium text-stone-700">
+                Your Name
+              </Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="John Smith"
+                className="mt-2"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="companyName" className="text-sm font-medium text-stone-700">
+                Company Name
+              </Label>
+              <Input
+                id="companyName"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Your company name"
+                className="mt-2"
+                required
+              />
+            </div>
+          </>
+        )}
+
+        <div>
+          <Label htmlFor="email" className="text-sm font-medium text-stone-700">
+            Email
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            className="mt-2"
+            required
+          />
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-sm font-medium text-stone-700">
+              Password
+            </Label>
+            {mode === 'login' && (
+              <Link href="/forgot-password" className="text-xs text-stone-500 hover:text-teal-600">
+                Forgot password?
+              </Link>
+            )}
+          </div>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            className="mt-2"
+            required
+            minLength={8}
+          />
+        </div>
+
+        {mode === 'register' && (
+          <div>
+            <Label htmlFor="confirmPassword" className="text-sm font-medium text-stone-700">
+              Confirm Password
+            </Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm your password"
+              className="mt-2"
+              required
+              minLength={8}
+            />
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 bg-error-light border border-error/20 rounded-xl">
+            <p className="text-sm text-error-dark">{error}</p>
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          variant="default"
+          className="w-full"
+          disabled={isLoading}
+          loading={isLoading}
+        >
+          {isLoading
+            ? 'Please wait...'
+            : mode === 'login'
+            ? 'Sign In'
+            : 'Create Account'}
+        </Button>
+      </form>
+
+      <div className="mt-6 text-center">
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === 'login' ? 'register' : 'login')
+            setError(null)
+            setConfirmPassword('')
+          }}
+          className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+        >
+          {mode === 'login'
+            ? "Don't have an account? Register"
+            : 'Already have an account? Sign in'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default function EmployerLoginPage() {
+  return (
     <main className="min-h-screen bg-stone-50 flex">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:flex-1 lg:flex-col justify-center px-12 bg-gradient-to-br from-teal-600 to-teal-500">
@@ -120,143 +262,9 @@ export default function EmployerLoginPage() {
             </Link>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-soft-lg border border-stone-100 p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-stone-900">
-                {mode === 'login' ? 'Welcome back' : 'Create your account'}
-              </h2>
-              <p className="text-stone-500 mt-2">
-                {mode === 'login'
-                  ? 'Sign in to access your employer dashboard'
-                  : 'Start screening candidates smarter'}
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {mode === 'register' && (
-                <>
-                  <div>
-                    <Label htmlFor="name" className="text-sm font-medium text-stone-700">
-                      Your Name
-                    </Label>
-                    <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="John Smith"
-                      className="mt-2"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="companyName" className="text-sm font-medium text-stone-700">
-                      Company Name
-                    </Label>
-                    <Input
-                      id="companyName"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="Your company name"
-                      className="mt-2"
-                      required
-                    />
-                  </div>
-                </>
-              )}
-
-              <div>
-                <Label htmlFor="email" className="text-sm font-medium text-stone-700">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
-                  className="mt-2"
-                  required
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium text-stone-700">
-                    Password
-                  </Label>
-                  {mode === 'login' && (
-                    <Link href="/forgot-password" className="text-xs text-stone-500 hover:text-teal-600">
-                      Forgot password?
-                    </Link>
-                  )}
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="mt-2"
-                  required
-                  minLength={8}
-                />
-              </div>
-
-              {mode === 'register' && (
-                <div>
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-stone-700">
-                    Confirm Password
-                  </Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm your password"
-                    className="mt-2"
-                    required
-                    minLength={8}
-                  />
-                </div>
-              )}
-
-              {error && (
-                <div className="p-4 bg-error-light border border-error/20 rounded-xl">
-                  <p className="text-sm text-error-dark">{error}</p>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                variant="default"
-                className="w-full"
-                disabled={isLoading}
-                loading={isLoading}
-              >
-                {isLoading
-                  ? 'Please wait...'
-                  : mode === 'login'
-                  ? 'Sign In'
-                  : 'Create Account'}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === 'login' ? 'register' : 'login')
-                  setError(null)
-                  setConfirmPassword('')
-                }}
-                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-              >
-                {mode === 'login'
-                  ? "Don't have an account? Register"
-                  : 'Already have an account? Sign in'}
-              </button>
-            </div>
-          </div>
+          <Suspense fallback={<div className="animate-pulse h-96 bg-stone-100 rounded-3xl" />}>
+            <EmployerLoginForm />
+          </Suspense>
 
           <p className="mt-8 text-center text-sm text-stone-500">
             By continuing, you agree to Pathway&apos;s Terms of Service and Privacy Policy.
