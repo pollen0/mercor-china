@@ -559,7 +559,7 @@ export interface EmployerWithToken {
 }
 
 // Helper to transform snake_case to camelCase for parsed resume data
-function transformParsedResume(data: unknown): ParsedResumeData | undefined {
+export function transformParsedResume(data: unknown): ParsedResumeData | undefined {
   if (!data || typeof data !== 'object') return undefined
   const d = data as Record<string, unknown>
 

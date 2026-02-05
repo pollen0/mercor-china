@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UploadProgress } from '@/components/ui/upload-progress'
 import { DocumentPreview } from '@/components/ui/document-preview'
-import { candidateApi, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward } from '@/lib/api'
+import { candidateApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward } from '@/lib/api'
 import { useDashboardData } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
 
@@ -252,8 +252,22 @@ function DashboardContent() {
         await new Promise(resolve => setTimeout(resolve, 200))
         setUploadProgress(100)
 
-        // Revalidate SWR cache
-        mutateResume()
+        // Parse the upload response and update SWR cache with the data directly
+        try {
+          const uploadResult = JSON.parse(xhr.responseText)
+          const resumeData = {
+            candidateId: candidate.id,
+            resumeUrl: uploadResult.resume_url,
+            rawText: uploadResult.raw_text_preview,
+            parsedData: transformParsedResume(uploadResult.parsed_data),
+            uploadedAt: new Date().toISOString(),
+          }
+          // Optimistic update: set data immediately, then revalidate in background
+          mutateResume(resumeData, { revalidate: true })
+        } catch {
+          // Fallback to simple revalidation
+          mutateResume()
+        }
 
         await new Promise(resolve => setTimeout(resolve, 500))
         setIsUploading(false)
