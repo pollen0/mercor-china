@@ -107,6 +107,7 @@ class InterviewSessionResponse(BaseModel):
     job_title: Optional[str] = None
     company_name: Optional[str] = None
     responses: list[ResponseDetail] = []
+    questions: list[QuestionInfo] = []  # AI-generated questions for this session
 
     class Config:
         from_attributes = True

@@ -289,6 +289,7 @@ export interface InterviewSession {
   jobTitle?: string
   companyName?: string
   responses: ResponseDetail[]
+  questions: QuestionInfo[]
 }
 
 export interface InterviewResults {
@@ -706,11 +707,19 @@ async function apiRequest<T>(
     ...options.headers as Record<string, string>,
   }
 
-  // Add auth token if available (check both employer and candidate tokens)
+  // Add auth token if available - choose the right token based on endpoint
   if (typeof window !== 'undefined') {
     const employerToken = localStorage.getItem('employer_token')
     const candidateToken = localStorage.getItem('candidate_token')
-    const token = employerToken || candidateToken
+
+    // Use employer token for employer endpoints, candidate token for everything else
+    let token: string | null = null
+    if (endpoint.startsWith('/api/employers')) {
+      token = employerToken || candidateToken
+    } else {
+      token = candidateToken || employerToken
+    }
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
@@ -1912,11 +1921,35 @@ export const employerApi = {
     return transformEmployerResponse(response)
   },
 
-  getDashboard: (): Promise<DashboardStats> =>
-    apiRequest('/api/employers/dashboard'),
+  getDashboard: async (): Promise<DashboardStats> => {
+    const data = await apiRequest<Record<string, unknown>>('/api/employers/dashboard')
+    return {
+      totalInterviews: (data.total_interviews ?? data.totalInterviews ?? 0) as number,
+      pendingReview: (data.pending_review ?? data.pendingReview ?? 0) as number,
+      shortlisted: (data.shortlisted ?? 0) as number,
+      rejected: (data.rejected ?? 0) as number,
+      averageScore: (data.average_score ?? data.averageScore) as number | undefined,
+    }
+  },
 
-  listJobs: (isActive?: boolean): Promise<{ jobs: Job[]; total: number }> =>
-    apiRequest(`/api/employers/jobs${isActive !== undefined ? `?is_active=${isActive}` : ''}`),
+  listJobs: async (isActive?: boolean): Promise<{ jobs: Job[]; total: number }> => {
+    const data = await apiRequest<Record<string, unknown>>(`/api/employers/jobs${isActive !== undefined ? `?is_active=${isActive}` : ''}`)
+    const jobs = ((data.jobs as Array<Record<string, unknown>>) || []).map(j => ({
+      id: j.id as string,
+      title: j.title as string,
+      description: j.description as string,
+      vertical: (j.vertical) as Vertical | undefined,
+      roleType: (j.role_type ?? j.roleType) as RoleType | undefined,
+      requirements: (j.requirements || []) as string[],
+      location: j.location as string | undefined,
+      salaryMin: (j.salary_min ?? j.salaryMin) as number | undefined,
+      salaryMax: (j.salary_max ?? j.salaryMax) as number | undefined,
+      isActive: (j.is_active ?? j.isActive ?? true) as boolean,
+      employerId: (j.employer_id ?? j.employerId) as string,
+      createdAt: (j.created_at ?? j.createdAt) as string,
+    }))
+    return { jobs, total: (data.total as number) || jobs.length }
+  },
 
   createJob: (data: {
     title: string
@@ -2122,7 +2155,37 @@ export const employerApi = {
 
     const queryString = params.toString()
     const url = `/api/employers/match-alerts${queryString ? `?${queryString}` : ''}`
-    return apiRequest(url)
+    const data = await apiRequest<Record<string, unknown>>(url)
+
+    // Transform snake_case to camelCase
+    const alerts = ((data.alerts as Array<Record<string, unknown>>) || []).map(a => {
+      const candidate = a.candidate as Record<string, unknown>
+      return {
+        id: a.id as string,
+        candidate: {
+          id: candidate.id as string,
+          name: candidate.name as string,
+          email: candidate.email as string,
+          university: candidate.university as string | undefined,
+          major: candidate.major as string | undefined,
+          graduationYear: (candidate.graduation_year ?? candidate.graduationYear) as number | undefined,
+        },
+        jobId: (a.job_id ?? a.jobId) as string | undefined,
+        jobTitle: (a.job_title ?? a.jobTitle) as string | undefined,
+        matchScore: (a.match_score ?? a.matchScore) as number,
+        interviewScore: (a.interview_score ?? a.interviewScore) as number | undefined,
+        skillsMatchScore: (a.skills_match_score ?? a.skillsMatchScore) as number | undefined,
+        status: a.status as string,
+        createdAt: (a.created_at ?? a.createdAt) as string,
+        isNew: (a.is_new ?? a.isNew ?? false) as boolean,
+      }
+    })
+
+    return {
+      alerts,
+      total: (data.total as number) || 0,
+      unreadCount: (data.unread_count ?? (data as Record<string, unknown>).unreadCount ?? 0) as number,
+    }
   },
 
   markMatchViewed: (matchId: string): Promise<{ success: boolean; status: string }> =>
@@ -2678,7 +2741,7 @@ export const candidateVerticalApi = {
         bestScore: p.best_score,
         totalInterviews: p.total_interviews || 0,
         lastInterviewAt: p.last_interview_at,
-        nextEligibleAt: p.next_eligible_at,
+        nextEligibleAt: p.next_interview_available_at || p.next_eligible_at,
         completedAt: p.completed_at,
         canInterview: p.can_interview ?? true,
       })),

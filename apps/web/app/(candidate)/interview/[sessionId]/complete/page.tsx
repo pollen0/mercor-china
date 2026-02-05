@@ -262,9 +262,9 @@ export default function InterviewCompletePage() {
             </div>
 
             <div className="text-center pt-2">
-              <Link href="/">
+              <Link href="/candidate/dashboard">
                 <Button variant="outline" className="min-w-[140px]">
-                  Back to Home
+                  Back to Dashboard
                 </Button>
               </Link>
             </div>

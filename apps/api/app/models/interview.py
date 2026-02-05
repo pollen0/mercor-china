@@ -29,7 +29,7 @@ class InterviewSession(Base):
     __tablename__ = "interview_sessions"
 
     id = Column(String, primary_key=True)
-    status = Column(Enum(InterviewStatus), default=InterviewStatus.PENDING)
+    status = Column(Enum(InterviewStatus, values_callable=lambda x: [e.value for e in x]), default=InterviewStatus.PENDING)
     is_practice = Column(Boolean, default=False)  # Practice mode flag
     scheduled_at = Column(DateTime(timezone=True), nullable=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
@@ -43,6 +43,7 @@ class InterviewSession(Base):
     vertical = Column(Enum(Vertical, values_callable=lambda x: [e.value for e in x]), nullable=True)  # 'new_energy' or 'sales'
     role_type = Column(Enum(RoleType, values_callable=lambda x: [e.value for e in x]), nullable=True)  # e.g., 'battery_engineer'
     is_vertical_interview = Column(Boolean, default=False)  # True for talent pool interviews
+    questions_data = Column(JSONB, nullable=True)  # AI-generated questions stored as JSON
 
     candidate_id = Column(String, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
     candidate = relationship("Candidate", back_populates="interview_sessions")
@@ -106,7 +107,7 @@ class FollowupQueue(Base):
     question_index = Column(Integer, nullable=False)  # Which base question this is for
     generated_questions = Column(ARRAY(String), nullable=False)  # List of follow-up questions
     selected_index = Column(Integer, nullable=True)  # Which follow-up was selected (if any)
-    status = Column(Enum(FollowupQueueStatus), default=FollowupQueueStatus.PENDING)
+    status = Column(Enum(FollowupQueueStatus, values_callable=lambda x: [e.value for e in x]), default=FollowupQueueStatus.PENDING)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     session_id = Column(String, ForeignKey("interview_sessions.id", ondelete="CASCADE"), nullable=False)
@@ -118,7 +119,7 @@ class Match(Base):
 
     id = Column(String, primary_key=True)
     score = Column(Float, nullable=False)
-    status = Column(Enum(MatchStatus), default=MatchStatus.PENDING)
+    status = Column(Enum(MatchStatus, values_callable=lambda x: [e.value for e in x]), default=MatchStatus.PENDING)
     ai_reasoning = Column(String, nullable=True)
     # Detailed match scores
     interview_score = Column(Float, nullable=True)  # Score from interview (0-10)

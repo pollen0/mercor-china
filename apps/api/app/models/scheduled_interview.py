@@ -2,7 +2,8 @@
 ScheduledInterview model for employer-candidate interview scheduling.
 Stores calendar events with Google Meet links for scheduled interviews.
 """
-from sqlalchemy import Column, String, DateTime, Integer, Text, Enum, ForeignKey, JSON
+from sqlalchemy import Column, String, DateTime, Integer, Text, Enum, ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -47,7 +48,7 @@ class ScheduledInterview(Base):
     # Interview details
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    interview_type = Column(Enum(InterviewType), default=InterviewType.OTHER)
+    interview_type = Column(Enum(InterviewType, values_callable=lambda x: [e.value for e in x]), default=InterviewType.OTHER)
 
     # Scheduling
     scheduled_at = Column(DateTime(timezone=True), nullable=False)
@@ -60,10 +61,10 @@ class ScheduledInterview(Base):
     calendar_link = Column(String, nullable=True)  # Link to view in Google Calendar
 
     # Additional attendees (e.g., other interviewers)
-    additional_attendees = Column(JSON, nullable=True)  # List of email addresses
+    additional_attendees = Column(JSONB, nullable=True)  # List of email addresses
 
     # Status and notes
-    status = Column(Enum(ScheduledInterviewStatus), default=ScheduledInterviewStatus.PENDING)
+    status = Column(Enum(ScheduledInterviewStatus, values_callable=lambda x: [e.value for e in x]), default=ScheduledInterviewStatus.PENDING)
     employer_notes = Column(Text, nullable=True)  # Private notes from employer
 
     # If rescheduled, link to the new interview

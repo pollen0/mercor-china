@@ -246,6 +246,23 @@ function DashboardContent() {
     loadInitialData()
   }, [router])
 
+  // Re-fetch employer data when tab becomes visible (e.g. after email verification in another tab)
+  useEffect(() => {
+    if (employer?.isVerified) return
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const employerData = await employerApi.getMe()
+          setEmployer(employerData)
+        } catch {
+          // Silently ignore - not critical
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [employer?.isVerified])
+
   // Load interviews when tab changes to interviews
   const loadInterviews = useCallback(async () => {
     setInterviewsLoading(true)
@@ -2037,6 +2054,8 @@ ${employer?.companyName || 'Our Company'}`)
                                       <h4 className="text-sm font-semibold text-stone-700 mb-2">Score Breakdown</h4>
                                       <div className="space-y-1">
                                         {Object.entries(detail.profileScore.breakdown).map(([key, value]) => {
+                                          if (value == null) return null
+                                          const numValue = Number(value) || 0
                                           const label = key
                                             .replace(/([A-Z])/g, ' $1')
                                             .replace(/^./, str => str.toUpperCase())
@@ -2047,10 +2066,10 @@ ${employer?.companyName || 'Our Company'}`)
                                               <div className="flex-1 h-2 bg-stone-200 rounded-full">
                                                 <div
                                                   className="h-2 bg-teal-500 rounded-full"
-                                                  style={{ width: `${((value as number) / 10) * 100}%` }}
+                                                  style={{ width: `${(numValue / 10) * 100}%` }}
                                                 />
                                               </div>
-                                              <span className="text-xs font-medium w-8">{(value as number).toFixed(1)}</span>
+                                              <span className="text-xs font-medium w-8">{numValue.toFixed(1)}</span>
                                             </div>
                                           )
                                         })}

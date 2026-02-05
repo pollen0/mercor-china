@@ -190,6 +190,8 @@ def build_progressive_question_prompt(
     resume_summary = candidate_data.get("resume_summary", "No resume available")
     github_summary = candidate_data.get("github_summary", "No GitHub data")
     transcript_summary = candidate_data.get("transcript_summary", "No transcript data")
+    activities_summary = candidate_data.get("activities_summary", "")
+    awards_summary = candidate_data.get("awards_summary", "")
 
     # Interview history context
     interview_count = interview_history.get("interview_count", 0)
@@ -221,10 +223,10 @@ Your goal is to assess whether they have GROWN and IMPROVED since their last int
 **GitHub Activity:**
 {github_summary}
 
-**Academic Transcript:**
+**Academic Background:**
 {transcript_summary}
 
-## INTERVIEW HISTORY:
+{activities_summary + chr(10) if activities_summary else ""}{awards_summary + chr(10) if awards_summary else ""}## INTERVIEW HISTORY:
 
 - This is interview #{interview_count + 1} for this candidate
 - Previous best score: {f'{best_score:.1f}/10' if best_score else 'First interview'}
@@ -275,7 +277,7 @@ Your goal is to assess whether they have GROWN and IMPROVED since their last int
     prompt += f"""
 ## REQUIREMENTS:
 
-1. **Personalization**: Questions should reference specific details from their resume, GitHub projects, or coursework
+1. **Personalization**: Questions MUST reference specific details from their resume, GitHub projects, coursework, club activities, or awards. For example, ask about a specific project they built, a specific course they took, a club they led, or a skill from their resume. NEVER ask generic questions like "tell me about yourself" - always ground questions in their specific background
 2. **No Redundancy**: DO NOT repeat topics already covered. Ask about NEW aspects or deeper layers.
 3. **Progressive Difficulty**: Questions should be at {difficulty_descriptions[recommended_difficulty]} level
 4. **Variety**: Cover different categories (technical, behavioral, problem-solving, motivation)
@@ -330,11 +332,25 @@ async def generate_progressive_questions(
     # Resume summary
     if candidate.resume_parsed_data:
         resume_data = candidate.resume_parsed_data
+        # Handle both flat and nested resume formats
+        skills = resume_data.get('skills', [])
+        if isinstance(skills, list):
+            skills_str = ', '.join(skills) if skills else 'Not specified'
+        else:
+            skills_str = str(skills)
+
         candidate_data["resume_summary"] = f"""
-- Education: {resume_data.get('education', 'Not specified')}
-- Skills: {', '.join(resume_data.get('skills', [])) if resume_data.get('skills') else 'Not specified'}
-- Experience: {resume_data.get('experience_summary', 'Not specified')}
-- Projects: {resume_data.get('projects_summary', 'Not specified')}
+- Education: {resume_data.get('education', resume_data.get('education_summary', 'Not specified'))}
+- Skills: {skills_str}
+- Experience: {resume_data.get('experience_summary', resume_data.get('experience', 'Not specified'))}
+- Projects: {resume_data.get('projects_summary', resume_data.get('projects', 'Not specified'))}
+"""
+    elif candidate.resume_raw_text:
+        # Use raw resume text if parsed data isn't available
+        raw_text = candidate.resume_raw_text[:1500]  # Limit to 1500 chars
+        candidate_data["resume_summary"] = f"""
+(Raw resume text excerpt):
+{raw_text}
 """
     else:
         candidate_data["resume_summary"] = "No resume data available"
@@ -346,7 +362,7 @@ async def generate_progressive_questions(
         languages = gh_data.get('languages', {})
 
         repos_summary = "\n".join([
-            f"  - {r.get('name', 'Unknown')}: {r.get('description', 'No description')[:100] if r.get('description') else 'No description'}"
+            f"  - {r.get('name', 'Unknown')}: {r.get('description', 'No description')[:100] if r.get('description') else 'No description'} ({r.get('language', 'Unknown language')})"
             for r in repos
         ]) if repos else "No public repos"
 
@@ -360,20 +376,68 @@ async def generate_progressive_questions(
     else:
         candidate_data["github_summary"] = "GitHub not connected"
 
-    # Transcript summary (if available)
-    if hasattr(candidate, 'transcript') and candidate.transcript:
-        candidate_data["transcript_summary"] = f"""
-- University: {candidate.university or 'Not specified'}
-- Major: {candidate.major or 'Not specified'}
-- GPA: {candidate.gpa or 'Not specified'}
-- Notable Courses: (from transcript data)
-"""
+    # Education and transcript
+    education_parts = []
+    if candidate.university:
+        education_parts.append(f"- University: {candidate.university}")
+    if candidate.major:
+        education_parts.append(f"- Major: {candidate.major}")
+    if hasattr(candidate, 'minors') and candidate.minors:
+        education_parts.append(f"- Minors: {', '.join(candidate.minors) if isinstance(candidate.minors, list) else candidate.minors}")
+    if candidate.gpa:
+        education_parts.append(f"- GPA: {candidate.gpa}")
+    if hasattr(candidate, 'graduation_year') and candidate.graduation_year:
+        education_parts.append(f"- Graduation Year: {candidate.graduation_year}")
+
+    # Courses (JSONB field on candidate)
+    if hasattr(candidate, 'courses') and candidate.courses:
+        courses = candidate.courses
+        if isinstance(courses, list):
+            course_names = [c.get('name', c) if isinstance(c, dict) else str(c) for c in courses[:10]]
+            education_parts.append(f"- Relevant Courses: {', '.join(course_names)}")
+
+    candidate_data["transcript_summary"] = "\n".join(education_parts) if education_parts else "No education data available"
+
+    # Activities and clubs
+    activities_parts = []
+    try:
+        if candidate.activities:
+            for act in candidate.activities[:8]:  # Top 8 activities
+                role_str = f" ({act.role})" if hasattr(act, 'role') and act.role else ""
+                activities_parts.append(f"  - {act.activity_name}{role_str}")
+    except Exception:
+        pass  # Lazy load may fail if session is closed
+
+    if activities_parts:
+        candidate_data["activities_summary"] = "Activities/Clubs:\n" + "\n".join(activities_parts)
     else:
-        candidate_data["transcript_summary"] = f"""
-- University: {candidate.university or 'Not specified'}
-- Major: {candidate.major or 'Not specified'}
-- GPA: {candidate.gpa if hasattr(candidate, 'gpa') else 'Not specified'}
-"""
+        candidate_data["activities_summary"] = ""
+
+    # Awards
+    awards_parts = []
+    try:
+        if candidate.awards:
+            for award in candidate.awards[:5]:  # Top 5 awards
+                issuer_str = f" from {award.issuer}" if hasattr(award, 'issuer') and award.issuer else ""
+                awards_parts.append(f"  - {award.name}{issuer_str}")
+    except Exception:
+        pass  # Lazy load may fail if session is closed
+
+    if awards_parts:
+        candidate_data["awards_summary"] = "Awards/Achievements:\n" + "\n".join(awards_parts)
+    else:
+        candidate_data["awards_summary"] = ""
+
+    # Log what data is available for debugging
+    data_available = {
+        "resume": bool(candidate.resume_parsed_data or candidate.resume_raw_text),
+        "github": bool(candidate.github_username and candidate.github_data),
+        "education": bool(candidate.university or candidate.major),
+        "courses": bool(hasattr(candidate, 'courses') and candidate.courses),
+        "activities": bool(activities_parts),
+        "awards": bool(awards_parts),
+    }
+    logger.info(f"Candidate {candidate.id} data available for question generation: {data_available}")
 
     # Get interview history
     interview_history = get_candidate_interview_history(

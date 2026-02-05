@@ -19,6 +19,7 @@ import {
   type FollowupQuestionInfo,
   type CodingQuestionInfo,
   type CodingFeedback,
+  type ResponseDetail,
 } from '@/lib/api'
 
 type RoomState =
@@ -76,34 +77,57 @@ export default function InterviewRoomPage() {
           return
         }
 
-        setIsPractice(session.isPractice)
+        // Handle both camelCase and snake_case from API response
+        const rawSession = session as unknown as Record<string, unknown>
+        setIsPractice(session.isPractice || rawSession.is_practice as boolean || false)
 
-        // Get questions for this job
-        const questionsData = await questionsApi.list(session.jobId || undefined)
+        // Use AI-generated questions stored on the session (preferred)
+        // Fall back to static question templates only for legacy sessions
+        const sessionQuestions = session.questions || (rawSession.questions as QuestionInfo[]) || []
+        let loadedQuestions: ExtendedQuestionInfo[] = []
 
-        if (questionsData.questions.length === 0) {
-          // Seed default questions if none exist
-          const seeded = await questionsApi.seedDefaults()
-          setQuestions(seeded.questions.map((q, i) => ({ ...q, index: i })))
+        if (sessionQuestions.length > 0) {
+          // Use personalized AI-generated questions from the session
+          // API may return snake_case or camelCase keys depending on endpoint
+          loadedQuestions = (sessionQuestions as unknown as Record<string, unknown>[]).map((q, i) => ({
+            index: (q.index as number) ?? i,
+            text: (q.text as string) || '',
+            category: (q.category as string) || undefined,
+            questionType: (q.question_type as string) || (q.questionType as string) || 'video',
+            codingChallengeId: (q.coding_challenge_id as string) || (q.codingChallengeId as string) || undefined,
+          }))
         } else {
-          setQuestions(questionsData.questions.map((q, i) => ({ ...q, index: i })))
+          // Legacy fallback: fetch from static questions table
+          const jobId = session.jobId || rawSession.job_id as string || undefined
+          const questionsData = await questionsApi.list(jobId)
+          if (questionsData.questions.length === 0) {
+            const seeded = await questionsApi.seedDefaults()
+            loadedQuestions = seeded.questions.map((q, i) => ({ ...q, index: i }))
+          } else {
+            loadedQuestions = questionsData.questions.map((q, i) => ({ ...q, index: i }))
+          }
         }
 
+        setQuestions(loadedQuestions)
+
         // Mark already completed questions (video responses have videoUrl, coding responses have codeSolution)
-        const completed = session.responses
-          .filter(r => r.videoUrl || (r as { codeSolution?: string }).codeSolution)
-          .map(r => r.questionIndex)
+        const responses = session.responses || (rawSession.responses as ResponseDetail[]) || []
+        const completed = (responses as unknown as Record<string, unknown>[])
+          .filter((r) =>
+            r.videoUrl || r.video_url || r.codeSolution || r.code_solution
+          )
+          .map((r) => (r.questionIndex ?? r.question_index) as number)
         setCompletedQuestions(completed)
 
         // Find first unanswered question
-        const firstUnanswered = questionsData.questions.findIndex(
+        const firstUnanswered = loadedQuestions.findIndex(
           (_, i) => !completed.includes(i)
         )
         const startIndex = firstUnanswered >= 0 ? firstUnanswered : 0
         setCurrentQuestionIndex(startIndex)
 
         // Check if the first question is a coding question
-        const firstQuestion = questionsData.questions[startIndex] as ExtendedQuestionInfo
+        const firstQuestion = loadedQuestions[startIndex]
         if (firstQuestion?.questionType === 'coding') {
           // Load the coding challenge
           try {

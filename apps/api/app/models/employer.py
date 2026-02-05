@@ -245,7 +245,7 @@ class OrganizationMember(Base):
     id = Column(String, primary_key=True)
     organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     employer_id = Column(String, ForeignKey("employers.id", ondelete="CASCADE"), nullable=False)
-    role = Column(Enum(OrganizationRole), default=OrganizationRole.RECRUITER)
+    role = Column(Enum(OrganizationRole, values_callable=lambda x: [e.value for e in x]), default=OrganizationRole.RECRUITER)
 
     # Permissions override (optional fine-grained control)
     permissions = Column(JSONB, nullable=True)  # {can_contact: true, can_manage_jobs: false, etc.}
@@ -268,9 +268,9 @@ class OrganizationInvite(Base):
     id = Column(String, primary_key=True)
     organization_id = Column(String, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     email = Column(String, nullable=False)  # Email of person being invited
-    role = Column(Enum(OrganizationRole), default=OrganizationRole.RECRUITER)
+    role = Column(Enum(OrganizationRole, values_callable=lambda x: [e.value for e in x]), default=OrganizationRole.RECRUITER)
     token = Column(String, unique=True, nullable=False)  # Invite token for the link
-    status = Column(Enum(InviteStatus), default=InviteStatus.PENDING)
+    status = Column(Enum(InviteStatus, values_callable=lambda x: [e.value for e in x]), default=InviteStatus.PENDING)
 
     invited_by_id = Column(String, ForeignKey("employers.id", ondelete="SET NULL"), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=False)

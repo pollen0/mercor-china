@@ -59,7 +59,16 @@ export function VideoRecorder({
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        await videoRef.current.play()
+        // play() can race with autoPlay or source changes — safely ignore AbortError
+        try {
+          await videoRef.current.play()
+        } catch (playErr) {
+          if (playErr instanceof DOMException && playErr.name === 'AbortError') {
+            // Benign: play() interrupted by a new load request, ignore
+          } else {
+            throw playErr
+          }
+        }
       }
 
       setIsLoading(false)
@@ -192,7 +201,6 @@ export function VideoRecorder({
         {/* Live preview */}
         <video
           ref={videoRef}
-          autoPlay
           muted
           playsInline
           className={`w-full h-full object-cover ${state === 'preview' ? 'hidden' : ''}`}

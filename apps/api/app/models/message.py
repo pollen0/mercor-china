@@ -20,7 +20,7 @@ class Message(Base):
     id = Column(String, primary_key=True)
     subject = Column(String, nullable=False)
     body = Column(Text, nullable=False)
-    message_type = Column(Enum(MessageType), default=MessageType.CUSTOM)
+    message_type = Column(Enum(MessageType, values_callable=lambda x: [e.value for e in x]), default=MessageType.CUSTOM)
     sent_at = Column(DateTime(timezone=True), server_default=func.now())
     read_at = Column(DateTime(timezone=True), nullable=True)
 

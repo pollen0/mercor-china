@@ -42,13 +42,13 @@ class InterviewReminder(Base):
     )
 
     # Reminder configuration
-    reminder_type = Column(Enum(ReminderType), nullable=False)
+    reminder_type = Column(Enum(ReminderType, values_callable=lambda x: [e.value for e in x]), nullable=False)
 
     # When the reminder should be sent
     scheduled_for = Column(DateTime(timezone=True), nullable=False)
 
     # Current status
-    status = Column(Enum(ReminderStatus), default=ReminderStatus.PENDING)
+    status = Column(Enum(ReminderStatus, values_callable=lambda x: [e.value for e in x]), default=ReminderStatus.PENDING)
 
     # When it was actually sent (if sent)
     sent_at = Column(DateTime(timezone=True), nullable=True)

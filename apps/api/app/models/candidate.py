@@ -146,8 +146,8 @@ class InterviewHistoryEntry(Base):
 
     id = Column(String, primary_key=True)
     candidate_id = Column(String, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
-    vertical = Column(Enum(Vertical), nullable=False)
-    role_type = Column(Enum(RoleType), nullable=False)
+    vertical = Column(Enum(Vertical, values_callable=lambda x: [e.value for e in x]), nullable=False)
+    role_type = Column(Enum(RoleType, values_callable=lambda x: [e.value for e in x]), nullable=False)
 
     # Interview reference
     interview_session_id = Column(String, ForeignKey("interview_sessions.id", ondelete="SET NULL"), nullable=True)

@@ -30,7 +30,7 @@ class EmployerTeamMember(Base):
     # Basic info
     email = Column(String, nullable=False)
     name = Column(String, nullable=False)
-    role = Column(Enum(TeamMemberRole), default=TeamMemberRole.INTERVIEWER)
+    role = Column(Enum(TeamMemberRole, values_callable=lambda x: [e.value for e in x]), default=TeamMemberRole.INTERVIEWER)
     is_active = Column(Boolean, default=True)
 
     # Google Calendar integration (separate from employer's calendar)

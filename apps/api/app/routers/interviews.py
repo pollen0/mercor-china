@@ -352,7 +352,8 @@ MONTHLY_COOLDOWN_DAYS = 30
 async def start_vertical_interview(
     request: Request,
     data: VerticalInterviewStart,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_candidate: Candidate = Depends(get_current_candidate),
 ):
     """
     Start a vertical interview for the talent pool.
@@ -363,13 +364,8 @@ async def start_vertical_interview(
     from ..schemas.question import get_questions_for_role
     from datetime import timedelta
 
-    # Verify candidate exists
-    candidate = db.query(Candidate).filter(Candidate.id == data.candidate_id).first()
-    if not candidate:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Candidate not found"
-        )
+    # Use authenticated candidate - ignore candidate_id from request body
+    candidate = current_candidate
 
     # Parse and validate vertical and role_type
     try:
@@ -390,7 +386,7 @@ async def start_vertical_interview(
 
     # Check for existing vertical profile
     profile = db.query(CandidateVerticalProfile).filter(
-        CandidateVerticalProfile.candidate_id == data.candidate_id,
+        CandidateVerticalProfile.candidate_id == candidate.id,
         CandidateVerticalProfile.vertical == vertical
     ).first()
 
@@ -408,7 +404,7 @@ async def start_vertical_interview(
 
                 recorded_questions = db.query(CandidateQuestionHistory).filter(
                     CandidateQuestionHistory.interview_session_id == existing_session.id,
-                    CandidateQuestionHistory.candidate_id == data.candidate_id
+                    CandidateQuestionHistory.candidate_id == candidate.id
                 ).order_by(CandidateQuestionHistory.asked_at).all()
 
                 question_list = []
@@ -518,7 +514,7 @@ async def start_vertical_interview(
             for q in base_questions[:5]
         ]
 
-    # Create new interview session
+    # Create new interview session with AI-generated questions stored
     session = InterviewSession(
         id=generate_cuid("i"),
         status=InterviewStatus.IN_PROGRESS,
@@ -527,8 +523,9 @@ async def start_vertical_interview(
         vertical=vertical,
         role_type=role_type,
         started_at=datetime.utcnow(),
-        candidate_id=data.candidate_id,
+        candidate_id=candidate.id,
         job_id=None,  # No specific job for talent pool interviews
+        questions_data=progressive_questions,  # Store AI-generated questions on session
     )
     db.add(session)
     db.flush()  # Get session ID
@@ -537,7 +534,7 @@ async def start_vertical_interview(
     if not profile:
         profile = CandidateVerticalProfile(
             id=generate_cuid("vp"),
-            candidate_id=data.candidate_id,
+            candidate_id=candidate.id,
             vertical=vertical,
             role_type=role_type,
             interview_session_id=session.id,
@@ -682,6 +679,19 @@ async def get_interview(
             created_at=resp.created_at,
         ))
 
+    # Build questions from session's stored AI-generated questions
+    session_questions = []
+    if session.questions_data:
+        for i, q in enumerate(session.questions_data):
+            if isinstance(q, dict):
+                session_questions.append(QuestionInfo(
+                    index=i,
+                    text=q.get("text", ""),
+                    category=q.get("category"),
+                    question_type=q.get("question_type", "video"),
+                    coding_challenge_id=q.get("coding_challenge_id"),
+                ))
+
     response_data = InterviewSessionResponse(
         id=session.id,
         status=session.status.value,
@@ -697,6 +707,7 @@ async def get_interview(
         job_title=session.job.title if session.job else "Practice Interview",
         company_name=session.job.employer.company_name if session.job else "Pathway",
         responses=sorted(responses, key=lambda x: x.question_index),
+        questions=session_questions,
     )
 
     # Cache completed interviews (they don't change)
@@ -787,19 +798,29 @@ async def submit_response(
             detail="Interview is already completed or cancelled"
         )
 
-    # Get question text
-    questions = db.query(InterviewQuestion).filter(
-        (InterviewQuestion.job_id == session.job_id) |
-        (InterviewQuestion.is_default == True)
-    ).order_by(InterviewQuestion.order).all()
+    # Get question text - prefer AI-generated questions stored on the session
+    question_text = None
+    if session.questions_data and question_index < len(session.questions_data):
+        q = session.questions_data[question_index]
+        question_text = q.get("text", "") if isinstance(q, dict) else str(q)
 
-    if question_index >= len(questions):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid question index"
-        )
+    if not question_text:
+        # Legacy fallback: fetch from static questions table
+        questions = db.query(InterviewQuestion).filter(
+            (InterviewQuestion.job_id == session.job_id) |
+            (InterviewQuestion.is_default == True)
+        ).order_by(InterviewQuestion.order).all()
 
-    question = questions[question_index]
+        if question_index < len(questions):
+            question_text = questions[question_index].text
+        else:
+            question_text = f"Question {question_index + 1}"
+
+    # Create a simple object to carry the text
+    class _QuestionRef:
+        def __init__(self, text: str):
+            self.text = text
+    question = _QuestionRef(question_text)
 
     # Handle video upload or key
     storage_key = video_key
@@ -924,6 +945,32 @@ async def complete_interview(
     scored_responses = [r for r in responses if r.ai_score is not None]
     if scored_responses:
         session.total_score = sum(r.ai_score for r in scored_responses) / len(scored_responses)
+
+    # Update CandidateVerticalProfile if this is a vertical interview
+    if session.is_vertical_interview and session.candidate_id:
+        from datetime import timedelta
+        vertical_profile = db.query(CandidateVerticalProfile).filter(
+            CandidateVerticalProfile.candidate_id == session.candidate_id,
+            CandidateVerticalProfile.interview_session_id == session.id,
+        ).first()
+
+        if vertical_profile:
+            vertical_profile.status = VerticalProfileStatus.COMPLETED
+            vertical_profile.interview_score = session.total_score
+            vertical_profile.last_interview_at = datetime.utcnow()
+            vertical_profile.total_interviews = (vertical_profile.total_interviews or 0) + 1
+            vertical_profile.next_eligible_at = datetime.utcnow() + timedelta(days=30)
+
+            # Update best_score if this is a new high
+            if session.total_score is not None:
+                if vertical_profile.best_score is None or session.total_score > vertical_profile.best_score:
+                    vertical_profile.best_score = session.total_score
+
+            # Set completed_at only on first completion
+            if vertical_profile.completed_at is None:
+                vertical_profile.completed_at = datetime.utcnow()
+
+            logger.info(f"Updated vertical profile {vertical_profile.id} to COMPLETED with score {session.total_score}")
 
     db.commit()
 

@@ -32,9 +32,6 @@ const VERTICAL_CONFIG: Record<string, { name: string; icon: string }> = {
   product: { name: 'Product', icon: '📱' },
   design: { name: 'Design', icon: '🎨' },
   finance: { name: 'Finance', icon: '💰' },
-  // Legacy mappings
-  engineering: { name: 'Software Engineering', icon: '💻' },
-  business: { name: 'Product', icon: '📱' },
 }
 
 const ROLE_NAMES: Record<string, string> = {
@@ -91,6 +88,7 @@ function DashboardContent() {
     matchingJobs,
     emailVerified,
     isLoading: isDataLoading,
+    mutateCandidate,
     mutateResume,
     mutateGitHub,
   } = useDashboardData(token)
@@ -152,6 +150,18 @@ function DashboardContent() {
     const storedTranscript = localStorage.getItem(`transcript_${candidateInfo.id}`)
     if (storedTranscript) setTranscriptData(JSON.parse(storedTranscript))
   }, [router])
+
+  // Re-fetch candidate profile when tab becomes visible (e.g. after email verification in another tab)
+  useEffect(() => {
+    if (emailVerified) return // Already verified, no need to listen
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        mutateCandidate()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [emailVerified, mutateCandidate])
 
   // Fetch activities and awards from API
   useEffect(() => {
@@ -1456,13 +1466,30 @@ function DashboardContent() {
                               <span className="text-stone-400">Score</span>
                               <span className="font-semibold text-stone-900">{profile.bestScore?.toFixed(1)}/10</span>
                             </div>
-                            {profile.canInterview && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-stone-400">Interviews</span>
+                              <span className="text-stone-700">{profile.totalInterviews}</span>
+                            </div>
+                            {profile.canInterview ? (
                               <Link href="/interview/select" className="block mt-3">
                                 <Button variant="outline" size="sm" className="w-full border-stone-200 text-stone-600 hover:bg-stone-50">
-                                  Retake
+                                  Retake Interview
                                 </Button>
                               </Link>
-                            )}
+                            ) : profile.nextEligibleAt ? (
+                              <div className="mt-3 text-center">
+                                <p className="text-xs text-stone-400">Retake available</p>
+                                <p className="text-sm font-medium text-stone-600">
+                                  {(() => {
+                                    const now = new Date()
+                                    const eligible = new Date(profile.nextEligibleAt)
+                                    const diffMs = eligible.getTime() - now.getTime()
+                                    const diffDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)))
+                                    return diffDays > 0 ? `in ${diffDays} day${diffDays !== 1 ? 's' : ''}` : 'now'
+                                  })()}
+                                </p>
+                              </div>
+                            ) : null}
                           </div>
                         ) : isInProgress ? (
                           <div className="text-center py-2">

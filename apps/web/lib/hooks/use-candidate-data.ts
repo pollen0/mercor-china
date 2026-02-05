@@ -159,6 +159,7 @@ export function useDashboardData(token: string | null) {
     verticalProfiles: profiles.profiles,
     matchingJobs: jobs.jobs,
     isLoading,
+    mutateCandidate: candidateProfile.mutate,
     mutateResume: resume.mutate,
     mutateGitHub: github.mutate,
     mutateProfiles: profiles.mutate,

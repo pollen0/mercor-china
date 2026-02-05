@@ -58,6 +58,15 @@ function VerifyEmailContent() {
   }
 
   const getRedirectPath = () => {
+    // If user is already logged in, redirect to dashboard instead of login
+    if (typeof window !== 'undefined') {
+      if (userType === 'employer' && localStorage.getItem('employer_token')) {
+        return '/dashboard'
+      }
+      if (userType !== 'employer' && localStorage.getItem('candidate_token')) {
+        return '/candidate/dashboard'
+      }
+    }
     if (userType === 'employer') {
       return '/login'
     }
@@ -115,7 +124,7 @@ function VerifyEmailContent() {
           <div className="pt-2">
             <Link href={getRedirectPath()}>
               <Button variant="default" className="w-full">
-                Continue to Login
+                {getRedirectPath().includes('dashboard') ? 'Go to Dashboard' : 'Continue to Login'}
               </Button>
             </Link>
           </div>

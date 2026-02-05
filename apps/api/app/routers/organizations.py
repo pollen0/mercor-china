@@ -185,23 +185,21 @@ async def create_organization(
     )
 
 
-@router.get("/me", response_model=OrganizationResponse)
+@router.get("/me", response_model=Optional[OrganizationResponse])
 async def get_my_organization(
     db: Session = Depends(get_db),
     employer: Employer = Depends(get_current_employer)
 ):
     """
     Get the current employer's organization.
+    Returns null if the employer doesn't belong to any organization.
     """
     membership = db.query(OrganizationMember).filter(
         OrganizationMember.employer_id == employer.id
     ).first()
 
     if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="You don't belong to any organization"
-        )
+        return None
 
     org = membership.organization
     member_count = db.query(OrganizationMember).filter(
@@ -294,16 +292,14 @@ async def list_members(
 ):
     """
     List all members of the organization.
+    Returns empty list if the employer doesn't belong to any organization.
     """
     membership = db.query(OrganizationMember).filter(
         OrganizationMember.employer_id == employer.id
     ).first()
 
     if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="You don't belong to any organization"
-        )
+        return []
 
     members = db.query(OrganizationMember).filter(
         OrganizationMember.organization_id == membership.organization_id
@@ -577,16 +573,14 @@ async def list_invites(
 ):
     """
     List all pending invites for the organization.
+    Returns empty list if the employer doesn't belong to any organization.
     """
     membership = db.query(OrganizationMember).filter(
         OrganizationMember.employer_id == employer.id
     ).first()
 
     if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="You don't belong to any organization"
-        )
+        return []
 
     from ..config import settings
 

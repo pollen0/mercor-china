@@ -109,7 +109,7 @@ class ScoringEvent(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # What was scored
-    event_type = Column(Enum(ScoringEventType), nullable=False, index=True)
+    event_type = Column(Enum(ScoringEventType, values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
 
     # Links to source entities
     candidate_id = Column(String, ForeignKey("candidates.id", ondelete="SET NULL"), nullable=True)
@@ -182,7 +182,7 @@ class ScoringLabel(Base):
 
     # Labeler info
     labeler_id = Column(String, nullable=True)  # User ID if internal
-    labeler_source = Column(Enum(LabelSource), nullable=False)
+    labeler_source = Column(Enum(LabelSource, values_callable=lambda x: [e.value for e in x]), nullable=False)
     labeler_expertise = Column(String(100), nullable=True)  # 'senior_engineer', 'recruiter'
     labeler_vertical = Column(String(50), nullable=True)  # Their domain expertise
 
@@ -263,14 +263,14 @@ class CandidateOutcome(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # What happened
-    outcome_type = Column(Enum(OutcomeType), nullable=False, index=True)
-    outcome_stage = Column(Enum(OutcomeStage), nullable=True)
+    outcome_type = Column(Enum(OutcomeType, values_callable=lambda x: [e.value for e in x]), nullable=False, index=True)
+    outcome_stage = Column(Enum(OutcomeStage, values_callable=lambda x: [e.value for e in x]), nullable=True)
 
     # Employer context
     employer_id = Column(String, ForeignKey("employers.id", ondelete="SET NULL"), nullable=True)
     job_id = Column(String, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True)
     company_name = Column(String, nullable=True)
-    company_tier = Column(Enum(CompanyTier), default=CompanyTier.UNKNOWN)
+    company_tier = Column(Enum(CompanyTier, values_callable=lambda x: [e.value for e in x]), default=CompanyTier.UNKNOWN)
 
     # Role context
     role_title = Column(String, nullable=True)
@@ -793,7 +793,7 @@ class MLExperiment(Base):
     target_roles = Column(ARRAY(String), nullable=True)
 
     # Status
-    status = Column(Enum(ExperimentStatus), default=ExperimentStatus.DRAFT)
+    status = Column(Enum(ExperimentStatus, values_callable=lambda x: [e.value for e in x]), default=ExperimentStatus.DRAFT)
     started_at = Column(DateTime(timezone=True), nullable=True)
     ended_at = Column(DateTime(timezone=True), nullable=True)
 
@@ -891,7 +891,7 @@ class ScoreCalibration(Base):
     # What this calibration is for
     vertical = Column(String(50), nullable=True)
     role_type = Column(String(50), nullable=True)
-    company_tier = Column(Enum(CompanyTier), nullable=True)
+    company_tier = Column(Enum(CompanyTier, values_callable=lambda x: [e.value for e in x]), nullable=True)
 
     # Score ranges and their outcomes
     calibration_data = Column(JSONB, nullable=False)  # [{

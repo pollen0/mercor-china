@@ -18,6 +18,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger("pathway")
 
+# Silence noisy third-party loggers
+logging.getLogger("botocore").setLevel(logging.WARNING)
+logging.getLogger("boto3").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("s3transfer").setLevel(logging.WARNING)
+
 
 def validate_required_env_vars():
     """Validate that required environment variables are set."""
