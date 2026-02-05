@@ -1,7 +1,7 @@
 """Add organizations and team collaboration tables
 
 Revision ID: 020
-Revises: 019
+Revises: 019a
 Create Date: 2026-02-02
 
 This migration adds:
