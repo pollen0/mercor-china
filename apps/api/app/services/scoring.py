@@ -338,9 +338,9 @@ Always respond in valid JSON format."""
         return self.SYSTEM_PROMPT_BASE
 
     def __init__(self):
-        # Claude API (exclusive - all AI uses Claude Sonnet 4.5)
+        # Claude API - uses Opus 4.1 for deeper reasoning in scoring
         self.anthropic_api_key = settings.anthropic_api_key
-        self.claude_model = settings.claude_model
+        self.claude_model = settings.claude_thinking_model  # Opus 4.1 for scoring accuracy
         self.anthropic_base_url = "https://api.anthropic.com/v1"
 
         if not self.anthropic_api_key:
@@ -348,7 +348,7 @@ Always respond in valid JSON format."""
 
     async def _call_claude(self, system_prompt: str, user_prompt: str, max_tokens: int = 2000) -> dict:
         """Call Claude API for fast, accurate AI processing."""
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 f"{self.anthropic_base_url}/messages",
                 headers={

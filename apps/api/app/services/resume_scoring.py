@@ -307,8 +307,9 @@ class ResumeScorerService:
     }
 
     def __init__(self):
+        # Opus 4.1 for deeper reasoning in resume scoring
         self.anthropic_api_key = settings.anthropic_api_key
-        self.claude_model = settings.claude_model
+        self.claude_model = settings.claude_thinking_model  # Opus 4.1 for scoring accuracy
         self.anthropic_base_url = "https://api.anthropic.com/v1"
 
     async def score_resume(

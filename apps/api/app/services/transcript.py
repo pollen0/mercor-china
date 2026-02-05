@@ -128,9 +128,9 @@ class TranscriptService:
     """Service for parsing and scoring academic transcripts."""
 
     def __init__(self):
-        # Claude API (exclusive - all AI uses Claude Sonnet 4.5)
+        # Claude API - uses Opus 4.1 for deeper reasoning in transcript analysis
         self.api_key = settings.anthropic_api_key
-        self.claude_model = settings.claude_model
+        self.claude_model = settings.claude_thinking_model  # Opus 4.1 for analysis accuracy
         self.base_url = "https://api.anthropic.com/v1"
 
         if not self.api_key:

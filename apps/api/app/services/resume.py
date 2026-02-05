@@ -20,9 +20,9 @@ class ResumeService:
     """Service for parsing resumes and generating personalized questions using Claude."""
 
     def __init__(self):
-        # Claude API (exclusive - all AI uses Claude Sonnet 4.5)
+        # Claude API - Sonnet 4.5 for fast resume parsing
         self.anthropic_api_key = settings.anthropic_api_key
-        self.claude_model = settings.claude_model
+        self.claude_model = settings.claude_model  # Sonnet 4.5 for speed
         self.anthropic_base_url = "https://api.anthropic.com/v1"
 
         if not self.anthropic_api_key:

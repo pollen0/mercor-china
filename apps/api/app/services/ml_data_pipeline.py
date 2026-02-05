@@ -18,7 +18,7 @@ Usage:
         input_data={"question": "...", "transcript": "..."},
         scores={"communication": 8.5, ...},
         overall_score=8.2,
-        model_used="claude-3-opus",
+        model_used="claude-sonnet-4-5-20250929",
         algorithm_version="2.1.0"
     )
 

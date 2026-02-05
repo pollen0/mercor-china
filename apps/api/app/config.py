@@ -24,9 +24,10 @@ class Settings(BaseSettings):
     r2_bucket_name: str = "pathway-videos"
     r2_endpoint_url: Optional[str] = None  # Will be constructed from account_id
 
-    # Claude API (primary - all AI/LLM features use Claude Sonnet 4.5)
+    # Claude API (primary - all AI/LLM features use Claude)
     anthropic_api_key: str = ""  # Set via ANTHROPIC_API_KEY env var
-    claude_model: str = "claude-sonnet-4-5-20250514"  # Claude Sonnet 4.5 - best balance of speed and accuracy
+    claude_model: str = "claude-sonnet-4-5-20250929"  # Claude Sonnet 4.5 - fast, accurate for general tasks
+    claude_thinking_model: str = "claude-opus-4-1-20250805"  # Claude Opus 4.1 - deeper reasoning for scoring/analysis
 
     # DeepSeek API (fallback for AI features)
     deepseek_api_key: str = ""  # Set via DEEPSEEK_API_KEY env var
