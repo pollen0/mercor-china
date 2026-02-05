@@ -2391,18 +2391,45 @@ export const inviteApi = {
       }),
     }),
 
-  createToken: (jobId: string, maxUses: number = 0, expiresInDays?: number): Promise<InviteTokenResponse> =>
-    apiRequest(`/api/employers/jobs/${jobId}/invites`, {
+  createToken: async (jobId: string, maxUses: number = 0, expiresInDays?: number): Promise<InviteTokenResponse> => {
+    const res = await apiRequest<Record<string, unknown>>(`/api/employers/jobs/${jobId}/invites`, {
       method: 'POST',
       body: JSON.stringify({
         job_id: jobId,
         max_uses: maxUses,
         expires_in_days: expiresInDays,
       }),
-    }),
+    })
+    return {
+      id: res.id as string,
+      token: res.token as string,
+      jobId: res.job_id as string,
+      jobTitle: res.job_title as string | undefined,
+      maxUses: res.max_uses as number,
+      usedCount: res.used_count as number,
+      expiresAt: res.expires_at as string | undefined,
+      isActive: res.is_active as boolean,
+      inviteUrl: res.invite_url as string,
+      createdAt: res.created_at as string,
+    }
+  },
 
-  listTokens: (jobId: string): Promise<{ tokens: InviteTokenResponse[]; total: number }> =>
-    apiRequest(`/api/employers/jobs/${jobId}/invites`),
+  listTokens: async (jobId: string): Promise<{ tokens: InviteTokenResponse[]; total: number }> => {
+    const res = await apiRequest<Record<string, unknown>>(`/api/employers/jobs/${jobId}/invites`)
+    const tokens = (res.tokens as Array<Record<string, unknown>>).map(t => ({
+      id: t.id as string,
+      token: t.token as string,
+      jobId: t.job_id as string,
+      jobTitle: t.job_title as string | undefined,
+      maxUses: t.max_uses as number,
+      usedCount: t.used_count as number,
+      expiresAt: t.expires_at as string | undefined,
+      isActive: t.is_active as boolean,
+      inviteUrl: t.invite_url as string,
+      createdAt: t.created_at as string,
+    }))
+    return { tokens, total: res.total as number }
+  },
 
   deleteToken: (inviteId: string): Promise<void> =>
     apiRequest(`/api/employers/invites/${inviteId}`, { method: 'DELETE' }),
