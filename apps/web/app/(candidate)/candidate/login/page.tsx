@@ -1,16 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { setAuthTokens } from '@/lib/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export default function CandidateLoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -37,14 +39,23 @@ export default function CandidateLoginPage() {
 
       const data = await response.json()
 
+      // Store candidate info
       localStorage.setItem('candidate', JSON.stringify({
         id: data.candidate.id,
         name: data.candidate.name,
         email: data.candidate.email,
       }))
-      localStorage.setItem('candidate_token', data.token)
 
-      router.push('/candidate/dashboard')
+      // Store tokens (in both localStorage and cookies for middleware)
+      setAuthTokens('candidate', {
+        token: data.token,
+        refreshToken: data.refresh_token,
+        expiresIn: data.expires_in || 3600,
+      })
+
+      // Redirect to returnTo URL or dashboard
+      const returnTo = searchParams.get('returnTo')
+      router.push(returnTo || '/candidate/dashboard')
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
@@ -84,7 +95,12 @@ export default function CandidateLoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-stone-600 text-sm">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-stone-600 text-sm">Password</Label>
+                <Link href="/forgot-password" className="text-xs text-stone-500 hover:text-stone-700">
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"

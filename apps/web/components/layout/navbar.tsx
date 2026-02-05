@@ -69,12 +69,13 @@ export function Navbar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
 
   // Default nav items based on variant
+  // Note: These are for employer dashboard - route is /employer/dashboard
   const defaultNavItems: NavItem[] = variant === 'dashboard'
     ? [
-        { label: 'Overview', href: '/dashboard' },
-        { label: 'Interviews', href: '/dashboard?tab=interviews' },
-        { label: 'Jobs', href: '/dashboard?tab=jobs' },
-        { label: 'Talent Pool', href: '/dashboard?tab=talent' },
+        { label: 'Overview', href: '/employer/dashboard' },
+        { label: 'Interviews', href: '/employer/dashboard?tab=interviews' },
+        { label: 'Jobs', href: '/employer/dashboard?tab=jobs' },
+        { label: 'Talent Pool', href: '/employer/dashboard?tab=talent' },
       ]
     : []
 

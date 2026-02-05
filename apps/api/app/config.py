@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     api_secret_key: str = ""
     jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
-    jwt_expiry_hours: int = 168  # 7 days
+    jwt_expiry_hours: int = 1  # 1 hour for access tokens (reduced from 7 days for security)
+    refresh_token_expiry_days: int = 30  # 30 days for refresh tokens
 
     # CORS
     cors_origins: str = "http://localhost:3000"

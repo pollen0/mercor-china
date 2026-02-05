@@ -14,6 +14,7 @@ import { DocumentPreview } from '@/components/ui/document-preview'
 import { candidateApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward } from '@/lib/api'
 import { useDashboardData } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
+import { logout, clearAuthTokens } from '@/lib/auth'
 
 interface Candidate {
   id: string
@@ -84,6 +85,8 @@ function DashboardContent() {
   const {
     resumeData,
     githubData,
+    githubAnalysis,
+    skillGap,
     verticalProfiles,
     matchingJobs,
     emailVerified,
@@ -116,6 +119,16 @@ function DashboardContent() {
     courses?: string[]
     transcriptUrl?: string
     transcriptKey?: string
+    verification?: {
+      status: 'verified' | 'warning' | 'suspicious'
+      confidenceScore: number
+      summary: string
+      flags?: Array<{
+        code: string
+        severity: 'high' | 'medium' | 'low'
+        message: string
+      }>
+    }
   } | null>(null)
   const [isLoadingTranscriptUrl, setIsLoadingTranscriptUrl] = useState(false)
   const [showTranscriptDeleteConfirm, setShowTranscriptDeleteConfirm] = useState(false)
@@ -202,9 +215,10 @@ function DashboardContent() {
 
   const isLoading = !token || isDataLoading
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Call server to invalidate token, then clear local storage and cookies
+    await logout('candidate', true)
     localStorage.removeItem('candidate')
-    localStorage.removeItem('candidate_token')
     router.push('/')
   }
 
@@ -264,6 +278,18 @@ function DashboardContent() {
           }
           // Optimistic update: set data immediately, then revalidate in background
           mutateResume(resumeData, { revalidate: true })
+
+          // Re-fetch activities and awards (they may have been auto-populated from resume)
+          try {
+            const [activitiesData, awardsData] = await Promise.all([
+              candidateApi.getActivities(token),
+              candidateApi.getAwards(token),
+            ])
+            setActivities(activitiesData)
+            setAwards(awardsData)
+          } catch (err) {
+            console.error('Failed to refresh activities/awards after resume upload:', err)
+          }
         } catch {
           // Fallback to simple revalidation
           mutateResume()
@@ -421,13 +447,23 @@ function DashboardContent() {
         await new Promise(resolve => setTimeout(resolve, 300))
         setTranscriptProgress(100)
 
-        // Parse response to get transcript URL and key
+        // Parse response to get transcript URL, key, and verification
         let transcriptUrl: string | undefined
         let transcriptKey: string | undefined
+        let verification: typeof transcriptData extends null ? never : NonNullable<typeof transcriptData>['verification'] | undefined
         try {
           const response = JSON.parse(xhr.responseText)
           transcriptUrl = response.transcript_url
           transcriptKey = response.transcript_key
+          // Parse verification response
+          if (response.verification) {
+            verification = {
+              status: response.verification.status,
+              confidenceScore: response.verification.confidence_score,
+              summary: response.verification.summary,
+              flags: response.verification.flags,
+            }
+          }
         } catch {
           // Response parsing failed, continue without URL
         }
@@ -436,9 +472,10 @@ function DashboardContent() {
         const transcriptInfo = {
           fileName: file.name,
           uploadedAt: new Date().toISOString(),
-          courses: [],
+          courses: [] as string[],
           transcriptUrl,
           transcriptKey,
+          verification,
         }
         setTranscriptData(transcriptInfo)
         localStorage.setItem(`transcript_${candidate.id}`, JSON.stringify(transcriptInfo))
@@ -1184,6 +1221,50 @@ function DashboardContent() {
                       </div>
                     )}
 
+                    {/* GitHub Analysis Results */}
+                    {githubAnalysis && (
+                      <div className="border-t pt-3 mt-3">
+                        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                          </svg>
+                          GitHub Analysis
+                        </h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-2 bg-gray-50 rounded-lg text-center">
+                            <p className="text-lg font-semibold text-teal-600">
+                              {githubAnalysis.overallScore.toFixed(1)}
+                            </p>
+                            <p className="text-xs text-gray-500">Overall</p>
+                          </div>
+                          <div className="p-2 bg-gray-50 rounded-lg text-center">
+                            <p className="text-lg font-semibold text-purple-600">
+                              {githubAnalysis.originalityScore.toFixed(1)}
+                            </p>
+                            <p className="text-xs text-gray-500">Originality</p>
+                          </div>
+                          <div className="p-2 bg-gray-50 rounded-lg text-center">
+                            <p className="text-lg font-semibold text-blue-600">
+                              {githubAnalysis.activityScore.toFixed(1)}
+                            </p>
+                            <p className="text-xs text-gray-500">Activity</p>
+                          </div>
+                          <div className="p-2 bg-gray-50 rounded-lg text-center">
+                            <p className="text-lg font-semibold text-amber-600">
+                              {githubAnalysis.depthScore.toFixed(1)}
+                            </p>
+                            <p className="text-xs text-gray-500">Depth</p>
+                          </div>
+                        </div>
+                        <div className="mt-2 p-2 bg-gray-50 rounded-lg text-center">
+                          <p className="text-lg font-semibold text-green-600">
+                            {githubAnalysis.collaborationScore.toFixed(1)}
+                          </p>
+                          <p className="text-xs text-gray-500">Collaboration</p>
+                        </div>
+                      </div>
+                    )}
+
                   </div>
                 ) : (
                   <div className="text-center py-4">
@@ -1264,9 +1345,43 @@ function DashboardContent() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {transcriptData.fileName}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900">
+                            {transcriptData.fileName}
+                          </p>
+                          {/* Verification Badge */}
+                          {transcriptData.verification && (
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                transcriptData.verification.status === 'verified'
+                                  ? 'bg-teal-50 text-teal-700'
+                                  : transcriptData.verification.status === 'warning'
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'bg-red-50 text-red-700'
+                              }`}
+                              title={transcriptData.verification.summary}
+                            >
+                              {transcriptData.verification.status === 'verified' ? (
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              ) : transcriptData.verification.status === 'warning' ? (
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                              {transcriptData.verification.status === 'verified'
+                                ? 'Verified'
+                                : transcriptData.verification.status === 'warning'
+                                ? 'Review'
+                                : 'Suspicious'}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500">
                           Uploaded {new Date(transcriptData.uploadedAt).toLocaleDateString()} at {new Date(transcriptData.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
@@ -1303,6 +1418,33 @@ function DashboardContent() {
                         </svg>
                         Delete
                       </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Courses from Transcript */}
+                {transcriptData?.courses && transcriptData.courses.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      Extracted Courses ({transcriptData.courses.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {transcriptData.courses.slice(0, 12).map((course, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100"
+                        >
+                          {course}
+                        </span>
+                      ))}
+                      {transcriptData.courses.length > 12 && (
+                        <span className="text-xs px-2 py-1 text-gray-500">
+                          +{transcriptData.courses.length - 12} more
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1434,6 +1576,137 @@ function DashboardContent() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Skill Gap Analysis Section */}
+            {skillGap && (
+              <Card>
+                <CardHeader className="pb-4">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Skills Analysis
+                    </CardTitle>
+                    <CardDescription>AI-powered analysis of your skills based on your profile</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Score Overview */}
+                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg mb-4">
+                    <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center">
+                      <span className="text-2xl font-bold text-indigo-600">
+                        {skillGap.avgProficiencyScore?.toFixed(0) || '-'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Proficiency Score</p>
+                      <p className="text-sm text-gray-500">
+                        Based on {skillGap.matchedRequirements || 0} skills analyzed
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Strongest Areas */}
+                  {skillGap.strongestAreas && skillGap.strongestAreas.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Your Strengths
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {skillGap.strongestAreas.slice(0, 6).map((skill, idx) => (
+                          <span
+                            key={idx}
+                            className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded-md border border-green-100"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bonus Skills */}
+                  {skillGap.bonusSkills && skillGap.bonusSkills.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                        </svg>
+                        Bonus Skills
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {skillGap.bonusSkills.slice(0, 6).map((skill, idx) => (
+                          <span
+                            key={idx}
+                            className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md border border-purple-100"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Areas for Growth */}
+                  {skillGap.criticalGaps && skillGap.criticalGaps.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Areas for Growth
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {skillGap.criticalGaps.slice(0, 6).map((skill, idx) => (
+                          <span
+                            key={idx}
+                            className="text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded-md border border-amber-100"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Learning Priorities */}
+                  {skillGap.learningPriorities && skillGap.learningPriorities.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        Recommended Learning
+                      </h4>
+                      <div className="space-y-2">
+                        {skillGap.learningPriorities.slice(0, 3).map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="p-2 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-900">{item.skill}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${
+                                item.priority === 'critical' ? 'bg-red-100 text-red-700' :
+                                item.priority === 'recommended' ? 'bg-blue-100 text-blue-700' :
+                                'bg-gray-100 text-gray-600'
+                              }`}>
+                                {item.priority}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">{item.reason}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 

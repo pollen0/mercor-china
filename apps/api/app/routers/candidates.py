@@ -1,5 +1,6 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request, BackgroundTasks
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
@@ -34,7 +35,7 @@ from ..schemas.candidate import (
 )
 from ..services.resume import resume_service
 from ..services.storage import storage_service
-from ..utils.auth import create_token, get_current_candidate, get_current_employer, get_password_hash, verify_password
+from ..utils.auth import create_token, create_token_pair, verify_refresh_token, revoke_refresh_token, get_current_candidate, get_current_employer, get_password_hash, verify_password, blacklist_token
 from ..utils.rate_limit import limiter, RateLimits
 from ..utils.crypto import encrypt_token, decrypt_token
 from ..config import settings
@@ -48,7 +49,9 @@ def generate_cuid() -> str:
 
 
 @router.post("/", response_model=CandidateWithToken, status_code=status.HTTP_201_CREATED)
+@limiter.limit(RateLimits.AUTH_REGISTER)
 async def create_candidate(
+    request: Request,
     candidate_data: CandidateCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
@@ -95,12 +98,8 @@ async def create_candidate(
     except Exception as e:
         logger.warning(f"Failed to send verification email for {candidate.email}: {e}")
 
-    # Generate token for immediate login after registration
-    token = create_token(
-        subject=candidate.id,
-        token_type="candidate",
-        expires_hours=settings.jwt_expiry_hours,
-    )
+    # Generate token pair for immediate login after registration
+    tokens = create_token_pair(subject=candidate.id, token_type="candidate")
 
     return CandidateWithToken(
         candidate=CandidateResponse(
@@ -118,12 +117,16 @@ async def create_candidate(
             resume_url=candidate.resume_url,
             created_at=candidate.created_at,
         ),
-        token=token,
+        token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        expires_in=settings.jwt_expiry_hours * 3600,
     )
 
 
 @router.post("/login", response_model=CandidateWithToken)
+@limiter.limit(RateLimits.AUTH_LOGIN)
 async def login_candidate(
+    request: Request,
     login_data: CandidateLogin,
     db: Session = Depends(get_db)
 ):
@@ -153,12 +156,8 @@ async def login_candidate(
             detail="Invalid email or password"
         )
 
-    # Generate token
-    token = create_token(
-        subject=candidate.id,
-        token_type="candidate",
-        expires_hours=settings.jwt_expiry_hours,
-    )
+    # Generate token pair
+    tokens = create_token_pair(subject=candidate.id, token_type="candidate")
 
     return CandidateWithToken(
         candidate=CandidateResponse(
@@ -176,8 +175,76 @@ async def login_candidate(
             resume_url=candidate.resume_url,
             created_at=candidate.created_at,
         ),
-        token=token,
+        token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        expires_in=settings.jwt_expiry_hours * 3600,
     )
+
+
+@router.post("/refresh")
+@limiter.limit(RateLimits.AUTH_LOGIN)  # Same rate limit as login
+async def refresh_candidate_token(
+    request: Request,
+    refresh_token: str,
+):
+    """
+    Get a new access token using a refresh token.
+
+    This allows the frontend to maintain sessions without requiring re-login.
+    The refresh token has a longer expiry (30 days) while access tokens expire in 1 hour.
+    """
+    from ..schemas.candidate import TokenRefreshResponse
+
+    payload = verify_refresh_token(refresh_token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    # Verify this is a candidate token
+    if payload.get("type") != "candidate":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid token type"
+        )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
+
+    # Generate new access token
+    new_access_token = create_token(
+        subject=user_id,
+        token_type="candidate",
+    )
+
+    return TokenRefreshResponse(
+        token=new_access_token,
+        expires_in=settings.jwt_expiry_hours * 3600,
+    )
+
+
+@router.post("/logout")
+async def logout_candidate(
+    credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer()),
+):
+    """
+    Logout a candidate by invalidating their token.
+    The token will be blacklisted and cannot be used again.
+    """
+    token = credentials.credentials
+    success = blacklist_token(token)
+
+    if success:
+        return {"message": "Successfully logged out"}
+    else:
+        # Even if blacklisting fails (e.g., Redis down), return success
+        # Client will clear their token anyway
+        return {"message": "Logged out (token invalidation unavailable)"}
 
 
 @router.get("/", response_model=CandidateList)
@@ -342,7 +409,7 @@ async def get_candidate(
             username=candidate.github_username,
             connected_at=candidate.github_connected_at,
             top_repos=github_data.get("top_repos"),
-            total_repos=github_data.get("total_repos"),
+            total_repos=github_data.get("public_repos"),
             total_contributions=github_data.get("total_contributions"),
             languages=github_data.get("languages"),
         )
@@ -377,6 +444,64 @@ async def get_candidate(
 
 
 # ==================== RESUME ENDPOINTS ====================
+
+def _auto_populate_from_resume(candidate_id: str, parsed_data: ParsedResume, db: Session) -> None:
+    """
+    Auto-populate CandidateActivity and CandidateAward records from parsed resume data.
+    Uses case-insensitive name matching to prevent duplicates.
+    """
+    if not parsed_data:
+        return
+
+    # Get existing activities and awards for de-duplication
+    existing_activities = db.query(CandidateActivity).filter(
+        CandidateActivity.candidate_id == candidate_id
+    ).all()
+    existing_activity_names = {a.activity_name.lower() for a in existing_activities}
+
+    existing_awards = db.query(CandidateAward).filter(
+        CandidateAward.candidate_id == candidate_id
+    ).all()
+    existing_award_names = {a.name.lower() for a in existing_awards}
+
+    # Create new activities (skip duplicates)
+    activities_created = 0
+    for activity in parsed_data.activities:
+        if activity.name.lower() not in existing_activity_names:
+            new_activity = CandidateActivity(
+                id=f"act_{uuid.uuid4().hex[:16]}",
+                candidate_id=candidate_id,
+                activity_name=activity.name,
+                organization=activity.organization,
+                role=activity.role,
+                description=activity.description,
+                start_date=activity.start_date,
+                end_date=activity.end_date,
+            )
+            db.add(new_activity)
+            existing_activity_names.add(activity.name.lower())
+            activities_created += 1
+
+    # Create new awards (skip duplicates)
+    awards_created = 0
+    for award in parsed_data.awards:
+        if award.name.lower() not in existing_award_names:
+            new_award = CandidateAward(
+                id=f"awd_{uuid.uuid4().hex[:16]}",
+                candidate_id=candidate_id,
+                name=award.name,
+                issuer=award.issuer,
+                date=award.date,
+                description=award.description,
+            )
+            db.add(new_award)
+            existing_award_names.add(award.name.lower())
+            awards_created += 1
+
+    if activities_created > 0 or awards_created > 0:
+        db.commit()
+        logger.info(f"Auto-populated {activities_created} activities and {awards_created} awards for candidate {candidate_id}")
+
 
 @router.post("/{candidate_id}/resume", response_model=ResumeParseResult)
 @limiter.limit(RateLimits.AI_RESUME_PARSE)
@@ -463,11 +588,23 @@ async def upload_resume(
         resume_url = None  # Continue without storage
 
     # Parse resume with AI
+    parse_warning = None
     try:
         parsed_data = await resume_service.parse_resume(raw_text)
+        # Check if parsing returned meaningful data
+        if parsed_data and not any([
+            parsed_data.name,
+            parsed_data.email,
+            parsed_data.education,
+            parsed_data.experience,
+            parsed_data.skills,
+        ]):
+            parse_warning = "Resume was uploaded but AI could not extract structured data. The raw text is still available."
+            logger.warning(f"Resume parsing returned empty data for student {candidate_id}")
     except Exception as e:
         logger.error(f"Resume AI parsing error for student {candidate_id}: {e}")
         parsed_data = ParsedResume()
+        parse_warning = f"Resume uploaded but parsing failed: {str(e)[:100]}. Please try again or upload a different format."
 
     # Sanitize parsed data and raw text to prevent XSS
     from ..utils.sanitize import sanitize_resume_data, sanitize_text_content, sanitize_name
@@ -487,6 +624,9 @@ async def upload_resume(
 
     db.commit()
 
+    # Auto-populate activities and awards from parsed resume
+    _auto_populate_from_resume(candidate_id, parsed_data, db)
+
     # Generate a signed URL for the resume if we have a storage key
     signed_resume_url = resume_url
     if resume_url and not resume_url.startswith('http'):
@@ -497,10 +637,11 @@ async def upload_resume(
 
     return ResumeParseResult(
         success=True,
-        message="Resume uploaded and parsed successfully",
+        message=parse_warning or "Resume uploaded and parsed successfully",
         resume_url=signed_resume_url,
         parsed_data=parsed_data,
-        raw_text_preview=raw_text[:500] if raw_text else None
+        raw_text_preview=raw_text[:500] if raw_text else None,
+        parse_warning=parse_warning,
     )
 
 
@@ -754,11 +895,38 @@ async def upload_transcript(
         transcript_url = None
 
     # Parse transcript with AI (using a modified prompt for transcripts)
+    parse_warning = None
     try:
         parsed_data = await parse_transcript(raw_text)
+        # Check if parsing returned meaningful data
+        if parsed_data and not parsed_data.get("courses") and not parsed_data.get("gpa"):
+            parse_warning = "Transcript was uploaded but AI could not extract course data. Please ensure this is a valid academic transcript."
+            logger.warning(f"Transcript parsing returned empty data for student {candidate_id}")
     except Exception as e:
         logger.error(f"Transcript parsing error: {e}")
         parsed_data = None
+        parse_warning = f"Transcript uploaded but parsing failed: {str(e)[:100]}. Please try a different format or clearer scan."
+
+    # Extract PDF metadata for verification
+    pdf_metadata = None
+    try:
+        from ..services.transcript import transcript_service
+        pdf_metadata = transcript_service.extract_pdf_metadata(file_bytes)
+    except Exception as e:
+        logger.warning(f"Failed to extract PDF metadata: {e}")
+
+    # Run transcript verification
+    verification_result = None
+    try:
+        from ..services.transcript_verification import transcript_verification_service
+        verification_result = transcript_verification_service.verify_transcript(
+            parsed_transcript=parsed_data or {},
+            pdf_metadata=pdf_metadata,
+            graduation_year=candidate.graduation_year,
+        )
+        logger.info(f"Transcript verification for {candidate_id}: status={verification_result.status}, score={verification_result.confidence_score}")
+    except Exception as e:
+        logger.error(f"Transcript verification error: {e}")
 
     # Store parsed transcript data in the courses field
     if parsed_data:
@@ -769,14 +937,54 @@ async def upload_transcript(
     # Store transcript storage key for later retrieval
     if transcript_key:
         candidate.transcript_key = transcript_key
+
+    # Store verification results
+    if verification_result:
+        candidate.transcript_verification = {
+            "status": verification_result.status,
+            "confidence_score": verification_result.confidence_score,
+            "flags": [
+                {
+                    "code": f.code,
+                    "severity": f.severity,
+                    "message": f.message,
+                    "details": f.details,
+                }
+                for f in verification_result.flags
+            ],
+            "checks_performed": verification_result.checks_performed,
+            "summary": verification_result.summary,
+        }
+        candidate.transcript_verification_status = verification_result.status
+        candidate.transcript_confidence_score = verification_result.confidence_score
+
     db.commit()
+
+    # Build verification response
+    verification_response = None
+    if verification_result:
+        verification_response = {
+            "status": verification_result.status,
+            "confidence_score": verification_result.confidence_score,
+            "summary": verification_result.summary,
+            "flags": [
+                {
+                    "code": f.code,
+                    "severity": f.severity,
+                    "message": f.message,
+                }
+                for f in verification_result.flags
+            ],
+        }
 
     return {
         "success": True,
-        "message": "Transcript uploaded and parsed successfully",
+        "message": parse_warning or "Transcript uploaded and parsed successfully",
         "parsed_data": parsed_data,
         "transcript_url": transcript_url,
-        "transcript_key": transcript_key
+        "transcript_key": transcript_key,
+        "verification": verification_response,
+        "parse_warning": parse_warning,
     }
 
 
@@ -820,8 +1028,8 @@ async def delete_transcript(
     """Delete the current student's transcript."""
     if current_candidate.transcript_key:
         try:
-            # Try to delete from storage
-            await storage_service.delete_video(current_candidate.transcript_key)
+            # Try to delete from storage (use generic delete_object for non-video files)
+            await storage_service.delete_object(current_candidate.transcript_key)
         except Exception as e:
             logger.warning(f"Failed to delete transcript from storage: {e}")
 
@@ -1384,19 +1592,23 @@ async def refresh_github_data(
         decrypted_token = decrypt_token(current_candidate.github_access_token)
         github_data = await github_service.get_full_profile(decrypted_token)
 
-        current_candidate.github_data = github_data
+        # Sanitize GitHub data before storage to prevent XSS (same as OAuth callback)
+        from ..utils.sanitize import sanitize_github_data
+        sanitized_github_data = sanitize_github_data(github_data)
+
+        current_candidate.github_data = sanitized_github_data
         db.commit()
 
         return {
             "success": True,
             "message": "GitHub data refreshed",
             "github_data": GitHubInfo(
-                username=github_data["username"],
+                username=sanitized_github_data["username"],
                 connected_at=current_candidate.github_connected_at,
-                top_repos=github_data.get("top_repos"),
-                total_repos=github_data.get("public_repos"),
-                total_contributions=github_data.get("total_contributions"),
-                languages=github_data.get("languages"),
+                top_repos=sanitized_github_data.get("top_repos"),
+                total_repos=sanitized_github_data.get("public_repos"),
+                total_contributions=sanitized_github_data.get("total_contributions"),
+                languages=sanitized_github_data.get("languages"),
             ),
         }
 

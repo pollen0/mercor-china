@@ -186,6 +186,24 @@ class ProjectItem(BaseModel):
     highlights: list[str] = []
 
 
+class ParsedActivity(BaseModel):
+    """Activity/club/organization extracted from resume."""
+    name: str  # Activity or organization name
+    organization: Optional[str] = None  # If name is role, this is the org
+    role: Optional[str] = None  # "President", "Member", "Project Lead", etc.
+    description: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+
+class ParsedAward(BaseModel):
+    """Award/honor/scholarship extracted from resume."""
+    name: str  # Award name
+    issuer: Optional[str] = None  # Who gave the award
+    date: Optional[str] = None  # When received
+    description: Optional[str] = None
+
+
 class ParsedResume(BaseModel):
     """Structured data extracted from a resume."""
     name: Optional[str] = None
@@ -199,6 +217,8 @@ class ParsedResume(BaseModel):
     projects: list[ProjectItem] = []
     languages: list[str] = []
     certifications: list[str] = []
+    activities: list[ParsedActivity] = []  # Clubs, organizations, leadership roles
+    awards: list[ParsedAward] = []  # Awards, honors, scholarships
 
 
 class ResumeParseResult(BaseModel):
@@ -208,6 +228,7 @@ class ResumeParseResult(BaseModel):
     resume_url: Optional[str] = None
     parsed_data: Optional[ParsedResume] = None
     raw_text_preview: Optional[str] = None  # First 500 chars
+    parse_warning: Optional[str] = None  # Warning if parsing failed or returned empty data
 
 
 class ResumeResponse(BaseModel):
@@ -248,10 +269,25 @@ class GitHubConnectResponse(BaseModel):
 
 
 class CandidateWithToken(BaseModel):
-    """Candidate response with auth token (for login)."""
+    """Candidate response with auth tokens (for login/register)."""
     candidate: CandidateResponse
     token: str
+    refresh_token: Optional[str] = None  # Refresh token for obtaining new access tokens
     token_type: str = "bearer"
+    expires_in: int = 3600  # Access token expiry in seconds (1 hour)
+
+
+class TokenRefreshRequest(BaseModel):
+    """Request to refresh access token."""
+    refresh_token: str
+
+
+class TokenRefreshResponse(BaseModel):
+    """Response with new access token."""
+    token: str
+    refresh_token: Optional[str] = None  # New refresh token if rotation is enabled
+    token_type: str = "bearer"
+    expires_in: int = 3600
 
 
 # Sharing preferences schemas (GTM)

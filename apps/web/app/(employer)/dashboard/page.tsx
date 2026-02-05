@@ -14,6 +14,7 @@ import { CandidateNotes } from '@/components/employer/candidate-notes'
 import { EmployerVerificationBanner } from '@/components/verification/employer-verification-banner'
 import { employerApi, inviteApi, talentPoolApi, organizationApi, schedulingLinkApi, teamMemberApi, type Employer, type DashboardStats, type InterviewSession, type Job, type InviteTokenResponse, type TalentPoolCandidate, type TalentProfileDetail, type Vertical, type RoleType, type Organization, type OrganizationMember, type OrganizationInvite, type SchedulingLink, type TeamMember, type MatchStatus } from '@/lib/api'
 import { CustomSelect, StatusSelect, type SelectOption } from '@/components/ui/custom-select'
+import { logout, clearAuthTokens } from '@/lib/auth'
 
 type TabType = 'overview' | 'interviews' | 'jobs' | 'talent' | 'team' | 'scheduling'
 
@@ -216,7 +217,7 @@ function DashboardContent() {
       try {
         const token = localStorage.getItem('employer_token')
         if (!token) {
-          router.push('/login')
+          router.push('/employer/login')
           return
         }
 
@@ -235,8 +236,8 @@ function DashboardContent() {
       } catch (err) {
         console.error('Failed to load dashboard:', err)
         if (err instanceof Error && err.message.includes('401')) {
-          localStorage.removeItem('employer_token')
-          router.push('/login')
+          clearAuthTokens('employer')
+          router.push('/employer/login')
         }
       } finally {
         setIsLoading(false)
@@ -565,10 +566,11 @@ function DashboardContent() {
     ...schedulingTeamMembers.filter(m => m.isActive),
   ] : []
 
-  const handleLogout = () => {
-    localStorage.removeItem('employer_token')
+  const handleLogout = async () => {
+    // Call server to invalidate token, then clear local storage and cookies
+    await logout('employer', true)
     localStorage.removeItem('employer')
-    router.push('/login')
+    router.push('/employer/login')
   }
 
   // Jobs handlers

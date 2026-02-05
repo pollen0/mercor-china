@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ARRAY, Text, Float, Integer, Boolean, ForeignKey, Enum, UniqueConstraint
+from sqlalchemy import Column, String, DateTime, ARRAY, Text, Float, Integer, Boolean, ForeignKey, Enum, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -52,7 +52,12 @@ class CandidateVerticalProfile(Base):
     matches = relationship("Match", back_populates="vertical_profile")
 
     # Unique: one profile per vertical per candidate
-    __table_args__ = (UniqueConstraint('candidate_id', 'vertical', name='uq_candidate_vertical'),)
+    # Indexes for common query patterns
+    __table_args__ = (
+        UniqueConstraint('candidate_id', 'vertical', name='uq_candidate_vertical'),
+        Index('ix_candidate_vertical_profiles_best_score', 'best_score'),
+        Index('ix_candidate_vertical_profiles_status', 'status'),
+    )
 
 
 class Candidate(Base):
@@ -105,6 +110,9 @@ class Candidate(Base):
 
     # Transcript
     transcript_key = Column(String, nullable=True)  # Storage key for transcript PDF
+    transcript_verification = Column(JSONB, nullable=True)  # Verification result details
+    transcript_verification_status = Column(String, nullable=True)  # "verified", "warning", "suspicious"
+    transcript_confidence_score = Column(Float, nullable=True)  # 0-100 confidence score
 
     # Email verification
     email_verified = Column(Boolean, default=False)
@@ -135,6 +143,13 @@ class Candidate(Base):
     activities = relationship("CandidateActivity", back_populates="candidate", cascade="all, delete-orphan")
     awards = relationship("CandidateAward", back_populates="candidate", cascade="all, delete-orphan")
     profile_tokens = relationship("ProfileToken", back_populates="candidate", cascade="all, delete-orphan")
+
+    # Indexes for common query patterns (talent pool filtering)
+    __table_args__ = (
+        Index('ix_candidates_university', 'university'),
+        Index('ix_candidates_graduation_year', 'graduation_year'),
+        Index('ix_candidates_gpa', 'gpa'),
+    )
 
 
 class InterviewHistoryEntry(Base):

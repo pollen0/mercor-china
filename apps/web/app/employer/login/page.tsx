@@ -1,20 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { employerApi } from '@/lib/api'
+import { setAuthTokens } from '@/lib/auth'
 
 type Mode = 'login' | 'register'
 
 export default function EmployerLoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [mode, setMode] = useState<Mode>('login')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -22,24 +26,41 @@ export default function EmployerLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Check passwords match for registration
+    if (mode === 'register' && password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
     setIsLoading(true)
 
     try {
+      let result
       if (mode === 'login') {
-        const result = await employerApi.login(email, password)
-        localStorage.setItem('employer_token', result.token)
-        localStorage.setItem('employer', JSON.stringify(result.employer))
-        router.push('/dashboard')
+        result = await employerApi.login(email, password)
       } else {
-        const result = await employerApi.register({
+        result = await employerApi.register({
+          name: name || undefined,
           companyName,
           email,
           password,
         })
-        localStorage.setItem('employer_token', result.token)
-        localStorage.setItem('employer', JSON.stringify(result.employer))
-        router.push('/dashboard')
       }
+
+      // Store employer info
+      localStorage.setItem('employer', JSON.stringify(result.employer))
+
+      // Store tokens (in both localStorage and cookies for middleware)
+      setAuthTokens('employer', {
+        token: result.token,
+        refreshToken: (result as { refresh_token?: string }).refresh_token,
+        expiresIn: (result as { expires_in?: number }).expires_in || 3600,
+      })
+
+      // Redirect to returnTo URL or dashboard
+      const returnTo = searchParams.get('returnTo')
+      router.push(returnTo || '/employer/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -48,7 +69,7 @@ export default function EmployerLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex">
+    <main className="min-h-screen bg-stone-50 flex">
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:flex-1 lg:flex-col justify-center px-12 bg-gradient-to-br from-teal-600 to-teal-500">
         <div className="max-w-md">
@@ -90,21 +111,21 @@ export default function EmployerLoginPage() {
         <div className="w-full max-w-md">
           <div className="lg:hidden text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-teal-600 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shadow-lg">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
-              <span className="text-gray-900 font-semibold text-xl">Pathway</span>
+              <span className="text-stone-900 font-semibold text-xl">Pathway</span>
             </Link>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-soft-lg border border-gray-100 p-8">
+          <div className="bg-white rounded-3xl shadow-soft-lg border border-stone-100 p-8">
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-stone-900">
                 {mode === 'login' ? 'Welcome back' : 'Create your account'}
               </h2>
-              <p className="text-gray-500 mt-2">
+              <p className="text-stone-500 mt-2">
                 {mode === 'login'
                   ? 'Sign in to access your employer dashboard'
                   : 'Start screening candidates smarter'}
@@ -113,23 +134,38 @@ export default function EmployerLoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {mode === 'register' && (
-                <div>
-                  <Label htmlFor="companyName" className="text-sm font-medium text-gray-700">
-                    Company Name
-                  </Label>
-                  <Input
-                    id="companyName"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="Your company name"
-                    className="mt-2"
-                    required
-                  />
-                </div>
+                <>
+                  <div>
+                    <Label htmlFor="name" className="text-sm font-medium text-stone-700">
+                      Your Name
+                    </Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="John Smith"
+                      className="mt-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="companyName" className="text-sm font-medium text-stone-700">
+                      Company Name
+                    </Label>
+                    <Input
+                      id="companyName"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="Your company name"
+                      className="mt-2"
+                      required
+                    />
+                  </div>
+                </>
               )}
 
               <div>
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="email" className="text-sm font-medium text-stone-700">
                   Email
                 </Label>
                 <Input
@@ -144,9 +180,16 @@ export default function EmployerLoginPage() {
               </div>
 
               <div>
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Password
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-medium text-stone-700">
+                    Password
+                  </Label>
+                  {mode === 'login' && (
+                    <Link href="/forgot-password" className="text-xs text-stone-500 hover:text-teal-600">
+                      Forgot password?
+                    </Link>
+                  )}
+                </div>
                 <Input
                   id="password"
                   type="password"
@@ -158,6 +201,24 @@ export default function EmployerLoginPage() {
                   minLength={8}
                 />
               </div>
+
+              {mode === 'register' && (
+                <div>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-stone-700">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="mt-2"
+                    required
+                    minLength={8}
+                  />
+                </div>
+              )}
 
               {error && (
                 <div className="p-4 bg-error-light border border-error/20 rounded-xl">
@@ -186,6 +247,7 @@ export default function EmployerLoginPage() {
                 onClick={() => {
                   setMode(mode === 'login' ? 'register' : 'login')
                   setError(null)
+                  setConfirmPassword('')
                 }}
                 className="text-sm text-teal-600 hover:text-teal-700 font-medium"
               >
@@ -196,7 +258,7 @@ export default function EmployerLoginPage() {
             </div>
           </div>
 
-          <p className="mt-8 text-center text-sm text-gray-500">
+          <p className="mt-8 text-center text-sm text-stone-500">
             By continuing, you agree to Pathway&apos;s Terms of Service and Privacy Policy.
           </p>
         </div>

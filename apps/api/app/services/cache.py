@@ -244,6 +244,37 @@ class CacheService:
         key = self._make_key(self.PREFIX_INTERVIEW, session_id)
         return self.delete(key)
 
+    # ============ TOKEN BLACKLIST (for logout) ============
+
+    PREFIX_BLACKLIST = "blacklist"
+
+    def blacklist_token(self, token_jti: str, ttl_seconds: int) -> bool:
+        """
+        Add a token to the blacklist.
+
+        Args:
+            token_jti: The unique token identifier (jti claim or hash of token)
+            ttl_seconds: How long to keep in blacklist (should match token expiry)
+
+        Returns:
+            True if successfully blacklisted
+        """
+        key = self._make_key(self.PREFIX_BLACKLIST, token_jti)
+        return self.set(key, {"blacklisted": True}, ttl=ttl_seconds)
+
+    def is_token_blacklisted(self, token_jti: str) -> bool:
+        """
+        Check if a token is blacklisted.
+
+        Args:
+            token_jti: The unique token identifier
+
+        Returns:
+            True if token is blacklisted
+        """
+        key = self._make_key(self.PREFIX_BLACKLIST, token_jti)
+        return self.get(key) is not None
+
 
 def cached(
     prefix: str,

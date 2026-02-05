@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, Enum, Boolean, ARRAY, Text
+from sqlalchemy import Column, String, DateTime, Float, Integer, ForeignKey, Enum, Boolean, ARRAY, Text, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -53,6 +53,13 @@ class InterviewSession(Base):
 
     responses = relationship("InterviewResponse", back_populates="session")
 
+    # Indexes for common query patterns
+    __table_args__ = (
+        Index('ix_interview_sessions_vertical', 'vertical'),
+        Index('ix_interview_sessions_status', 'status'),
+        Index('ix_interview_sessions_candidate_id', 'candidate_id'),
+    )
+
 
 class InterviewResponse(Base):
     __tablename__ = "interview_responses"
@@ -90,7 +97,7 @@ class InterviewResponse(Base):
     session = relationship("InterviewSession", back_populates="responses")
 
     # Self-referential relationship for follow-up responses
-    parent_response = relationship("InterviewResponse", remote_side="InterviewResponse.id", backref="followup_responses")
+    parent_response = relationship("InterviewResponse", remote_side=[id], backref="followup_responses")
 
 
 class FollowupQueueStatus(str, enum.Enum):

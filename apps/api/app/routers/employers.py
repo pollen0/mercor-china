@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request, BackgroundTasks
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
@@ -9,6 +10,7 @@ import json
 
 from ..database import get_db
 from ..models import Employer, Job, InterviewSession, InterviewStatus, MatchStatus, Match, InviteToken, Vertical, RoleType, Message, MessageType, Candidate, CandidateVerticalProfile, VerticalProfileStatus
+from ..models.employer import Organization, OrganizationMember, OrganizationInvite, OrganizationRole, InviteStatus
 from ..models.activity import CandidateActivity, CandidateAward, Club
 from ..schemas.employer import (
     EmployerRegister,
@@ -28,6 +30,16 @@ from ..schemas.employer import (
     MatchAlert,
     MatchAlertCandidate,
     MatchAlertList,
+    # Organization schemas
+    OrganizationCreate,
+    OrganizationUpdate,
+    OrganizationResponse,
+    OrganizationDetailResponse,
+    OrganizationList,
+    OrganizationMemberResponse,
+    OrganizationInviteCreate,
+    OrganizationInviteResponse,
+    OrganizationInviteAccept,
 )
 from ..schemas.interview import (
     InterviewSessionResponse,
@@ -44,7 +56,8 @@ import csv
 import io
 from datetime import datetime, timedelta
 import secrets
-from ..utils.auth import create_access_token, verify_token, get_password_hash, verify_password
+from ..utils.auth import create_access_token, create_token, create_token_pair, verify_token, verify_refresh_token, revoke_refresh_token, get_password_hash, verify_password, blacklist_token
+from ..config import settings
 from ..services.storage import storage_service
 from ..services.cache import cache_service
 from ..services.matching import matching_service
@@ -53,6 +66,7 @@ import logging
 
 logger = logging.getLogger("pathway.employers")
 router = APIRouter()
+security = HTTPBearer()
 
 
 def generate_cuid(prefix: str = "e") -> str:
@@ -195,11 +209,14 @@ async def register_employer(
     from .auth import create_verification_for_employer
     create_verification_for_employer(employer, db, background_tasks)
 
-    token = create_access_token({"sub": employer.id, "type": "employer"})
+    # Generate token pair
+    tokens = create_token_pair(subject=employer.id, token_type="employer")
 
     return EmployerWithToken(
         employer=EmployerResponse.model_validate(employer),
-        token=token,
+        token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        expires_in=settings.jwt_expiry_hours * 3600,
     )
 
 
@@ -219,12 +236,81 @@ async def login_employer(
             detail="Invalid email or password"
         )
 
-    token = create_access_token({"sub": employer.id, "type": "employer"})
+    # Generate token pair
+    tokens = create_token_pair(subject=employer.id, token_type="employer")
 
     return EmployerWithToken(
         employer=EmployerResponse.model_validate(employer),
-        token=token,
+        token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        expires_in=settings.jwt_expiry_hours * 3600,
     )
+
+
+@router.post("/refresh")
+@limiter.limit(RateLimits.AUTH_LOGIN)
+async def refresh_employer_token(
+    request: Request,
+    refresh_token: str,
+):
+    """
+    Get a new access token using a refresh token.
+
+    This allows the frontend to maintain sessions without requiring re-login.
+    The refresh token has a longer expiry (30 days) while access tokens expire in 1 hour.
+    """
+    from ..schemas.candidate import TokenRefreshResponse
+
+    payload = verify_refresh_token(refresh_token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    # Verify this is an employer token
+    if payload.get("type") != "employer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid token type"
+        )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
+
+    # Generate new access token
+    new_access_token = create_token(
+        subject=user_id,
+        token_type="employer",
+    )
+
+    return TokenRefreshResponse(
+        token=new_access_token,
+        expires_in=settings.jwt_expiry_hours * 3600,
+    )
+
+
+@router.post("/logout")
+async def logout_employer(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """
+    Logout an employer by invalidating their token.
+    The token will be blacklisted and cannot be used again.
+    """
+    token = credentials.credentials
+    success = blacklist_token(token)
+
+    if success:
+        return {"message": "Successfully logged out"}
+    else:
+        # Even if blacklisting fails (e.g., Redis down), return success
+        # Client will clear their token anyway
+        return {"message": "Logged out (token invalidation unavailable)"}
 
 
 @router.get("/me", response_model=EmployerResponse)
@@ -571,6 +657,9 @@ async def create_job(
     db.commit()
     db.refresh(job)
 
+    # Invalidate dashboard stats cache since job count changed
+    cache_service.invalidate_dashboard(employer.id)
+
     # Auto-match with talent pool candidates
     if vertical:
         from ..config import settings
@@ -755,6 +844,9 @@ async def update_job(
     db.commit()
     db.refresh(job)
 
+    # Invalidate dashboard stats cache
+    cache_service.invalidate_dashboard(employer.id)
+
     return job
 
 
@@ -778,6 +870,9 @@ async def delete_job(
 
     db.delete(job)
     db.commit()
+
+    # Invalidate dashboard stats cache
+    cache_service.invalidate_dashboard(employer.id)
 
 
 # Interview management
@@ -834,7 +929,7 @@ async def list_interviews(
             candidate_id=session.candidate_id,
             candidate_name=session.candidate.name,
             job_id=session.job_id,
-            job_title=session.job.title,
+            job_title=session.job.title if session.job else None,
             company_name=employer.company_name,
             responses=[],
         ))
@@ -991,7 +1086,7 @@ async def get_interview_detail(
         candidate_id=session.candidate_id,
         candidate_name=session.candidate.name,
         job_id=session.job_id,
-        job_title=session.job.title,
+        job_title=session.job.title if session.job else None,
         company_name=employer.company_name,
         responses=sorted(responses, key=lambda x: x.question_index),
     )
@@ -1326,10 +1421,13 @@ async def bulk_interview_action(
 
     # Invalidate relevant caches
     cache_service.invalidate_dashboard(employer.id)
-    # Invalidate top candidates for all affected jobs
+    # Invalidate top candidates for all affected jobs (only employer's own jobs)
     affected_job_ids = set()
     for interview_id in data.interview_ids:
-        session = db.query(InterviewSession).filter(InterviewSession.id == interview_id).first()
+        session = db.query(InterviewSession).filter(
+            InterviewSession.id == interview_id,
+            InterviewSession.job_id.in_(job_ids)  # Security: only employer's jobs
+        ).first()
         if session and session.job_id:
             affected_job_ids.add(session.job_id)
     for jid in affected_job_ids:
@@ -1598,14 +1696,18 @@ async def browse_talent_pool(
     """
     from sqlalchemy import or_, cast, String, case
     from sqlalchemy.dialects.postgresql import JSONB
+    from sqlalchemy.orm import joinedload
     from ..services.scoring import scoring_service
     from ..services.cohort import cohort_service
 
     candidates_result = []
 
     # Part 1: Get candidates with completed vertical profiles
+    # Use joinedload to eagerly load the candidate relationship (avoid N+1)
     completed_query = db.query(CandidateVerticalProfile).join(
         Candidate, CandidateVerticalProfile.candidate_id == Candidate.id
+    ).options(
+        joinedload(CandidateVerticalProfile.candidate)
     ).filter(
         CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
     )
@@ -1651,6 +1753,43 @@ async def browse_talent_pool(
 
     # Track candidate IDs we've already added
     added_candidate_ids = set()
+
+    # Batch pre-fetch activities and awards to avoid N+1 queries
+    candidate_ids_for_batch = [p.candidate_id for p in completed_profiles]
+
+    # Batch fetch all activities for these candidates (single query instead of N)
+    activities_by_candidate: dict[str, list] = {}
+    if candidate_ids_for_batch:
+        all_activities = db.query(CandidateActivity).options(
+            joinedload(CandidateActivity.club)
+        ).filter(
+            CandidateActivity.candidate_id.in_(candidate_ids_for_batch)
+        ).order_by(
+            CandidateActivity.activity_score.desc().nulls_last()
+        ).all()
+
+        for a in all_activities:
+            if a.candidate_id not in activities_by_candidate:
+                activities_by_candidate[a.candidate_id] = []
+            # Limit to 5 per candidate
+            if len(activities_by_candidate[a.candidate_id]) < 5:
+                activities_by_candidate[a.candidate_id].append(a)
+
+    # Batch fetch all awards for these candidates (single query instead of N)
+    awards_by_candidate: dict[str, list] = {}
+    if candidate_ids_for_batch:
+        all_awards = db.query(CandidateAward).filter(
+            CandidateAward.candidate_id.in_(candidate_ids_for_batch)
+        ).order_by(
+            CandidateAward.prestige_tier.desc().nulls_last()
+        ).all()
+
+        for a in all_awards:
+            if a.candidate_id not in awards_by_candidate:
+                awards_by_candidate[a.candidate_id] = []
+            # Limit to 5 per candidate
+            if len(awards_by_candidate[a.candidate_id]) < 5:
+                awards_by_candidate[a.candidate_id].append(a)
 
     for profile in completed_profiles:
         candidate = profile.candidate
@@ -1712,11 +1851,8 @@ async def browse_talent_pool(
                         culture_fit=round(sum(avg_scores["culture_fit"]) / len(avg_scores["culture_fit"]), 2) if avg_scores["culture_fit"] else None,
                     )
 
-        # Get activities and awards for this candidate
-        activities_list = db.query(CandidateActivity).filter(
-            CandidateActivity.candidate_id == candidate.id
-        ).order_by(CandidateActivity.activity_score.desc().nulls_last()).limit(5).all()
-
+        # Get activities and awards from pre-fetched batch (avoids N+1)
+        activities_list = activities_by_candidate.get(candidate.id, [])
         activities = [
             ActivitySummary(
                 name=a.activity_name,
@@ -1727,10 +1863,7 @@ async def browse_talent_pool(
             for a in activities_list
         ]
 
-        awards_list = db.query(CandidateAward).filter(
-            CandidateAward.candidate_id == candidate.id
-        ).order_by(CandidateAward.prestige_tier.desc().nulls_last()).limit(5).all()
-
+        awards_list = awards_by_candidate.get(candidate.id, [])
         awards = [
             AwardSummary(
                 name=a.name,
@@ -1821,11 +1954,53 @@ async def browse_talent_pool(
             Candidate.created_at.desc()
         ).all()
 
+        # Batch pre-fetch data for incomplete candidates to avoid N+1 queries
+        incomplete_candidate_ids = [c.id for c in profile_only_candidates]
+
+        # Batch fetch all vertical profiles for these candidates
+        profiles_by_candidate_incomplete: dict[str, CandidateVerticalProfile] = {}
+        if incomplete_candidate_ids:
+            all_profiles = db.query(CandidateVerticalProfile).filter(
+                CandidateVerticalProfile.candidate_id.in_(incomplete_candidate_ids)
+            ).all()
+            for p in all_profiles:
+                profiles_by_candidate_incomplete[p.candidate_id] = p
+
+        # Batch fetch activities for incomplete candidates
+        activities_by_candidate_incomplete: dict[str, list] = {}
+        if incomplete_candidate_ids:
+            all_activities = db.query(CandidateActivity).options(
+                joinedload(CandidateActivity.club)
+            ).filter(
+                CandidateActivity.candidate_id.in_(incomplete_candidate_ids)
+            ).order_by(
+                CandidateActivity.activity_score.desc().nulls_last()
+            ).all()
+
+            for a in all_activities:
+                if a.candidate_id not in activities_by_candidate_incomplete:
+                    activities_by_candidate_incomplete[a.candidate_id] = []
+                if len(activities_by_candidate_incomplete[a.candidate_id]) < 5:
+                    activities_by_candidate_incomplete[a.candidate_id].append(a)
+
+        # Batch fetch awards for incomplete candidates
+        awards_by_candidate_incomplete: dict[str, list] = {}
+        if incomplete_candidate_ids:
+            all_awards = db.query(CandidateAward).filter(
+                CandidateAward.candidate_id.in_(incomplete_candidate_ids)
+            ).order_by(
+                CandidateAward.prestige_tier.desc().nulls_last()
+            ).all()
+
+            for a in all_awards:
+                if a.candidate_id not in awards_by_candidate_incomplete:
+                    awards_by_candidate_incomplete[a.candidate_id] = []
+                if len(awards_by_candidate_incomplete[a.candidate_id]) < 5:
+                    awards_by_candidate_incomplete[a.candidate_id].append(a)
+
         for candidate in profile_only_candidates:
-            # Check if they have any vertical profile (even if not completed)
-            existing_profile = db.query(CandidateVerticalProfile).filter(
-                CandidateVerticalProfile.candidate_id == candidate.id
-            ).first()
+            # Get existing profile from batch (avoids N+1)
+            existing_profile = profiles_by_candidate_incomplete.get(candidate.id)
 
             # Apply vertical filter if specified
             if vertical and existing_profile:
@@ -1885,11 +2060,11 @@ async def browse_talent_pool(
                     exp_quality = min(5.0 + exp_count * 1.0, 8.5)
 
                 if candidate.gpa:
-                    edu_score = min(5.0 + (candidate.gpa - 3.0) * 2, 9.5)
+                    edu_score = max(1.0, min(5.0 + (candidate.gpa - 3.0) * 2, 9.5))
 
                 if candidate.github_data:
-                    repos = candidate.github_data.get("repos", [])
-                    contributions = candidate.github_data.get("totalContributions", 0)
+                    repos = candidate.github_data.get("top_repos", candidate.github_data.get("repos", []))
+                    contributions = candidate.github_data.get("total_contributions", candidate.github_data.get("totalContributions", 0))
                     github_score = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
 
                 # Weighted average
@@ -1906,11 +2081,8 @@ async def browse_talent_pool(
             if min_score > 0 and (profile_score is None or profile_score < min_score):
                 continue
 
-            # Get activities and awards for this candidate
-            activities_list = db.query(CandidateActivity).filter(
-                CandidateActivity.candidate_id == candidate.id
-            ).order_by(CandidateActivity.activity_score.desc().nulls_last()).limit(5).all()
-
+            # Get activities and awards from pre-fetched batch (avoids N+1)
+            activities_list = activities_by_candidate_incomplete.get(candidate.id, [])
             activities = [
                 ActivitySummary(
                     name=a.activity_name,
@@ -1921,10 +2093,7 @@ async def browse_talent_pool(
                 for a in activities_list
             ]
 
-            awards_list = db.query(CandidateAward).filter(
-                CandidateAward.candidate_id == candidate.id
-            ).order_by(CandidateAward.prestige_tier.desc().nulls_last()).limit(5).all()
-
+            awards_list = awards_by_candidate_incomplete.get(candidate.id, [])
             awards = [
                 AwardSummary(
                     name=a.name,
@@ -2111,11 +2280,11 @@ async def get_talent_candidate_detail(
                 breakdown["experience_quality"] = min(5.0 + exp_count * 1.0, 8.5)
 
             if candidate.gpa:
-                breakdown["education"] = min(5.0 + (candidate.gpa - 3.0) * 2, 9.5)
+                breakdown["education"] = max(1.0, min(5.0 + (candidate.gpa - 3.0) * 2, 9.5))
 
             if candidate.github_data:
-                repos = candidate.github_data.get("repos", [])
-                contributions = candidate.github_data.get("totalContributions", 0)
+                repos = candidate.github_data.get("top_repos", candidate.github_data.get("repos", []))
+                contributions = candidate.github_data.get("total_contributions", candidate.github_data.get("totalContributions", 0))
                 breakdown["github_activity"] = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
 
             # Calculate weighted average
@@ -2226,8 +2395,10 @@ async def get_talent_profile_detail(
     from ..models.interview import InterviewResponse
 
     # Try to find by profile_id first
+    # Security: Only return completed profiles to employers
     profile = db.query(CandidateVerticalProfile).filter(
-        CandidateVerticalProfile.id == profile_id
+        CandidateVerticalProfile.id == profile_id,
+        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
     ).first()
 
     # If not found by profile_id, check if it's a candidate_id
@@ -2342,10 +2513,10 @@ async def get_talent_profile_detail(
             exp_count = len(parsed.get("experience", []))
             breakdown["experience_quality"] = min(5.0 + exp_count * 1.0, 8.5)
         if candidate.gpa:
-            breakdown["education"] = min(5.0 + (candidate.gpa - 3.0) * 2, 9.5)
+            breakdown["education"] = max(1.0, min(5.0 + (candidate.gpa - 3.0) * 2, 9.5))
         if candidate.github_data:
-            repos = candidate.github_data.get("repos", [])
-            contributions = candidate.github_data.get("totalContributions", 0)
+            repos = candidate.github_data.get("top_repos", candidate.github_data.get("repos", []))
+            contributions = candidate.github_data.get("total_contributions", candidate.github_data.get("totalContributions", 0))
             breakdown["github_activity"] = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
         if breakdown:
             weights = {"technical_skills": 0.3, "experience_quality": 0.25, "education": 0.25, "github_activity": 0.2}
@@ -3722,3 +3893,491 @@ async def rank_candidates_for_job(
         total=total,
         average_match_score=round(avg_score, 1),
     )
+
+
+# ============================================================================
+# ORGANIZATION ENDPOINTS
+# ============================================================================
+
+def generate_slug(name: str) -> str:
+    """Generate a URL-friendly slug from organization name."""
+    import re
+    # Convert to lowercase and replace spaces/special chars with hyphens
+    slug = name.lower().strip()
+    slug = re.sub(r'[^\w\s-]', '', slug)
+    slug = re.sub(r'[\s_]+', '-', slug)
+    slug = re.sub(r'-+', '-', slug)
+    return slug[:50]  # Limit length
+
+
+@router.post("/organizations", response_model=OrganizationResponse, status_code=status.HTTP_201_CREATED)
+async def create_organization(
+    data: OrganizationCreate,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Create a new organization and set the current employer as owner."""
+    # Generate unique slug
+    base_slug = generate_slug(data.name)
+    slug = base_slug
+    counter = 1
+    while db.query(Organization).filter(Organization.slug == slug).first():
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+
+    org = Organization(
+        id=generate_cuid("org"),
+        name=data.name,
+        slug=slug,
+        website=data.website,
+        industry=data.industry,
+        company_size=data.company_size,
+        description=data.description,
+    )
+    db.add(org)
+    db.flush()
+
+    # Add current employer as owner
+    membership = OrganizationMember(
+        id=generate_cuid("om"),
+        organization_id=org.id,
+        employer_id=employer.id,
+        role=OrganizationRole.OWNER,
+    )
+    db.add(membership)
+    db.commit()
+    db.refresh(org)
+
+    return OrganizationResponse(
+        id=org.id,
+        name=org.name,
+        slug=org.slug,
+        logo_url=org.logo_url,
+        website=org.website,
+        industry=org.industry,
+        company_size=org.company_size,
+        description=org.description,
+        plan=org.plan,
+        created_at=org.created_at,
+        member_count=1,
+    )
+
+
+@router.get("/organizations", response_model=OrganizationList)
+async def list_my_organizations(
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """List organizations the current employer belongs to."""
+    memberships = db.query(OrganizationMember).filter(
+        OrganizationMember.employer_id == employer.id
+    ).all()
+
+    organizations = []
+    for m in memberships:
+        org = m.organization
+        member_count = db.query(OrganizationMember).filter(
+            OrganizationMember.organization_id == org.id
+        ).count()
+        organizations.append(OrganizationResponse(
+            id=org.id,
+            name=org.name,
+            slug=org.slug,
+            logo_url=org.logo_url,
+            website=org.website,
+            industry=org.industry,
+            company_size=org.company_size,
+            description=org.description,
+            plan=org.plan,
+            created_at=org.created_at,
+            member_count=member_count,
+        ))
+
+    return OrganizationList(organizations=organizations, total=len(organizations))
+
+
+@router.get("/organizations/{org_id}", response_model=OrganizationDetailResponse)
+async def get_organization(
+    org_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Get organization details with members list."""
+    # Verify membership
+    membership = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org_id,
+        OrganizationMember.employer_id == employer.id
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Organization not found or you are not a member"
+        )
+
+    org = membership.organization
+
+    # Get all members
+    members = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org_id
+    ).all()
+
+    member_list = []
+    for m in members:
+        emp = m.employer
+        member_list.append(OrganizationMemberResponse(
+            id=m.id,
+            employer_id=emp.id,
+            employer_name=emp.name,
+            employer_email=emp.email,
+            role=m.role.value,
+            joined_at=m.joined_at,
+        ))
+
+    return OrganizationDetailResponse(
+        id=org.id,
+        name=org.name,
+        slug=org.slug,
+        logo_url=org.logo_url,
+        website=org.website,
+        industry=org.industry,
+        company_size=org.company_size,
+        description=org.description,
+        plan=org.plan,
+        created_at=org.created_at,
+        member_count=len(members),
+        members=member_list,
+    )
+
+
+@router.patch("/organizations/{org_id}", response_model=OrganizationResponse)
+async def update_organization(
+    org_id: str,
+    data: OrganizationUpdate,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Update organization details. Requires admin or owner role."""
+    # Verify membership with admin/owner role
+    membership = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org_id,
+        OrganizationMember.employer_id == employer.id,
+        OrganizationMember.role.in_([OrganizationRole.OWNER, OrganizationRole.ADMIN])
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to update this organization"
+        )
+
+    org = membership.organization
+
+    # Update fields
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(org, key, value)
+
+    db.commit()
+    db.refresh(org)
+
+    member_count = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org_id
+    ).count()
+
+    return OrganizationResponse(
+        id=org.id,
+        name=org.name,
+        slug=org.slug,
+        logo_url=org.logo_url,
+        website=org.website,
+        industry=org.industry,
+        company_size=org.company_size,
+        description=org.description,
+        plan=org.plan,
+        created_at=org.created_at,
+        member_count=member_count,
+    )
+
+
+@router.post("/organizations/{org_id}/invites", response_model=OrganizationInviteResponse, status_code=status.HTTP_201_CREATED)
+async def invite_to_organization(
+    org_id: str,
+    data: OrganizationInviteCreate,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Invite someone to join the organization. Requires admin or owner role."""
+    # Verify membership with admin/owner role
+    membership = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org_id,
+        OrganizationMember.employer_id == employer.id,
+        OrganizationMember.role.in_([OrganizationRole.OWNER, OrganizationRole.ADMIN])
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to invite members"
+        )
+
+    org = membership.organization
+
+    # Check if already a member
+    existing_member = db.query(OrganizationMember).join(Employer).filter(
+        OrganizationMember.organization_id == org_id,
+        Employer.email == data.email
+    ).first()
+
+    if existing_member:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This person is already a member of the organization"
+        )
+
+    # Check for existing pending invite
+    existing_invite = db.query(OrganizationInvite).filter(
+        OrganizationInvite.organization_id == org_id,
+        OrganizationInvite.email == data.email,
+        OrganizationInvite.status == InviteStatus.PENDING
+    ).first()
+
+    if existing_invite:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="An invite is already pending for this email"
+        )
+
+    # Create invite
+    invite = OrganizationInvite(
+        id=generate_cuid("oi"),
+        organization_id=org_id,
+        email=data.email,
+        role=OrganizationRole(data.role),
+        token=secrets.token_urlsafe(32),
+        invited_by_id=employer.id,
+        expires_at=datetime.utcnow() + timedelta(days=7),
+    )
+    db.add(invite)
+    db.commit()
+    db.refresh(invite)
+
+    # TODO: Send invite email
+
+    return OrganizationInviteResponse(
+        id=invite.id,
+        organization_id=org_id,
+        organization_name=org.name,
+        email=invite.email,
+        role=invite.role.value,
+        status=invite.status.value,
+        expires_at=invite.expires_at,
+        created_at=invite.created_at,
+    )
+
+
+@router.get("/organizations/{org_id}/invites", response_model=list[OrganizationInviteResponse])
+async def list_organization_invites(
+    org_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """List pending invites for an organization. Requires admin or owner role."""
+    # Verify membership with admin/owner role
+    membership = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org_id,
+        OrganizationMember.employer_id == employer.id,
+        OrganizationMember.role.in_([OrganizationRole.OWNER, OrganizationRole.ADMIN])
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to view invites"
+        )
+
+    org = membership.organization
+
+    invites = db.query(OrganizationInvite).filter(
+        OrganizationInvite.organization_id == org_id,
+        OrganizationInvite.status == InviteStatus.PENDING
+    ).order_by(OrganizationInvite.created_at.desc()).all()
+
+    return [
+        OrganizationInviteResponse(
+            id=inv.id,
+            organization_id=org_id,
+            organization_name=org.name,
+            email=inv.email,
+            role=inv.role.value,
+            status=inv.status.value,
+            expires_at=inv.expires_at,
+            created_at=inv.created_at,
+        )
+        for inv in invites
+    ]
+
+
+@router.post("/organizations/accept-invite", response_model=OrganizationResponse)
+async def accept_organization_invite(
+    data: OrganizationInviteAccept,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Accept an organization invite using the token."""
+    invite = db.query(OrganizationInvite).filter(
+        OrganizationInvite.token == data.token,
+        OrganizationInvite.status == InviteStatus.PENDING
+    ).first()
+
+    if not invite:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invalid or expired invite"
+        )
+
+    # Check if expired
+    if invite.expires_at < datetime.utcnow():
+        invite.status = InviteStatus.EXPIRED
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This invite has expired"
+        )
+
+    # Check if email matches
+    if invite.email.lower() != employer.email.lower():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This invite was sent to a different email address"
+        )
+
+    # Check if already a member
+    existing_member = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == invite.organization_id,
+        OrganizationMember.employer_id == employer.id
+    ).first()
+
+    if existing_member:
+        invite.status = InviteStatus.ACCEPTED
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You are already a member of this organization"
+        )
+
+    # Create membership
+    membership = OrganizationMember(
+        id=generate_cuid("om"),
+        organization_id=invite.organization_id,
+        employer_id=employer.id,
+        role=invite.role,
+        invited_by_id=invite.invited_by_id,
+    )
+    db.add(membership)
+
+    # Update invite status
+    invite.status = InviteStatus.ACCEPTED
+    invite.accepted_at = datetime.utcnow()
+
+    db.commit()
+
+    org = invite.organization
+    member_count = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org.id
+    ).count()
+
+    return OrganizationResponse(
+        id=org.id,
+        name=org.name,
+        slug=org.slug,
+        logo_url=org.logo_url,
+        website=org.website,
+        industry=org.industry,
+        company_size=org.company_size,
+        description=org.description,
+        plan=org.plan,
+        created_at=org.created_at,
+        member_count=member_count,
+    )
+
+
+@router.delete("/organizations/{org_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_organization_member(
+    org_id: str,
+    member_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Remove a member from the organization. Requires admin/owner role."""
+    # Verify membership with admin/owner role
+    current_membership = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org_id,
+        OrganizationMember.employer_id == employer.id,
+        OrganizationMember.role.in_([OrganizationRole.OWNER, OrganizationRole.ADMIN])
+    ).first()
+
+    if not current_membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to remove members"
+        )
+
+    # Find member to remove
+    target_member = db.query(OrganizationMember).filter(
+        OrganizationMember.id == member_id,
+        OrganizationMember.organization_id == org_id
+    ).first()
+
+    if not target_member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member not found"
+        )
+
+    # Cannot remove owner (must transfer ownership first)
+    if target_member.role == OrganizationRole.OWNER:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove the owner. Transfer ownership first."
+        )
+
+    db.delete(target_member)
+    db.commit()
+
+
+@router.delete("/organizations/{org_id}/invites/{invite_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def cancel_organization_invite(
+    org_id: str,
+    invite_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """Cancel a pending invite. Requires admin/owner role."""
+    # Verify membership with admin/owner role
+    membership = db.query(OrganizationMember).filter(
+        OrganizationMember.organization_id == org_id,
+        OrganizationMember.employer_id == employer.id,
+        OrganizationMember.role.in_([OrganizationRole.OWNER, OrganizationRole.ADMIN])
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to cancel invites"
+        )
+
+    invite = db.query(OrganizationInvite).filter(
+        OrganizationInvite.id == invite_id,
+        OrganizationInvite.organization_id == org_id,
+        OrganizationInvite.status == InviteStatus.PENDING
+    ).first()
+
+    if not invite:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invite not found"
+        )
+
+    invite.status = InviteStatus.CANCELLED
+    db.commit()

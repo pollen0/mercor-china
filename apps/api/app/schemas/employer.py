@@ -92,9 +92,12 @@ class EmployerResponse(BaseModel):
 
 
 class EmployerWithToken(BaseModel):
+    """Employer response with auth tokens (for login/register)."""
     employer: EmployerResponse
     token: str
+    refresh_token: Optional[str] = None  # Refresh token for obtaining new access tokens
     token_type: str = "bearer"
+    expires_in: int = 3600  # Access token expiry in seconds (1 hour)
 
 
 class JobCreate(BaseModel):
@@ -410,3 +413,124 @@ class CandidateRankingResponse(BaseModel):
     candidates: list[RankedCandidate]
     total: int
     average_match_score: float
+
+
+# ==========================================
+# ORGANIZATION SCHEMAS
+# ==========================================
+
+class OrganizationCreate(BaseModel):
+    """Create a new organization."""
+    name: str
+    website: Optional[str] = None
+    industry: Optional[str] = None
+    company_size: Optional[str] = None  # 'startup', 'smb', 'enterprise'
+    description: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("Organization name must be at least 2 characters")
+        if len(v) > 100:
+            raise ValueError("Organization name cannot exceed 100 characters")
+        return v
+
+
+class OrganizationUpdate(BaseModel):
+    """Update organization details."""
+    name: Optional[str] = None
+    logo_url: Optional[str] = None
+    website: Optional[str] = None
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
+    description: Optional[str] = None
+    settings: Optional[dict] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            v = v.strip()
+            if len(v) < 2:
+                raise ValueError("Organization name must be at least 2 characters")
+            if len(v) > 100:
+                raise ValueError("Organization name cannot exceed 100 characters")
+        return v
+
+
+class OrganizationMemberResponse(BaseModel):
+    """Organization member details."""
+    id: str
+    employer_id: str
+    employer_name: Optional[str] = None
+    employer_email: str
+    role: str
+    joined_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OrganizationResponse(BaseModel):
+    """Organization details response."""
+    id: str
+    name: str
+    slug: str
+    logo_url: Optional[str] = None
+    website: Optional[str] = None
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
+    description: Optional[str] = None
+    plan: str
+    created_at: datetime
+    member_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class OrganizationDetailResponse(OrganizationResponse):
+    """Organization with members list."""
+    members: list[OrganizationMemberResponse] = []
+
+
+class OrganizationList(BaseModel):
+    """List of organizations."""
+    organizations: list[OrganizationResponse]
+    total: int
+
+
+class OrganizationInviteCreate(BaseModel):
+    """Create an invite to join organization."""
+    email: EmailStr
+    role: str = "recruiter"  # owner, admin, recruiter, hiring_manager, interviewer
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        valid_roles = ['admin', 'recruiter', 'hiring_manager', 'interviewer']
+        if v not in valid_roles:
+            raise ValueError(f"Role must be one of: {', '.join(valid_roles)}")
+        return v
+
+
+class OrganizationInviteResponse(BaseModel):
+    """Pending invite details."""
+    id: str
+    organization_id: str
+    organization_name: str
+    email: str
+    role: str
+    status: str
+    expires_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OrganizationInviteAccept(BaseModel):
+    """Accept an organization invite."""
+    token: str

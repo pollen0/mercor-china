@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { candidateRegistrationSchema, targetRoleOptions, universityOptions, graduationYearOptions, type CandidateRegistrationInput } from '@/lib/validations/candidate'
+import { setAuthTokens } from '@/lib/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -90,13 +91,19 @@ export default function RegisterPage() {
         throw new Error(data.error || data.detail || 'Registration failed. Please try again.')
       }
 
-      // Store candidate info and token
+      // Store candidate info
       localStorage.setItem('candidate', JSON.stringify({
         id: data.candidate.id,
         name: data.candidate.name,
         email: data.candidate.email,
       }))
-      localStorage.setItem('candidate_token', data.token)
+
+      // Store tokens (in both localStorage and cookies for middleware)
+      setAuthTokens('candidate', {
+        token: data.token,
+        refreshToken: data.refresh_token,
+        expiresIn: data.expires_in || 3600,
+      })
 
       setSubmitStatus('success')
 
