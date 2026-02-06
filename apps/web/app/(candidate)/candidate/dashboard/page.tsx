@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { UploadProgress } from '@/components/ui/upload-progress'
 import { DocumentPreview } from '@/components/ui/document-preview'
 import { candidateApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward } from '@/lib/api'
-import { useDashboardData } from '@/lib/hooks/use-candidate-data'
+import { useDashboardData, useSkillGap } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
 import { logout, clearAuthTokens } from '@/lib/auth'
 
@@ -86,7 +86,6 @@ function DashboardContent() {
     resumeData,
     githubData,
     githubAnalysis,
-    skillGap,
     verticalProfiles,
     matchingJobs,
     emailVerified,
@@ -95,6 +94,9 @@ function DashboardContent() {
     mutateResume,
     mutateGitHub,
   } = useDashboardData(token)
+
+  // Skill gap fetched separately to avoid TypeScript inference depth limits
+  const { skillGap } = useSkillGap(token)
 
   // Upload states
   const [isUploading, setIsUploading] = useState(false)

@@ -15,9 +15,9 @@ export function useCandidateProfile(token: string | null) {
     token ? ['candidate-profile', token] : null,
     ([, t]) => candidateApi.getMe(t),
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60000, // 1 minute
+      revalidateOnFocus: true,  // Re-fetch when user returns to tab (profile may have been edited)
+      revalidateOnReconnect: true,
+      dedupingInterval: 5000, // 5 seconds - allow quick re-fetches after edits
     }
   )
 
@@ -35,9 +35,9 @@ export function useResumeData(token: string | null) {
     token ? ['resume', token] : null,
     ([, t]) => candidateApi.getMyResume(t),
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60000, // 1 minute
+      revalidateOnFocus: true,  // Re-fetch when user returns (may have uploaded new resume)
+      revalidateOnReconnect: true,
+      dedupingInterval: 5000, // 5 seconds
     }
   )
 
@@ -61,9 +61,9 @@ export function useGitHubData(token: string | null) {
       }
     },
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60000,
+      revalidateOnFocus: true,  // Re-fetch when user returns (may have connected/refreshed GitHub)
+      revalidateOnReconnect: true,
+      dedupingInterval: 10000, // 10 seconds
     }
   )
 
@@ -77,7 +77,7 @@ export function useGitHubData(token: string | null) {
 
 // Hook for fetching GitHub analysis with caching
 export function useGitHubAnalysis(token: string | null) {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     token ? ['github-analysis', token] : null,
     async ([, t]) => {
       try {
@@ -87,9 +87,9 @@ export function useGitHubAnalysis(token: string | null) {
       }
     },
     {
-      revalidateOnFocus: false,
+      revalidateOnFocus: false, // Analysis doesn't change on user action
       revalidateOnReconnect: false,
-      dedupingInterval: 300000, // 5 minutes - analysis doesn't change often
+      dedupingInterval: 120000, // 2 minutes - analysis takes time to compute
     }
   )
 
@@ -97,6 +97,7 @@ export function useGitHubAnalysis(token: string | null) {
     githubAnalysis: data,
     isLoading,
     error,
+    mutate,
   }
 }
 
@@ -106,9 +107,9 @@ export function useVerticalProfiles(token: string | null) {
     token ? ['vertical-profiles', token] : null,
     ([, t]) => candidateVerticalApi.getMyVerticals(t),
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60000,
+      revalidateOnFocus: true,  // Re-fetch after completing interview
+      revalidateOnReconnect: true,
+      dedupingInterval: 10000, // 10 seconds
     }
   )
 
@@ -122,13 +123,13 @@ export function useVerticalProfiles(token: string | null) {
 
 // Hook for fetching matching jobs with caching
 export function useMatchingJobs(token: string | null) {
-  const { data, error, isLoading } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     token ? ['matching-jobs', token] : null,
     ([, t]) => candidateVerticalApi.getMatchingJobs(t),
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 120000, // 2 minutes
+      revalidateOnFocus: false, // Jobs don't change based on user action
+      revalidateOnReconnect: true,
+      dedupingInterval: 60000, // 1 minute - jobs update server-side
     }
   )
 
@@ -136,10 +137,40 @@ export function useMatchingJobs(token: string | null) {
     jobs: data?.jobs || [],
     isLoading,
     error,
+    mutate,
+  }
+}
+
+// Hook for fetching skill gap analysis
+export function useSkillGap(token: string | null) {
+  const { data, error, isLoading, mutate } = useSWR(
+    token ? ['skill-gap', token] : null,
+    async ([, t]) => {
+      try {
+        // Pass empty options object for general skill gap (not job-specific)
+        return await candidateApi.getMySkillGap({}, t)
+      } catch {
+        return null
+      }
+    },
+    {
+      revalidateOnFocus: false, // Analysis doesn't change on user action
+      revalidateOnReconnect: false,
+      dedupingInterval: 120000, // 2 minutes
+    }
+  )
+
+  return {
+    skillGap: data,
+    isLoading,
+    error,
+    mutate,
   }
 }
 
 // Combined hook for all dashboard data
+// Note: useSkillGap is exported separately and should be called directly
+// by consumers to avoid TypeScript inference depth limits with the large candidateApi object
 export function useDashboardData(token: string | null) {
   const candidateProfile = useCandidateProfile(token)
   const resume = useResumeData(token)
