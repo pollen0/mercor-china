@@ -1,5 +1,8 @@
 """
 Pydantic schemas for Vibe Code Session upload and analysis.
+
+Students see qualitative feedback only (archetype, strengths, areas to improve).
+Employers see numerical scores through the talent pool / profile endpoints.
 """
 from pydantic import BaseModel, field_validator
 from typing import Optional, Any
@@ -39,8 +42,78 @@ class VibeCodeSessionUpload(BaseModel):
         return v
 
 
+class VibeCodeRawUpload(BaseModel):
+    """Simplified upload for CLI piping - just raw content + optional metadata."""
+    session_content: str
+    title: Optional[str] = None
+    source: Optional[str] = None
+
+    @field_validator("session_content")
+    @classmethod
+    def validate_content(cls, v: str) -> str:
+        if len(v.strip()) < 50:
+            raise ValueError("Session content must be at least 50 characters")
+        if len(v) > 5_000_000:
+            raise ValueError("Session content exceeds 5MB limit")
+        return v
+
+
+# ============================================================================
+# STUDENT-FACING RESPONSES (no numerical scores)
+# ============================================================================
+
+class VibeCodeStudentResponse(BaseModel):
+    """
+    Student-facing session response.
+    Shows qualitative feedback ONLY - no numerical scores.
+    Students see: archetype, strengths, areas to improve, summary, status.
+    """
+    id: str
+    candidate_id: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    source: str
+    project_url: Optional[str] = None
+    message_count: Optional[int] = None
+    word_count: Optional[int] = None
+
+    # Analysis status
+    analysis_status: str
+
+    # Qualitative feedback only - NO scores
+    analysis_summary: Optional[str] = None
+    strengths: Optional[list[str]] = None
+    weaknesses: Optional[list[str]] = None
+    notable_patterns: Optional[list[str]] = None
+    builder_archetype: Optional[str] = None
+
+    # Timestamps
+    uploaded_at: Optional[datetime] = None
+    analyzed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class VibeCodeStudentUploadResponse(BaseModel):
+    """Response after uploading a session (student-facing)."""
+    success: bool
+    message: str
+    session: VibeCodeStudentResponse
+
+
+class VibeCodeStudentSessionList(BaseModel):
+    """List of vibe code sessions for a student (no scores)."""
+    sessions: list[VibeCodeStudentResponse]
+    total: int
+
+
+# ============================================================================
+# EMPLOYER-FACING RESPONSES (full scores + evidence)
+# ============================================================================
+
 class VibeCodeScores(BaseModel):
-    """Breakdown of builder score dimensions."""
+    """Breakdown of builder score dimensions (employer-only)."""
     direction: Optional[float] = None
     design_thinking: Optional[float] = None
     iteration_quality: Optional[float] = None
@@ -49,7 +122,7 @@ class VibeCodeScores(BaseModel):
 
 
 class VibeCodeSessionResponse(BaseModel):
-    """Response for a single vibe code session."""
+    """Full session response with scores (employer-facing)."""
     id: str
     candidate_id: str
     title: Optional[str] = None
@@ -80,21 +153,21 @@ class VibeCodeSessionResponse(BaseModel):
 
 
 class VibeCodeUploadResponse(BaseModel):
-    """Response after uploading a session."""
+    """Response after uploading a session (employer-facing, legacy compat)."""
     success: bool
     message: str
     session: VibeCodeSessionResponse
 
 
 class VibeCodeSessionList(BaseModel):
-    """List of vibe code sessions for a candidate."""
+    """List of vibe code sessions with scores (employer-facing)."""
     sessions: list[VibeCodeSessionResponse]
     total: int
     best_builder_score: Optional[float] = None
 
 
 class VibeCodeSessionDetail(BaseModel):
-    """Detailed view of a session including analysis evidence."""
+    """Detailed view of a session including analysis evidence (employer-facing)."""
     id: str
     candidate_id: str
     title: Optional[str] = None
@@ -126,7 +199,7 @@ class VibeCodeSessionDetail(BaseModel):
 
 
 class VibeCodeProfileSummary(BaseModel):
-    """Summary of a candidate's vibe code profile for talent pool display."""
+    """Summary of a candidate's vibe code profile for talent pool display (employer-facing)."""
     total_sessions: int = 0
     best_builder_score: Optional[float] = None
     avg_builder_score: Optional[float] = None

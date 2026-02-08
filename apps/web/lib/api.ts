@@ -4393,14 +4393,7 @@ export const organizationApi = {
 // Vibe Code Sessions - AI Coding Session Analysis
 // ============================================================================
 
-export interface VibeCodeScores {
-  direction: number | null
-  designThinking: number | null
-  iterationQuality: number | null
-  productSense: number | null
-  aiLeadership: number | null
-}
-
+// Student-facing session (qualitative feedback only - NO scores)
 export interface VibeCodeSession {
   id: string
   candidateId: string
@@ -4411,21 +4404,14 @@ export interface VibeCodeSession {
   messageCount?: number
   wordCount?: number
   analysisStatus: string
-  builderScore?: number
-  scores?: VibeCodeScores
+  // Qualitative feedback only - students don't see numerical scores
   analysisSummary?: string
   strengths?: string[]
   weaknesses?: string[]
   notablePatterns?: string[]
   builderArchetype?: string
-  scoringModel?: string
-  scoringVersion?: string
   uploadedAt?: string
   analyzedAt?: string
-}
-
-export interface VibeCodeSessionDetail extends VibeCodeSession {
-  analysisDetails?: Record<string, unknown>
 }
 
 export interface VibeCodeUploadResponse {
@@ -4437,9 +4423,9 @@ export interface VibeCodeUploadResponse {
 export interface VibeCodeSessionList {
   sessions: VibeCodeSession[]
   total: number
-  bestBuilderScore?: number
 }
 
+// Employer-facing types (with scores - used in talent pool)
 export interface VibeCodeProfileSummary {
   totalSessions: number
   bestBuilderScore?: number
@@ -4450,7 +4436,6 @@ export interface VibeCodeProfileSummary {
 }
 
 function transformVibeCodeSession(data: Record<string, unknown>): VibeCodeSession {
-  const scores = data.scores as Record<string, unknown> | null
   return {
     id: data.id as string,
     candidateId: data.candidate_id as string,
@@ -4461,21 +4446,11 @@ function transformVibeCodeSession(data: Record<string, unknown>): VibeCodeSessio
     messageCount: data.message_count as number | undefined,
     wordCount: data.word_count as number | undefined,
     analysisStatus: data.analysis_status as string,
-    builderScore: data.builder_score as number | undefined,
-    scores: scores ? {
-      direction: scores.direction as number | null,
-      designThinking: scores.design_thinking as number | null,
-      iterationQuality: scores.iteration_quality as number | null,
-      productSense: scores.product_sense as number | null,
-      aiLeadership: scores.ai_leadership as number | null,
-    } : undefined,
     analysisSummary: data.analysis_summary as string | undefined,
     strengths: data.strengths as string[] | undefined,
     weaknesses: data.weaknesses as string[] | undefined,
     notablePatterns: data.notable_patterns as string[] | undefined,
     builderArchetype: data.builder_archetype as string | undefined,
-    scoringModel: data.scoring_model as string | undefined,
-    scoringVersion: data.scoring_version as string | undefined,
     uploadedAt: data.uploaded_at as string | undefined,
     analyzedAt: data.analyzed_at as string | undefined,
   }
@@ -4507,24 +4482,20 @@ export const vibeCodeApi = {
     }
   },
 
-  // List all sessions for current student
+  // List all sessions for current student (no scores returned)
   listSessions: async (): Promise<VibeCodeSessionList> => {
     const response = await apiRequest<Record<string, unknown>>('/api/vibe-code/sessions')
     const sessions = (response.sessions as Array<Record<string, unknown>>).map(transformVibeCodeSession)
     return {
       sessions,
       total: response.total as number,
-      bestBuilderScore: response.best_builder_score as number | undefined,
     }
   },
 
-  // Get detailed session view
-  getSession: async (sessionId: string): Promise<VibeCodeSessionDetail> => {
+  // Get a single session (student view - no scores)
+  getSession: async (sessionId: string): Promise<VibeCodeSession> => {
     const data = await apiRequest<Record<string, unknown>>(`/api/vibe-code/sessions/${sessionId}`)
-    return {
-      ...transformVibeCodeSession(data),
-      analysisDetails: data.analysis_details as Record<string, unknown> | undefined,
-    }
+    return transformVibeCodeSession(data)
   },
 
   // Delete a session
@@ -4539,7 +4510,7 @@ export const vibeCodeApi = {
     return transformVibeCodeSession(data)
   },
 
-  // Get candidate's vibe code profile summary (for talent pool)
+  // Get candidate's vibe code profile summary (for talent pool - employer facing)
   getProfile: async (candidateId: string): Promise<VibeCodeProfileSummary> => {
     const data = await apiRequest<Record<string, unknown>>(`/api/vibe-code/profile/${candidateId}`)
     return {

@@ -20,27 +20,27 @@ const ARCHETYPE_LABELS: Record<string, { label: string; color: string; descripti
   architect: {
     label: 'Architect',
     color: 'bg-indigo-100 text-indigo-800',
-    description: 'Plans thoroughly, designs before building',
+    description: 'Plans thoroughly, designs before building, questions AI decisions',
   },
   iterative_builder: {
     label: 'Iterative Builder',
     color: 'bg-emerald-100 text-emerald-800',
-    description: 'Builds incrementally, refines through cycles',
+    description: 'Builds incrementally, tests often, refines through cycles',
   },
   experimenter: {
     label: 'Experimenter',
     color: 'bg-amber-100 text-amber-800',
-    description: 'Explores alternatives, tries many approaches',
+    description: 'Curious and exploratory, tries multiple approaches before committing',
   },
   ai_dependent: {
     label: 'AI Dependent',
     color: 'bg-orange-100 text-orange-800',
-    description: 'Relies heavily on AI for decisions',
+    description: 'Relies heavily on AI for decisions - consider leading more',
   },
   copy_paster: {
     label: 'Copy Paster',
     color: 'bg-red-100 text-red-800',
-    description: 'Minimal effort, pastes errors back',
+    description: 'Minimal steering of the AI - try being more intentional',
   },
 }
 
@@ -75,37 +75,7 @@ const EXPORT_GUIDES: Record<string, { tool: string; steps: string[] }> = {
 }
 
 // ============================================================================
-// Score Bar Component
-// ============================================================================
-
-function ScoreBar({ label, score, maxScore = 10 }: { label: string; score: number | null; maxScore?: number }) {
-  if (score === null || score === undefined) return null
-  const percentage = (score / maxScore) * 100
-  const getColor = (pct: number) => {
-    if (pct >= 80) return 'bg-emerald-500'
-    if (pct >= 60) return 'bg-indigo-500'
-    if (pct >= 40) return 'bg-amber-500'
-    return 'bg-red-400'
-  }
-
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-sm">
-        <span className="text-stone-600">{label}</span>
-        <span className="font-medium text-stone-900">{score.toFixed(1)}/10</span>
-      </div>
-      <div className="w-full bg-stone-100 rounded-full h-2">
-        <div
-          className={`h-2 rounded-full transition-all ${getColor(percentage)}`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
-// ============================================================================
-// Session Card Component
+// Session Card Component (student view - qualitative only, NO scores)
 // ============================================================================
 
 function SessionCard({
@@ -164,7 +134,7 @@ function SessionCard({
         </div>
       </div>
 
-      {/* Status */}
+      {/* Status: Analyzing */}
       {isAnalyzing && (
         <div className="flex items-center gap-2 text-sm text-stone-500">
           <div className="animate-spin h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full" />
@@ -172,55 +142,42 @@ function SessionCard({
         </div>
       )}
 
+      {/* Status: Failed */}
       {isFailed && (
         <div className="text-sm text-red-500 bg-red-50 rounded p-2">
-          Analysis failed. Click "Retry" to try again.
+          Analysis failed. Click &ldquo;Retry&rdquo; to try again.
         </div>
       )}
 
-      {/* Results */}
-      {isCompleted && session.builderScore !== undefined && (
+      {/* Results: Qualitative feedback only */}
+      {isCompleted && (
         <div className="space-y-3">
-          {/* Builder Score + Archetype */}
-          <div className="flex items-center justify-between">
+          {/* Builder Archetype */}
+          {archetype && (
             <div className="flex items-center gap-3">
-              <div className="text-2xl font-bold text-stone-900">
-                {session.builderScore.toFixed(1)}
-              </div>
-              <div className="text-sm text-stone-500">/10 Builder Score</div>
-            </div>
-            {archetype && (
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${archetype.color}`}>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${archetype.color}`}>
                 {archetype.label}
               </span>
-            )}
-          </div>
-
-          {/* Summary */}
-          {session.analysisSummary && (
-            <p className="text-sm text-stone-600">{session.analysisSummary}</p>
-          )}
-
-          {/* Score Breakdown */}
-          {session.scores && (
-            <div className="space-y-2">
-              <ScoreBar label="Direction & Intent" score={session.scores.direction} />
-              <ScoreBar label="Design Thinking" score={session.scores.designThinking} />
-              <ScoreBar label="Iteration Quality" score={session.scores.iterationQuality} />
-              <ScoreBar label="Product Sense" score={session.scores.productSense} />
-              <ScoreBar label="AI Leadership" score={session.scores.aiLeadership} />
+              <span className="text-xs text-stone-500">{archetype.description}</span>
             </div>
           )}
 
-          {/* Strengths & Weaknesses */}
+          {/* Analysis Summary */}
+          {session.analysisSummary && (
+            <p className="text-sm text-stone-600 bg-stone-50 rounded-lg p-3">
+              {session.analysisSummary}
+            </p>
+          )}
+
+          {/* Strengths & Areas to Improve */}
           <div className="grid grid-cols-2 gap-3">
             {session.strengths && session.strengths.length > 0 && (
-              <div>
-                <h5 className="text-xs font-medium text-emerald-700 mb-1">Strengths</h5>
-                <ul className="text-xs text-stone-600 space-y-0.5">
+              <div className="bg-emerald-50 rounded-lg p-3">
+                <h5 className="text-xs font-medium text-emerald-800 mb-2">What you did well</h5>
+                <ul className="text-xs text-stone-700 space-y-1">
                   {session.strengths.map((s, i) => (
-                    <li key={i} className="flex items-start gap-1">
-                      <span className="text-emerald-500 mt-0.5">+</span>
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-emerald-500 mt-0.5 shrink-0">+</span>
                       <span>{s}</span>
                     </li>
                   ))}
@@ -228,12 +185,12 @@ function SessionCard({
               </div>
             )}
             {session.weaknesses && session.weaknesses.length > 0 && (
-              <div>
-                <h5 className="text-xs font-medium text-amber-700 mb-1">Areas to Improve</h5>
-                <ul className="text-xs text-stone-600 space-y-0.5">
+              <div className="bg-amber-50 rounded-lg p-3">
+                <h5 className="text-xs font-medium text-amber-800 mb-2">Areas to improve</h5>
+                <ul className="text-xs text-stone-700 space-y-1">
                   {session.weaknesses.map((w, i) => (
-                    <li key={i} className="flex items-start gap-1">
-                      <span className="text-amber-500 mt-0.5">-</span>
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-amber-500 mt-0.5 shrink-0">-</span>
                       <span>{w}</span>
                     </li>
                   ))}
@@ -241,6 +198,20 @@ function SessionCard({
               </div>
             )}
           </div>
+
+          {/* Notable Patterns */}
+          {session.notablePatterns && session.notablePatterns.length > 0 && (
+            <div>
+              <h5 className="text-xs font-medium text-stone-500 mb-1">Notable patterns</h5>
+              <div className="flex flex-wrap gap-1.5">
+                {session.notablePatterns.map((p, i) => (
+                  <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -264,6 +235,8 @@ function UploadForm({
   const [source, setSource] = useState('')
   const [projectUrl, setProjectUrl] = useState('')
   const [showGuide, setShowGuide] = useState<string | null>(null)
+  const [showCli, setShowCli] = useState(false)
+  const [showPasteArea, setShowPasteArea] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -272,7 +245,6 @@ function UploadForm({
     reader.onload = (e) => {
       const text = e.target?.result as string
       setContent(text)
-      // Auto-set title from filename
       if (!title) {
         const name = file.name.replace(/\.(json|md|txt|log)$/i, '')
         setTitle(name)
@@ -297,7 +269,6 @@ function UploadForm({
       source: source || undefined,
       projectUrl: projectUrl || undefined,
     })
-    // Reset form
     setContent('')
     setTitle('')
     setDescription('')
@@ -307,13 +278,13 @@ function UploadForm({
 
   return (
     <div className="space-y-4">
-      {/* Export Guides */}
+      {/* Export Guides + CLI */}
       <div className="flex flex-wrap gap-2">
-        <span className="text-sm text-stone-500">How to export from:</span>
+        <span className="text-sm text-stone-500">How to export:</span>
         {Object.entries(EXPORT_GUIDES).map(([key, guide]) => (
           <button
             key={key}
-            onClick={() => setShowGuide(showGuide === key ? null : key)}
+            onClick={() => { setShowGuide(showGuide === key ? null : key); setShowCli(false) }}
             className={`text-xs px-2 py-1 rounded border transition-colors ${
               showGuide === key
                 ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
@@ -323,6 +294,16 @@ function UploadForm({
             {guide.tool}
           </button>
         ))}
+        <button
+          onClick={() => { setShowCli(!showCli); setShowGuide(null) }}
+          className={`text-xs px-2 py-1 rounded border transition-colors ${
+            showCli
+              ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+              : 'border-stone-200 text-stone-600 hover:border-stone-300'
+          }`}
+        >
+          CLI / Terminal
+        </button>
       </div>
 
       {/* Guide Steps */}
@@ -342,7 +323,37 @@ function UploadForm({
         </div>
       )}
 
-      {/* Drop Zone / Paste Area */}
+      {/* CLI Instructions */}
+      {showCli && (
+        <div className="bg-stone-900 rounded-lg p-4 text-sm font-mono">
+          <p className="text-stone-400 text-xs mb-2"># Upload directly from your terminal:</p>
+          <p className="text-emerald-400 text-xs mb-3">
+            # Get your auth token from browser: localStorage.getItem(&apos;candidate_token&apos;)
+          </p>
+          <div className="space-y-3">
+            <div>
+              <p className="text-stone-500 text-xs mb-1"># Claude Code - pipe session directly</p>
+              <p className="text-white text-xs break-all">
+                claude export --format json | jq -Rs &apos;{'{'}session_content: .{'}'}&apos; | \<br />
+                &nbsp;&nbsp;curl -X POST -H &quot;Authorization: Bearer $TOKEN&quot; \<br />
+                &nbsp;&nbsp;-H &quot;Content-Type: application/json&quot; -d @- \<br />
+                &nbsp;&nbsp;https://pathway.careers/api/vibe-code/sessions/raw
+              </p>
+            </div>
+            <div>
+              <p className="text-stone-500 text-xs mb-1"># Upload any session file</p>
+              <p className="text-white text-xs break-all">
+                jq -Rs &apos;{'{'}session_content: .{'}'}&apos; session.json | \<br />
+                &nbsp;&nbsp;curl -X POST -H &quot;Authorization: Bearer $TOKEN&quot; \<br />
+                &nbsp;&nbsp;-H &quot;Content-Type: application/json&quot; -d @- \<br />
+                &nbsp;&nbsp;https://pathway.careers/api/vibe-code/sessions/raw
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Drop Zone / File Upload / Paste Area */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
@@ -356,11 +367,11 @@ function UploadForm({
         }`}
       >
         {!content ? (
-          <div className="p-8 text-center">
+          <div className="p-6 text-center">
             <div className="text-stone-400 mb-2">
-              <svg className="mx-auto h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                  d="M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-6h6m6 1a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
             <p className="text-sm text-stone-600 mb-1">
@@ -372,7 +383,7 @@ function UploadForm({
                 browse files
               </button>
             </p>
-            <p className="text-xs text-stone-400">
+            <p className="text-xs text-stone-400 mb-3">
               Supports .json, .md, .txt exports from Cursor, Claude Code, Copilot
             </p>
             <input
@@ -385,24 +396,52 @@ function UploadForm({
                 if (file) handleFileRead(file)
               }}
             />
-            <div className="mt-3 flex items-center gap-2 justify-center">
-              <div className="h-px bg-stone-200 w-16" />
-              <span className="text-xs text-stone-400">or paste directly</span>
-              <div className="h-px bg-stone-200 w-16" />
+
+            {/* Paste options */}
+            <div className="flex items-center gap-2 justify-center mb-2">
+              <div className="h-px bg-stone-200 w-12" />
+              <span className="text-xs text-stone-400">or paste your session</span>
+              <div className="h-px bg-stone-200 w-12" />
             </div>
-            <button
-              onClick={async () => {
-                try {
-                  const text = await navigator.clipboard.readText()
-                  if (text) setContent(text)
-                } catch {
-                  // Clipboard API not available - show textarea
-                }
-              }}
-              className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium"
-            >
-              Paste from clipboard
-            </button>
+            <div className="flex items-center gap-2 justify-center">
+              <button
+                onClick={async () => {
+                  try {
+                    const text = await navigator.clipboard.readText()
+                    if (text) setContent(text)
+                  } catch {
+                    setShowPasteArea(true)
+                  }
+                }}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Paste from clipboard
+              </button>
+              <span className="text-xs text-stone-300">|</span>
+              <button
+                onClick={() => setShowPasteArea(!showPasteArea)}
+                className="text-xs text-stone-500 hover:text-stone-700"
+              >
+                Type/paste manually
+              </button>
+            </div>
+
+            {/* Manual paste textarea */}
+            {showPasteArea && (
+              <div className="mt-3 text-left">
+                <textarea
+                  className="w-full h-32 text-xs font-mono border border-stone-200 rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-indigo-300 resize-y"
+                  placeholder="Paste your AI coding session content here..."
+                  onChange={(e) => {
+                    if (e.target.value.length > 50) {
+                      setContent(e.target.value)
+                      setShowPasteArea(false)
+                    }
+                  }}
+                />
+                <p className="text-xs text-stone-400 mt-1">Start typing or paste - will auto-load when content is detected</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="p-4">
@@ -417,7 +456,7 @@ function UploadForm({
                 Clear
               </button>
             </div>
-            <pre className="text-xs text-stone-500 bg-white rounded p-2 max-h-32 overflow-y-auto border border-stone-100">
+            <pre className="text-xs text-stone-500 bg-white rounded p-2 max-h-24 overflow-y-auto border border-stone-100">
               {content.slice(0, 500)}{content.length > 500 ? '...' : ''}
             </pre>
           </div>
@@ -453,12 +492,12 @@ function UploadForm({
             </select>
           </div>
           <div className="col-span-2">
-            <label className="text-xs text-stone-500 block mb-1">Description (optional)</label>
+            <label className="text-xs text-stone-500 block mb-1">What did you build? (optional)</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What did you build in this session?"
+              placeholder="e.g., Full-stack todo app with auth and real-time updates"
               className="w-full text-sm border border-stone-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
             />
           </div>
@@ -500,28 +539,15 @@ interface VibeCodeSectionProps {
 
 export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeSectionProps) {
   const [sessions, setSessions] = useState<VibeCodeSession[]>(initialData?.sessions || [])
-  const [bestScore, setBestScore] = useState<number | undefined>(initialData?.bestBuilderScore)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showUpload, setShowUpload] = useState(false)
-
-  const refreshSessions = useCallback(async () => {
-    try {
-      const data = await vibeCodeApi.listSessions()
-      setSessions(data.sessions)
-      setBestScore(data.bestBuilderScore)
-      onDataChange?.()
-    } catch {
-      // Silently fail on refresh
-    }
-  }, [onDataChange])
 
   const handleUpload = useCallback(async (data: Parameters<typeof vibeCodeApi.upload>[0]) => {
     setIsUploading(true)
     setError(null)
     try {
       const result = await vibeCodeApi.upload(data)
-      // Add new session to list
       setSessions(prev => [result.session, ...prev])
       setShowUpload(false)
 
@@ -530,48 +556,41 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
         try {
           const updated = await vibeCodeApi.listSessions()
           setSessions(updated.sessions)
-          setBestScore(updated.bestBuilderScore)
-          // Stop polling when analysis is done
           const session = updated.sessions.find(s => s.id === result.session.id)
           if (session && (session.analysisStatus === 'completed' || session.analysisStatus === 'failed')) {
             clearInterval(pollInterval)
+            onDataChange?.()
           }
         } catch {
           clearInterval(pollInterval)
         }
       }, 5000)
 
-      // Safety: stop polling after 3 minutes
       setTimeout(() => clearInterval(pollInterval), 180000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
       setIsUploading(false)
     }
-  }, [])
+  }, [onDataChange])
 
   const handleDelete = useCallback(async (sessionId: string) => {
     try {
       await vibeCodeApi.deleteSession(sessionId)
       setSessions(prev => prev.filter(s => s.id !== sessionId))
-      // Recalculate best score
-      const remaining = sessions.filter(s => s.id !== sessionId && s.builderScore != null)
-      setBestScore(remaining.length > 0 ? Math.max(...remaining.map(s => s.builderScore!)) : undefined)
     } catch {
       setError('Failed to delete session')
     }
-  }, [sessions])
+  }, [])
 
   const handleReanalyze = useCallback(async (sessionId: string) => {
     try {
       const updated = await vibeCodeApi.reanalyze(sessionId)
       setSessions(prev => prev.map(s => s.id === sessionId ? updated : s))
-      // Poll for completion
       const pollInterval = setInterval(async () => {
         try {
           const data = await vibeCodeApi.listSessions()
           setSessions(data.sessions)
-          setBestScore(data.bestBuilderScore)
           const session = data.sessions.find(s => s.id === sessionId)
           if (session && (session.analysisStatus === 'completed' || session.analysisStatus === 'failed')) {
             clearInterval(pollInterval)
@@ -595,14 +614,14 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
           <div>
             <CardTitle className="flex items-center gap-2">
               AI Builder Profile
-              {bestScore !== undefined && (
-                <span className="text-sm font-normal px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700">
-                  Best: {bestScore.toFixed(1)}/10
+              {completedSessions.length > 0 && (
+                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                  {completedSessions.length} session{completedSessions.length !== 1 ? 's' : ''} analyzed
                 </span>
               )}
             </CardTitle>
             <CardDescription>
-              Upload your AI coding sessions (Cursor, Claude Code, Copilot) to show employers how you think and build
+              Upload your AI coding sessions to show employers how you think and build with tools like Cursor, Claude Code, and Copilot
             </CardDescription>
           </div>
           <button
@@ -638,10 +657,10 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
                   d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
               </svg>
             </div>
-            <h4 className="text-sm font-medium text-stone-700 mb-1">No sessions uploaded yet</h4>
+            <h4 className="text-sm font-medium text-stone-700 mb-1">Show employers how you build</h4>
             <p className="text-xs text-stone-500 mb-4 max-w-sm mx-auto">
               Upload your AI coding sessions from Cursor, Claude Code, or Copilot.
-              Employers will see how you think and build with AI tools.
+              We&apos;ll analyze how you think and give you feedback on your building style.
             </p>
             <button
               onClick={() => setShowUpload(true)}
@@ -666,25 +685,12 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
           </div>
         )}
 
-        {/* Stats Summary */}
+        {/* Summary for multiple sessions */}
         {completedSessions.length >= 2 && (
-          <div className="bg-stone-50 rounded-lg p-3 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-lg font-bold text-stone-900">{completedSessions.length}</div>
-              <div className="text-xs text-stone-500">Sessions</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-stone-900">
-                {bestScore?.toFixed(1) || '-'}
-              </div>
-              <div className="text-xs text-stone-500">Best Score</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-stone-900">
-                {(completedSessions.reduce((sum, s) => sum + (s.builderScore || 0), 0) / completedSessions.length).toFixed(1)}
-              </div>
-              <div className="text-xs text-stone-500">Avg Score</div>
-            </div>
+          <div className="bg-stone-50 rounded-lg p-3 text-center">
+            <p className="text-xs text-stone-500">
+              {completedSessions.length} sessions analyzed. Upload more sessions to build a stronger builder profile for employers.
+            </p>
           </div>
         )}
       </CardContent>
