@@ -445,10 +445,80 @@ async def get_candidate(
 
 # ==================== RESUME ENDPOINTS ====================
 
+def _match_club(activity_name: str, db: Session) -> tuple:
+    """Try to match an activity name to a known club. Returns (club, score) or (None, 3.0)."""
+    name_lower = activity_name.lower()
+
+    # Search all clubs for a match (name, short_name, or aliases)
+    clubs = db.query(Club).all()
+    for club in clubs:
+        if (name_lower in club.name.lower() or
+            club.name.lower() in name_lower or
+            (club.short_name and (
+                name_lower == club.short_name.lower() or
+                club.short_name.lower() in name_lower
+            ))):
+            return club, club.prestige_score
+
+        # Check aliases
+        if club.aliases:
+            for alias in club.aliases:
+                if isinstance(alias, str) and (
+                    name_lower == alias.lower() or
+                    alias.lower() in name_lower
+                ):
+                    return club, club.prestige_score
+
+    return None, 3.0
+
+
+def _get_role_tier_for_populate(role: str | None) -> int:
+    """Determine role tier from role title."""
+    if not role:
+        return 1
+    role_lower = role.lower()
+    if any(x in role_lower for x in ["president", "founder", "ceo", "director"]):
+        return 5
+    if any(x in role_lower for x in ["vice president", "vp", "executive", "chair", "head"]):
+        return 4
+    if any(x in role_lower for x in ["officer", "lead", "manager", "coordinator", "captain"]):
+        return 3
+    if any(x in role_lower for x in ["mentor", "tutor", "developer", "designer", "analyst"]):
+        return 2
+    return 1
+
+
+def _get_role_multiplier_for_populate(role: str | None) -> float:
+    """Get score multiplier based on role."""
+    tier = _get_role_tier_for_populate(role)
+    return {1: 1.0, 2: 1.1, 3: 1.25, 4: 1.4, 5: 1.5}.get(tier, 1.0)
+
+
+def _estimate_award_tier_for_populate(name: str, issuer: str | None) -> int:
+    """Estimate prestige tier for an award based on keywords."""
+    name_lower = name.lower()
+    issuer_lower = (issuer or "").lower()
+
+    if any(x in name_lower for x in ["national", "international", "goldwater", "fulbright", "rhodes", "marshall"]):
+        return 5
+    if any(x in name_lower for x in ["scholarship", "fellowship"]):
+        if any(x in issuer_lower for x in ["google", "microsoft", "facebook", "meta", "apple", "amazon"]):
+            return 5
+        return 4
+    if any(x in name_lower for x in ["first place", "1st place", "grand prize", "winner"]):
+        return 4
+    if any(x in name_lower for x in ["dean's list", "honors", "cum laude", "phi beta kappa", "magna", "summa"]):
+        return 3
+    if any(x in name_lower for x in ["award", "recognition", "certificate", "finalist", "semifinalist"]):
+        return 2
+    return 1
+
+
 def _auto_populate_from_resume(candidate_id: str, parsed_data: ParsedResume, db: Session) -> None:
     """
     Auto-populate CandidateActivity and CandidateAward records from parsed resume data.
     Uses case-insensitive name matching to prevent duplicates.
+    Includes club matching and scoring for activities, prestige estimation for awards.
     """
     if not parsed_data:
         return
@@ -464,34 +534,46 @@ def _auto_populate_from_resume(candidate_id: str, parsed_data: ParsedResume, db:
     ).all()
     existing_award_names = {a.name.lower() for a in existing_awards}
 
-    # Create new activities (skip duplicates)
+    # Create new activities with scoring (skip duplicates)
     activities_created = 0
     for activity in parsed_data.activities:
         if activity.name.lower() not in existing_activity_names:
+            # Try to match with a known club
+            club, base_score = _match_club(activity.name, db)
+            role_multiplier = _get_role_multiplier_for_populate(activity.role)
+            activity_score = min(10.0, base_score * role_multiplier)
+            role_tier = _get_role_tier_for_populate(activity.role)
+
             new_activity = CandidateActivity(
                 id=f"act_{uuid.uuid4().hex[:16]}",
                 candidate_id=candidate_id,
+                club_id=club.id if club else None,
                 activity_name=activity.name,
                 organization=activity.organization,
                 role=activity.role,
+                role_tier=role_tier,
                 description=activity.description,
                 start_date=activity.start_date,
                 end_date=activity.end_date,
+                activity_score=activity_score,
             )
             db.add(new_activity)
             existing_activity_names.add(activity.name.lower())
             activities_created += 1
 
-    # Create new awards (skip duplicates)
+    # Create new awards with prestige estimation (skip duplicates)
     awards_created = 0
     for award in parsed_data.awards:
         if award.name.lower() not in existing_award_names:
+            prestige_tier = _estimate_award_tier_for_populate(award.name, award.issuer)
+
             new_award = CandidateAward(
                 id=f"awd_{uuid.uuid4().hex[:16]}",
                 candidate_id=candidate_id,
                 name=award.name,
                 issuer=award.issuer,
                 date=award.date,
+                prestige_tier=prestige_tier,
                 description=award.description,
             )
             db.add(new_award)
@@ -503,11 +585,98 @@ def _auto_populate_from_resume(candidate_id: str, parsed_data: ParsedResume, db:
         logger.info(f"Auto-populated {activities_created} activities and {awards_created} awards for candidate {candidate_id}")
 
 
+async def _enrich_activities_awards_background(candidate_id: str, university: str | None) -> None:
+    """
+    Background task: Use Claude to assess notability/prestige of activities and awards.
+    Updates the DB records with AI-assessed prestige tiers, scores, and descriptions.
+    """
+    from ..database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        # Get all activities and awards for this candidate
+        activities = db.query(CandidateActivity).filter(
+            CandidateActivity.candidate_id == candidate_id
+        ).all()
+        awards = db.query(CandidateAward).filter(
+            CandidateAward.candidate_id == candidate_id
+        ).all()
+
+        if not activities and not awards:
+            return
+
+        # Build input for AI enrichment
+        activity_dicts = [
+            {
+                "activity_name": a.activity_name,
+                "role": a.role,
+                "organization": a.organization,
+                "description": a.description,
+            }
+            for a in activities
+        ]
+        award_dicts = [
+            {
+                "name": a.name,
+                "issuer": a.issuer,
+                "date": a.date,
+                "description": a.description,
+            }
+            for a in awards
+        ]
+
+        # Call Claude for enrichment
+        result = await resume_service.enrich_activities_and_awards(
+            activity_dicts, award_dicts, university
+        )
+
+        # Update activities with AI assessments
+        enriched_activities = result.get("enriched_activities", [])
+        for enrichment in enriched_activities:
+            idx = enrichment.get("index")
+            if idx is not None and 0 <= idx < len(activities):
+                activity = activities[idx]
+                # Only upgrade scores from AI if they differ from the keyword default
+                ai_score = enrichment.get("activity_score")
+                if ai_score is not None:
+                    activity.activity_score = min(10.0, float(ai_score) * _get_role_multiplier_for_populate(activity.role))
+                # Add enhanced description if original was empty/vague
+                enhanced_desc = enrichment.get("enhanced_description")
+                if enhanced_desc and (not activity.description or len(activity.description) < 20):
+                    activity.description = enhanced_desc
+
+        # Update awards with AI assessments
+        enriched_awards = result.get("enriched_awards", [])
+        for enrichment in enriched_awards:
+            idx = enrichment.get("index")
+            if idx is not None and 0 <= idx < len(awards):
+                award = awards[idx]
+                ai_tier = enrichment.get("prestige_tier")
+                if ai_tier is not None:
+                    award.prestige_tier = int(ai_tier)
+                ai_type = enrichment.get("award_type")
+                if ai_type:
+                    award.award_type = ai_type
+                enhanced_desc = enrichment.get("enhanced_description")
+                if enhanced_desc and (not award.description or len(award.description) < 20):
+                    award.description = enhanced_desc
+
+        db.commit()
+        logger.info(f"AI enriched {len(enriched_activities)} activities and {len(enriched_awards)} awards for candidate {candidate_id}")
+
+    except Exception as e:
+        logger.error(f"Activity/award AI enrichment failed for {candidate_id}: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 @router.post("/{candidate_id}/resume", response_model=ResumeParseResult)
 @limiter.limit(RateLimits.AI_RESUME_PARSE)
 async def upload_resume(
     request: Request,
     candidate_id: str,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_candidate: Candidate = Depends(get_current_candidate),
@@ -626,6 +795,14 @@ async def upload_resume(
 
     # Auto-populate activities and awards from parsed resume
     _auto_populate_from_resume(candidate_id, parsed_data, db)
+
+    # Run AI enrichment for activities/awards in background
+    if parsed_data.activities or parsed_data.awards:
+        background_tasks.add_task(
+            _enrich_activities_awards_background,
+            candidate_id,
+            candidate.university,
+        )
 
     # Generate a signed URL for the resume if we have a storage key
     signed_resume_url = resume_url
@@ -1139,7 +1316,7 @@ Respond with JSON in this format:
 
 # ==================== ACTIVITIES ENDPOINTS ====================
 
-from ..models.activity import CandidateActivity, CandidateAward
+from ..models.activity import CandidateActivity, CandidateAward, Club
 
 class ActivityCreate(PydanticBaseModel):
     activity_name: str
