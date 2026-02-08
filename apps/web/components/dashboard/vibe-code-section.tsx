@@ -149,69 +149,13 @@ function SessionCard({
         </div>
       )}
 
-      {/* Results: Qualitative feedback only */}
+      {/* Completed: just show confirmation (all feedback is employer-only) */}
       {isCompleted && (
-        <div className="space-y-3">
-          {/* Builder Archetype */}
-          {archetype && (
-            <div className="flex items-center gap-3">
-              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${archetype.color}`}>
-                {archetype.label}
-              </span>
-              <span className="text-xs text-stone-500">{archetype.description}</span>
-            </div>
-          )}
-
-          {/* Analysis Summary */}
-          {session.analysisSummary && (
-            <p className="text-sm text-stone-600 bg-stone-50 rounded-lg p-3">
-              {session.analysisSummary}
-            </p>
-          )}
-
-          {/* Strengths & Areas to Improve */}
-          <div className="grid grid-cols-2 gap-3">
-            {session.strengths && session.strengths.length > 0 && (
-              <div className="bg-emerald-50 rounded-lg p-3">
-                <h5 className="text-xs font-medium text-emerald-800 mb-2">What you did well</h5>
-                <ul className="text-xs text-stone-700 space-y-1">
-                  {session.strengths.map((s, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <span className="text-emerald-500 mt-0.5 shrink-0">+</span>
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {session.weaknesses && session.weaknesses.length > 0 && (
-              <div className="bg-amber-50 rounded-lg p-3">
-                <h5 className="text-xs font-medium text-amber-800 mb-2">Areas to improve</h5>
-                <ul className="text-xs text-stone-700 space-y-1">
-                  {session.weaknesses.map((w, i) => (
-                    <li key={i} className="flex items-start gap-1.5">
-                      <span className="text-amber-500 mt-0.5 shrink-0">-</span>
-                      <span>{w}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Notable Patterns */}
-          {session.notablePatterns && session.notablePatterns.length > 0 && (
-            <div>
-              <h5 className="text-xs font-medium text-stone-500 mb-1">Notable patterns</h5>
-              <div className="flex flex-wrap gap-1.5">
-                {session.notablePatterns.map((p, i) => (
-                  <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="flex items-center gap-2 text-sm text-emerald-600">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Analysis complete. Employers can view your builder profile.
         </div>
       )}
     </div>

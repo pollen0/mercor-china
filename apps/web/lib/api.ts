@@ -4393,7 +4393,7 @@ export const organizationApi = {
 // Vibe Code Sessions - AI Coding Session Analysis
 // ============================================================================
 
-// Student-facing session (qualitative feedback only - NO scores)
+// Student-facing session (status only - NO scores, NO feedback)
 export interface VibeCodeSession {
   id: string
   candidateId: string
@@ -4403,13 +4403,7 @@ export interface VibeCodeSession {
   projectUrl?: string
   messageCount?: number
   wordCount?: number
-  analysisStatus: string
-  // Qualitative feedback only - students don't see numerical scores
-  analysisSummary?: string
-  strengths?: string[]
-  weaknesses?: string[]
-  notablePatterns?: string[]
-  builderArchetype?: string
+  analysisStatus: string  // pending, analyzing, completed, failed
   uploadedAt?: string
   analyzedAt?: string
 }
@@ -4446,11 +4440,6 @@ function transformVibeCodeSession(data: Record<string, unknown>): VibeCodeSessio
     messageCount: data.message_count as number | undefined,
     wordCount: data.word_count as number | undefined,
     analysisStatus: data.analysis_status as string,
-    analysisSummary: data.analysis_summary as string | undefined,
-    strengths: data.strengths as string[] | undefined,
-    weaknesses: data.weaknesses as string[] | undefined,
-    notablePatterns: data.notable_patterns as string[] | undefined,
-    builderArchetype: data.builder_archetype as string | undefined,
     uploadedAt: data.uploaded_at as string | undefined,
     analyzedAt: data.analyzed_at as string | undefined,
   }

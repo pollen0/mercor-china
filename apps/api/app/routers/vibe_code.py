@@ -46,7 +46,7 @@ def generate_cuid() -> str:
 # ============================================================================
 
 def _session_to_student_response(session: VibeCodeSession) -> VibeCodeStudentResponse:
-    """Convert to student-facing response (NO scores, qualitative only)."""
+    """Convert to student-facing response (status only - NO feedback of any kind)."""
     return VibeCodeStudentResponse(
         id=session.id,
         candidate_id=session.candidate_id,
@@ -57,12 +57,6 @@ def _session_to_student_response(session: VibeCodeSession) -> VibeCodeStudentRes
         message_count=session.message_count,
         word_count=session.word_count,
         analysis_status=session.analysis_status or "pending",
-        # Qualitative only - no builder_score, no dimension scores
-        analysis_summary=session.analysis_summary,
-        strengths=session.strengths,
-        weaknesses=session.weaknesses,
-        notable_patterns=session.notable_patterns,
-        builder_archetype=session.builder_archetype,
         uploaded_at=session.uploaded_at,
         analyzed_at=session.analyzed_at,
     )

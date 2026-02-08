@@ -283,7 +283,7 @@ export default function InterviewSelectPage() {
                     </div>
                     {isCompleted && (
                       <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">
-                        {profile.bestScore?.toFixed(1)}
+                        Done
                       </span>
                     )}
                   </div>
