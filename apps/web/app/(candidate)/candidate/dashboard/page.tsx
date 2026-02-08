@@ -14,6 +14,7 @@ import { DocumentPreview } from '@/components/ui/document-preview'
 import { candidateApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward } from '@/lib/api'
 import { useDashboardData, useSkillGap } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
+import VibeCodeSection from '@/components/dashboard/vibe-code-section'
 import { logout, clearAuthTokens } from '@/lib/auth'
 
 interface Candidate {
@@ -1284,6 +1285,9 @@ function DashboardContent() {
                 {githubError && <p className="mt-2 text-sm text-red-500">{githubError}</p>}
               </CardContent>
             </Card>
+
+            {/* Vibe Code / AI Builder Profile Section */}
+            <VibeCodeSection />
 
             {/* Transcript Section */}
             <Card>

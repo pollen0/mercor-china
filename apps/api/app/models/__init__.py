@@ -20,6 +20,7 @@ from .activity import (
     Club, CandidateActivity, CandidateAward,
     ActivityTier, ActivityCategory
 )
+from .vibe_code_session import VibeCodeSession, SessionSource, AnalysisStatus
 from .ml_scoring import (
     # Enums
     ScoringEventType, LabelSource, OutcomeType, OutcomeStage, CompanyTier, ExperimentStatus,
@@ -108,4 +109,8 @@ __all__ = [
     "InterviewReminder",
     "ReminderType",
     "ReminderStatus",
+    # Vibe Code Sessions
+    "VibeCodeSession",
+    "SessionSource",
+    "AnalysisStatus",
 ]
