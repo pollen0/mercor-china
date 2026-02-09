@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CustomSelect } from '@/components/ui/custom-select'
 import { candidateRegistrationSchema, targetRoleOptions, majorOptions, universityOptions, graduationYearOptions, type CandidateRegistrationInput } from '@/lib/validations/candidate'
 import { setAuthTokens } from '@/lib/auth'
 
@@ -40,11 +41,6 @@ export default function RegisterPage() {
   const [customMajor, setCustomMajor] = useState('')
   const [majorDropdownOpen, setMajorDropdownOpen] = useState(false)
   const majorDropdownRef = useRef<HTMLDivElement>(null)
-  const [gradYearDropdownOpen, setGradYearDropdownOpen] = useState(false)
-  const gradYearDropdownRef = useRef<HTMLDivElement>(null)
-  const [uniDropdownOpen, setUniDropdownOpen] = useState(false)
-  const uniDropdownRef = useRef<HTMLDivElement>(null)
-  const [uniSearch, setUniSearch] = useState('')
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -104,32 +100,6 @@ export default function RegisterPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [majorDropdownOpen])
 
-  // Close grad year dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (gradYearDropdownRef.current && !gradYearDropdownRef.current.contains(e.target as Node)) {
-        setGradYearDropdownOpen(false)
-      }
-    }
-    if (gradYearDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [gradYearDropdownOpen])
-
-  // Close university dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (uniDropdownRef.current && !uniDropdownRef.current.contains(e.target as Node)) {
-        setUniDropdownOpen(false)
-        setUniSearch('')
-      }
-    }
-    if (uniDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [uniDropdownOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -341,144 +311,37 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="space-y-1.5" ref={uniDropdownRef}>
+            <div className="space-y-1.5">
               <Label className="text-stone-600 text-sm">
                 University
               </Label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUniDropdownOpen(!uniDropdownOpen)
-                    setUniSearch('')
-                  }}
-                  className={`w-full h-11 px-3 rounded-lg border bg-white text-sm text-left flex items-center justify-between focus:outline-none focus:border-stone-400 transition-colors ${
-                    uniDropdownOpen ? 'border-stone-400' : errors.university ? 'border-red-300' : 'border-stone-200'
-                  }`}
-                >
-                  {formData.university ? (
-                    <span className="text-stone-900 truncate">
-                      {universityOptions.find(o => o.value === formData.university)?.label || formData.university}
-                    </span>
-                  ) : (
-                    <span className="text-stone-400">Select university</span>
-                  )}
-                  <svg className={`w-4 h-4 text-stone-400 flex-shrink-0 transition-transform ${uniDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {uniDropdownOpen && (
-                  <div className="absolute z-10 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-64 overflow-auto">
-                    <div className="px-3 py-2 sticky top-0 bg-white border-b border-stone-100">
-                      <input
-                        type="text"
-                        value={uniSearch}
-                        onChange={(e) => setUniSearch(e.target.value)}
-                        placeholder="Search universities..."
-                        className="w-full text-sm border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-stone-400"
-                        autoFocus
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    {universityOptions
-                      .filter(option => option.label.toLowerCase().includes(uniSearch.toLowerCase()))
-                      .map(option => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, university: option.value }))
-                          setUniDropdownOpen(false)
-                          setUniSearch('')
-                          if (errors.university) {
-                            setErrors(prev => ({ ...prev, university: undefined }))
-                          }
-                        }}
-                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2.5 transition-colors ${
-                          formData.university === option.value
-                            ? 'bg-stone-50 text-stone-900'
-                            : 'text-stone-700 hover:bg-stone-50'
-                        }`}
-                      >
-                        <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${
-                          formData.university === option.value
-                            ? 'bg-stone-900 border-stone-900'
-                            : 'border-stone-300'
-                        }`}>
-                          {formData.university === option.value && (
-                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </span>
-                        {option.label}
-                      </button>
-                    ))}
-                    {universityOptions.filter(option => option.label.toLowerCase().includes(uniSearch.toLowerCase())).length === 0 && (
-                      <p className="px-3 py-2 text-sm text-stone-400">No matches found</p>
-                    )}
-                  </div>
-                )}
-              </div>
+              <CustomSelect
+                value={formData.university}
+                onChange={(v) => {
+                  setFormData(prev => ({ ...prev, university: v }))
+                  if (errors.university) {
+                    setErrors(prev => ({ ...prev, university: undefined }))
+                  }
+                }}
+                options={universityOptions.map(o => ({ value: o.value, label: o.label }))}
+                placeholder="Select university"
+                searchable
+                searchPlaceholder="Search universities..."
+                triggerClassName={errors.university ? 'border-red-300' : ''}
+              />
               {errors.university && (
                 <p className="text-xs text-red-500">{errors.university}</p>
               )}
             </div>
 
-            <div className="space-y-1.5" ref={gradYearDropdownRef}>
+            <div className="space-y-1.5">
               <Label className="text-stone-600 text-sm">Grad Year</Label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setGradYearDropdownOpen(!gradYearDropdownOpen)}
-                  className={`w-full h-11 px-3 rounded-lg border bg-white text-sm text-left flex items-center justify-between focus:outline-none focus:border-stone-400 transition-colors ${
-                    gradYearDropdownOpen ? 'border-stone-400' : 'border-stone-200'
-                  }`}
-                >
-                  {formData.graduationYear ? (
-                    <span className="text-stone-900">{formData.graduationYear}</span>
-                  ) : (
-                    <span className="text-stone-400">Year</span>
-                  )}
-                  <svg className={`w-4 h-4 text-stone-400 transition-transform ${gradYearDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {gradYearDropdownOpen && (
-                  <div className="absolute z-10 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-56 overflow-auto">
-                    {graduationYearOptions.map(option => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, graduationYear: option.value }))
-                          setGradYearDropdownOpen(false)
-                        }}
-                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2.5 transition-colors ${
-                          formData.graduationYear === option.value
-                            ? 'bg-stone-50 text-stone-900'
-                            : 'text-stone-700 hover:bg-stone-50'
-                        }`}
-                      >
-                        <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${
-                          formData.graduationYear === option.value
-                            ? 'bg-stone-900 border-stone-900'
-                            : 'border-stone-300'
-                        }`}>
-                          {formData.graduationYear === option.value && (
-                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </span>
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <CustomSelect
+                value={formData.graduationYear ? String(formData.graduationYear) : ''}
+                onChange={(v) => setFormData(prev => ({ ...prev, graduationYear: Number(v) }))}
+                options={graduationYearOptions.map(o => ({ value: String(o.value), label: o.label }))}
+                placeholder="Year"
+              />
             </div>
 
             <div className="space-y-1.5" ref={majorDropdownRef}>

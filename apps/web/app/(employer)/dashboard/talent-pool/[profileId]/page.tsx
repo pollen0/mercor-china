@@ -10,6 +10,7 @@ import { Container, PageWrapper } from '@/components/layout/container'
 import { talentPoolApi, employerApi, employerCalendarApi, type TalentProfileDetail, type MatchStatus, type CalendarStatus, type Job } from '@/lib/api'
 import { ScheduleInterviewModal } from '@/components/employer/schedule-interview-modal'
 import { GrowthTimeline } from '@/components/employer/growth-timeline'
+import { StatusSelect } from '@/components/ui/custom-select'
 
 // Use the TalentProfileDetail type from API
 type TalentProfile = TalentProfileDetail & {
@@ -40,13 +41,13 @@ type TalentProfile = TalentProfileDetail & {
   }
 }
 
-const STATUS_OPTIONS: { value: MatchStatus; label: string; color: string }[] = [
-  { value: 'PENDING', label: 'Pending', color: 'bg-gray-100 text-gray-700' },
-  { value: 'CONTACTED', label: 'Contacted', color: 'bg-blue-100 text-blue-700' },
-  { value: 'IN_REVIEW', label: 'In Review', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'SHORTLISTED', label: 'Shortlisted', color: 'bg-green-100 text-green-700' },
-  { value: 'REJECTED', label: 'Rejected', color: 'bg-red-100 text-red-700' },
-  { value: 'HIRED', label: 'Hired', color: 'bg-teal-100 text-teal-700' },
+const STATUS_OPTIONS: { value: MatchStatus; label: string; color: string; bgColor: string }[] = [
+  { value: 'PENDING', label: 'Pending', color: 'text-stone-700', bgColor: 'bg-stone-100' },
+  { value: 'CONTACTED', label: 'Contacted', color: 'text-blue-700', bgColor: 'bg-blue-100' },
+  { value: 'IN_REVIEW', label: 'In Review', color: 'text-amber-700', bgColor: 'bg-amber-100' },
+  { value: 'SHORTLISTED', label: 'Shortlisted', color: 'text-teal-700', bgColor: 'bg-teal-100' },
+  { value: 'REJECTED', label: 'Rejected', color: 'text-red-700', bgColor: 'bg-red-100' },
+  { value: 'HIRED', label: 'Hired', color: 'text-teal-700', bgColor: 'bg-teal-100' },
 ]
 
 const SCORING_DIMENSIONS = [
@@ -376,18 +377,12 @@ ${companyName}`)
               {/* Status Dropdown */}
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">Status:</span>
-                <select
+                <StatusSelect
                   value={currentStatus}
-                  onChange={(e) => handleStatusChange(e.target.value as MatchStatus)}
+                  onChange={(v) => handleStatusChange(v as MatchStatus)}
+                  options={STATUS_OPTIONS}
                   disabled={isUpdatingStatus}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium border-0 cursor-pointer ${
-                    STATUS_OPTIONS.find(s => s.value === currentStatus)?.color || 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {STATUS_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                />
                 {isUpdatingStatus && (
                   <span className="w-4 h-4 border-2 border-gray-300 border-t-teal-500 rounded-full animate-spin" />
                 )}

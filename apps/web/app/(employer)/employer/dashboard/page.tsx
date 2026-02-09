@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CustomSelect } from '@/components/ui/custom-select'
 import { DashboardNavbar } from '@/components/layout/navbar'
 import { Container, PageWrapper } from '@/components/layout/container'
 import { CandidateCard } from '@/components/dashboard/candidate-card'
@@ -674,28 +675,30 @@ function EmployerDashboardContent() {
                 <div className="flex flex-wrap gap-4 items-end">
                   <div className="w-48">
                     <Label className="text-sm">Job</Label>
-                    <select
+                    <CustomSelect
                       value={interviewJobFilter}
-                      onChange={(e) => setInterviewJobFilter(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 border rounded-lg"
-                    >
-                      <option value="">All Jobs</option>
-                      {jobs.map((job) => (
-                        <option key={job.id} value={job.id}>{job.title}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setInterviewJobFilter(v)}
+                      options={[
+                        { value: '', label: 'All Jobs' },
+                        ...jobs.map((job) => ({ value: job.id, label: job.title })),
+                      ]}
+                      placeholder="All Jobs"
+                      className="mt-1"
+                    />
                   </div>
                   <div className="w-40">
                     <Label className="text-sm">Status</Label>
-                    <select
+                    <CustomSelect
                       value={interviewStatusFilter}
-                      onChange={(e) => setInterviewStatusFilter(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 border rounded-lg"
-                    >
-                      <option value="">All</option>
-                      <option value="completed">Completed</option>
-                      <option value="in_progress">In Progress</option>
-                    </select>
+                      onChange={(v) => setInterviewStatusFilter(v)}
+                      options={[
+                        { value: '', label: 'All' },
+                        { value: 'completed', label: 'Completed' },
+                        { value: 'in_progress', label: 'In Progress' },
+                      ]}
+                      placeholder="All"
+                      className="mt-1"
+                    />
                   </div>
                   <div className="w-32">
                     <Label className="text-sm">Min Score</Label>
@@ -775,44 +778,46 @@ function EmployerDashboardContent() {
                 <div className="flex flex-wrap gap-4 items-end">
                   <div className="w-48">
                     <Label className="text-sm">Vertical</Label>
-                    <select
+                    <CustomSelect
                       value={talentVertical}
-                      onChange={(e) => { setTalentVertical(e.target.value as Vertical | ''); setTalentRole(''); setTalentPage(1) }}
-                      className="w-full mt-1 px-3 py-2 border rounded-lg"
-                    >
-                      <option value="">All Verticals</option>
-                      {VERTICALS.map((v) => (
-                        <option key={v.value} value={v.value}>{v.label}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => { setTalentVertical(v as Vertical | ''); setTalentRole(''); setTalentPage(1) }}
+                      options={[
+                        { value: '', label: 'All Verticals' },
+                        ...VERTICALS.map((v) => ({ value: v.value, label: v.label })),
+                      ]}
+                      placeholder="All Verticals"
+                      className="mt-1"
+                    />
                   </div>
                   <div className="w-48">
                     <Label className="text-sm">Role</Label>
-                    <select
+                    <CustomSelect
                       value={talentRole}
-                      onChange={(e) => { setTalentRole(e.target.value as RoleType | ''); setTalentPage(1) }}
+                      onChange={(v) => { setTalentRole(v as RoleType | ''); setTalentPage(1) }}
+                      options={[
+                        { value: '', label: 'All Roles' },
+                        ...(talentVertical && ROLE_TYPES[talentVertical] ? ROLE_TYPES[talentVertical].map((r) => ({ value: r.value, label: r.label })) : []),
+                      ]}
+                      placeholder="All Roles"
                       disabled={!talentVertical}
-                      className="w-full mt-1 px-3 py-2 border rounded-lg disabled:bg-gray-50"
-                    >
-                      <option value="">All Roles</option>
-                      {talentVertical && ROLE_TYPES[talentVertical]?.map((r) => (
-                        <option key={r.value} value={r.value}>{r.label}</option>
-                      ))}
-                    </select>
+                      className="mt-1"
+                    />
                   </div>
                   <div className="w-40">
                     <Label className="text-sm">Min Score</Label>
-                    <select
-                      value={talentMinScore}
-                      onChange={(e) => { setTalentMinScore(Number(e.target.value)); setTalentPage(1) }}
-                      className="w-full mt-1 px-3 py-2 border rounded-lg"
-                    >
-                      <option value={0}>Any Score</option>
-                      <option value={5}>5+ / 10</option>
-                      <option value={6}>6+ / 10</option>
-                      <option value={7}>7+ / 10</option>
-                      <option value={8}>8+ / 10</option>
-                    </select>
+                    <CustomSelect
+                      value={String(talentMinScore)}
+                      onChange={(v) => { setTalentMinScore(Number(v)); setTalentPage(1) }}
+                      options={[
+                        { value: '0', label: 'Any Score' },
+                        { value: '5', label: '5+ / 10' },
+                        { value: '6', label: '6+ / 10' },
+                        { value: '7', label: '7+ / 10' },
+                        { value: '8', label: '8+ / 10' },
+                      ]}
+                      placeholder="Any Score"
+                      className="mt-1"
+                    />
                   </div>
                   <Button variant="outline" onClick={() => { setTalentVertical(''); setTalentRole(''); setTalentMinScore(0); setTalentSearchInput(''); setTalentSearch(''); setTalentPage(1) }}>
                     Clear All

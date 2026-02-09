@@ -16,66 +16,93 @@ Pathway is an AI-powered career platform for US college students. Students inter
 ### 1. AI Services
 
 **Approved AI Services:**
-- **OpenAI API** (Primary for US market)
-  - LLM/Scoring: `gpt-4` or `gpt-4-turbo`
-  - Speech-to-Text: `whisper-1`
-  - Env vars: `OPENAI_API_KEY`
+- **Anthropic Claude API** (Primary for all AI tasks)
+  - LLM/Scoring: Claude Sonnet 4.5 (`claude-sonnet-4-5-20251101`)
+  - Env vars: `ANTHROPIC_API_KEY`
 
 - **DeepSeek API** (Fallback/cost optimization)
   - LLM/Scoring: `deepseek-chat` model
   - Env vars: `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`
 
-### 2. Target Verticals (Student-Focused)
+### 2. Design System (HEYTEA-Inspired)
+
+**ALWAYS follow `apps/web/DESIGN_PRINCIPLES.md`**
+
+| Element | Use | Never Use |
+|---------|-----|-----------|
+| Neutrals | `stone-*` | `gray-*` |
+| Success/Active | `teal-50/700` | `green-*`, `indigo-*` |
+| Warning | `amber-50/700` | `yellow-*`, `orange-*` |
+| Error | `red-50/700` | - |
+| Primary buttons | `bg-stone-900 text-white` | `bg-indigo-*`, `bg-blue-*` |
+| Font weight | `font-medium`, `font-semibold` max | `font-bold` |
+
+**Rule**: No more than 2 colors per component. Keep it minimal.
+
+### 3. Target Verticals (Student-Focused)
 
 | Vertical | Description | Target Students |
 |----------|-------------|-----------------|
-| `engineering` | Software Engineering, DevOps | CS, SE, CE majors |
+| `software_engineering` | Software Engineering, DevOps | CS, SE, CE majors |
 | `data` | Data Science, ML, Analytics | Data Science, Stats, CS |
-| `business` | PM, Marketing, Finance | Business, Econ majors |
+| `product` | PM, Business Ops | Business, Econ majors |
 | `design` | UX/UI, Product Design | Design, HCI majors |
+| `finance` | Finance, Investment | Finance, Econ majors |
 
-### 3. Role Types
+### 4. Role Types
 
 ```python
 # Engineering
 SOFTWARE_ENGINEER, FRONTEND_ENGINEER, BACKEND_ENGINEER
-FULLSTACK_ENGINEER, MOBILE_ENGINEER, DEVOPS_ENGINEER
+FULLSTACK_ENGINEER, MOBILE_ENGINEER, DEVOPS_ENGINEER, EMBEDDED_ENGINEER, QA_ENGINEER
 
 # Data
 DATA_ANALYST, DATA_SCIENTIST, ML_ENGINEER, DATA_ENGINEER
 
-# Business
-PRODUCT_MANAGER, BUSINESS_ANALYST, MARKETING_ASSOCIATE
-FINANCE_ANALYST, CONSULTANT
+# Product
+PRODUCT_MANAGER, ASSOCIATE_PM
 
 # Design
 UX_DESIGNER, UI_DESIGNER, PRODUCT_DESIGNER
+
+# Finance
+IB_ANALYST, FINANCE_ANALYST, EQUITY_RESEARCH
 ```
 
-### 4. Tech Stack
+### 5. Tech Stack
 
 | Layer | Technology |
 |-------|------------|
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui |
-| Backend | FastAPI, SQLAlchemy, PostgreSQL |
+| Backend | FastAPI, SQLAlchemy, PostgreSQL (Neon) |
 | Storage | Cloudflare R2 (S3-compatible) |
-| AI | OpenAI (primary), DeepSeek (fallback) |
+| AI | Claude Sonnet 4.5 (primary), DeepSeek (fallback) |
 | Auth | GitHub OAuth, Email/Password, JWT |
 | Email | Resend |
 
-### 5. Branding
+### 6. Database Models
 
-- **Name**: Pathway
-- **Tagline**: "Show your growth, land your first job"
-- **Colors**: Indigo/Purple gradient (`from-indigo-600 to-purple-600`)
-- **Logo**: Growth chart icon in gradient background
-- **Target**: US college students (primarily CS/Engineering initially)
+All models use **CUID** prefixes:
+- `c_` - Candidates
+- `e_` - Employers
+- `i_` - Interviews
+- `j_` - Jobs
+- `o_` - Organizations
+- `rv_` - ResumeVersions (growth tracking)
+- `gah_` - GitHubAnalysisHistory (growth tracking)
+- `pcl_` - ProfileChangeLogs (growth tracking)
 
-### 6. Language
+### 7. Scoring System (5 Dimensions)
 
-- **English only** - US market focus
-- No internationalization needed initially
-- All error messages, UI text, and API responses in English
+| Dimension | Weight | Description |
+|-----------|--------|-------------|
+| Communication | 20% | Clarity, articulation, confidence |
+| Problem Solving | 25% | Analytical thinking, approach to challenges |
+| Technical Knowledge | 25% | Relevant skills, depth of understanding |
+| Growth Mindset | 15% | Learning from failures, curiosity, adaptability |
+| Culture Fit | 15% | Teamwork, values alignment, enthusiasm |
+
+Score range: 0-10 (floating point)
 
 ## Environment Variables
 
@@ -87,8 +114,8 @@ DATABASE_URL=postgresql://user:pass@host:5432/pathway
 API_SECRET_KEY=your-secret-key
 JWT_SECRET=your-jwt-secret
 
-# OpenAI (Primary AI)
-OPENAI_API_KEY=sk-...
+# Anthropic (Primary AI)
+ANTHROPIC_API_KEY=sk-ant-...
 
 # DeepSeek (Fallback)
 DEEPSEEK_API_KEY=sk-...
@@ -97,6 +124,10 @@ DEEPSEEK_BASE_URL=https://api.deepseek.com
 # GitHub OAuth
 GITHUB_CLIENT_ID=Iv1.xxxx
 GITHUB_CLIENT_SECRET=xxxx
+
+# Google Calendar OAuth
+GOOGLE_CLIENT_ID=xxxx
+GOOGLE_CLIENT_SECRET=xxxx
 
 # Cloudflare R2 (Storage)
 R2_ACCOUNT_ID=xxxx
@@ -113,19 +144,140 @@ FRONTEND_URL=http://localhost:3000
 CORS_ORIGINS=http://localhost:3000
 ```
 
-## Scoring Dimensions (Student-Focused)
+---
 
-The AI evaluates candidates on 5 dimensions:
+## Growth Tracking System
 
-| Dimension | Weight | Description |
-|-----------|--------|-------------|
-| Communication | 20% | Clarity, articulation, confidence |
-| Problem Solving | 25% | Analytical thinking, approach to challenges |
-| Technical Knowledge | 25% | Relevant skills, depth of understanding |
-| Growth Mindset | 15% | Learning from failures, curiosity, adaptability |
-| Culture Fit | 15% | Teamwork, values alignment, enthusiasm |
+**Recruiter-only feature** that tracks all key datapoints with timestamps to show student growth over time.
 
-**Note**: "Growth Mindset" replaced "Motivation" from the China version to better align with US hiring practices.
+### Overview
+
+| Component | Purpose |
+|-----------|---------|
+| `ResumeVersion` | Track all resume uploads (versioned, not overwritten) |
+| `GitHubAnalysisHistory` | Track GitHub score changes over time |
+| `ProfileChangeLog` | Audit trail for GPA, major, education changes |
+| Growth Timeline API | Concise endpoint for recruiter consumption |
+| Growth Timeline UI | Progressive disclosure component |
+
+### Database Tables
+
+#### `resume_versions`
+```python
+class ResumeVersion(Base):
+    __tablename__ = "resume_versions"
+
+    id = Column(String, primary_key=True)  # rv_{uuid}
+    candidate_id = Column(String, ForeignKey("candidates.id"))
+    version_number = Column(Integer, nullable=False)
+    storage_key = Column(String, nullable=False)
+    raw_text = Column(Text)
+    parsed_data = Column(JSONB)
+    skills_added = Column(JSONB)      # Delta from previous version
+    skills_removed = Column(JSONB)    # Delta from previous version
+    is_current = Column(Boolean, default=True)
+    uploaded_at = Column(DateTime(timezone=True))
+```
+
+#### `github_analysis_history`
+```python
+class GitHubAnalysisHistory(Base):
+    __tablename__ = "github_analysis_history"
+
+    id = Column(String, primary_key=True)  # gah_{uuid}
+    candidate_id = Column(String, ForeignKey("candidates.id"))
+    overall_score = Column(Float)
+    originality_score = Column(Float)
+    activity_score = Column(Float)
+    depth_score = Column(Float)
+    collaboration_score = Column(Float)
+    total_repos_analyzed = Column(Integer)
+    score_delta = Column(Float)       # Change from previous analysis
+    repos_delta = Column(Integer)
+    analyzed_at = Column(DateTime(timezone=True))
+```
+
+#### `profile_change_logs`
+```python
+class ProfileChangeLog(Base):
+    __tablename__ = "profile_change_logs"
+
+    id = Column(String, primary_key=True)  # pcl_{uuid}
+    candidate_id = Column(String, ForeignKey("candidates.id"))
+    change_type = Column(String)  # gpa_update, major_change, etc.
+    field_name = Column(String)
+    old_value = Column(JSONB)
+    new_value = Column(JSONB)
+    change_source = Column(String)  # "manual", "resume_parse", "transcript_verify"
+    changed_at = Column(DateTime(timezone=True))
+```
+
+### API Endpoint
+
+```
+GET /api/employers/talent-pool/{profile_id}/growth-timeline
+Query: time_range = "6m" | "1y" | "2y" | "all" (default: "1y")
+```
+
+**Response:**
+```json
+{
+  "candidate_id": "c_xxx",
+  "candidate_name": "John Doe",
+  "summary": {
+    "total_interviews": 4,
+    "interview_score_change": 1.8,
+    "github_connected": true,
+    "github_score_change": 12,
+    "resume_versions_count": 3,
+    "skills_growth_count": 8
+  },
+  "events": [
+    {
+      "event_type": "interview",
+      "event_date": "2026-01-15T...",
+      "title": "Completed Interview #4",
+      "delta": 0.5,
+      "icon": "interview"
+    },
+    {
+      "event_type": "resume",
+      "event_date": "2025-12-01T...",
+      "title": "Resume Updated (v3)",
+      "subtitle": "+2 skills, +1 project",
+      "icon": "document"
+    }
+  ]
+}
+```
+
+### Frontend Component
+
+**File**: `apps/web/components/employer/growth-timeline.tsx`
+
+- Progressive disclosure: summary always visible, details expandable
+- Time range filter: 6m, 1y, 2y, all
+- Stone/teal color palette per DESIGN_PRINCIPLES.md
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `apps/api/app/models/resume_version.py` | ResumeVersion model |
+| `apps/api/app/models/github_analysis_history.py` | GitHubAnalysisHistory model |
+| `apps/api/app/models/profile_change_log.py` | ProfileChangeLog model |
+| `apps/api/app/services/growth_tracking.py` | GrowthTrackingService |
+| `apps/api/app/utils/date_parser.py` | Date string parser utility |
+| `apps/api/app/schemas/growth.py` | Pydantic schemas |
+| `apps/web/components/employer/growth-timeline.tsx` | UI component |
+
+### Integration Points
+
+1. **Resume Upload** (`candidates.py`): Creates `ResumeVersion` on each upload
+2. **GitHub Analysis** (`github_analysis.py`): Creates `GitHubAnalysisHistory` snapshot
+3. **Profile Updates** (`candidates.py`): Logs changes to `ProfileChangeLog`
+
+---
 
 ## Key Features
 
@@ -138,25 +290,26 @@ interface Candidate {
   email: string
   phone: string
 
-  // Education (new for Pathway)
+  // Education
   university?: string
   major?: string
   graduationYear?: number
   gpa?: number
   courses?: string[]
 
-  // GitHub integration (new for Pathway)
+  // GitHub integration
   githubUsername?: string
-  githubData?: {
-    repos: Array<{ name, language, stars, url }>
-    languages: Record<string, number>
-    totalContributions?: number
-  }
+  githubData?: GitHubData
   githubConnectedAt?: string
 
   // Resume
   resumeUrl?: string
   resumeParsedData?: ParsedResumeData
+
+  // Growth tracking relationships
+  resumeVersions: ResumeVersion[]
+  githubAnalysisHistory: GitHubAnalysisHistory[]
+  profileChangeLogs: ProfileChangeLog[]
 }
 ```
 
@@ -180,8 +333,8 @@ class CandidateVerticalProfile:
 ### GitHub Integration
 
 - OAuth connection with GitHub
-- Fetches: profile, repos, languages, contribution count
-- Displayed on student profile for employers
+- Code quality analysis (originality, activity, depth, collaboration scores)
+- **History tracking**: Each analysis creates a snapshot for growth tracking
 - Can be refreshed to update data
 
 ```python
@@ -191,7 +344,10 @@ POST /api/candidates/auth/github/callback  # Exchange code
 DELETE /api/candidates/me/github           # Disconnect
 GET  /api/candidates/me/github             # Get GitHub info
 POST /api/candidates/me/github/refresh     # Refresh data
+POST /api/candidates/me/github/analyze     # Run code analysis
 ```
+
+---
 
 ## User Flows
 
@@ -202,11 +358,15 @@ Register (/register)
     ↓
 Complete Profile (education info)
     ↓
+Upload Resume (creates ResumeVersion v1)
+    ↓
 Connect GitHub (OAuth)
+    ↓
+Analyze GitHub (creates GitHubAnalysisHistory)
     ↓
 Start Interview (/interview/select)
     ↓
-Select Vertical (Engineering/Data/Business/Design)
+Select Vertical (Engineering/Data/Product/Design/Finance)
     ↓
 Complete 5 Video Questions (15 min)
     ↓
@@ -224,14 +384,20 @@ Register/Login (/employer/login)
     ↓
 Create Job Postings (select vertical, role type)
     ↓
-Browse Talent Pool (/employer/dashboard/talent)
+Browse Talent Pool (/employer/dashboard/talent-pool)
     ↓
 Filter (vertical, school, graduation year, score)
     ↓
-View Candidate Profiles (progress charts, GitHub, videos)
+View Candidate Profiles
+    ↓
+View Growth Timeline (interview progress, GitHub changes, resume versions)
+    ↓
+Update Candidate Status (New/Contacted/In Review/Shortlisted/Rejected/Hired)
     ↓
 Contact Promising Candidates
 ```
+
+---
 
 ## Key URLs
 
@@ -245,113 +411,98 @@ Contact Promising Candidates
 | `/auth/github/callback` | GitHub OAuth callback |
 | `/employer/login` | Employer login/register |
 | `/employer/dashboard` | Employer dashboard |
-| `/employer/dashboard/talent` | Browse talent pool |
+| `/employer/dashboard/talent-pool` | Browse talent pool |
+| `/employer/dashboard/talent-pool/[id]` | View candidate + growth timeline |
+| `/schedule/[slug]` | Public self-scheduling page |
 
-## File Structure
+---
+
+## Project Structure
 
 ```
 apps/
 ├── api/                           # FastAPI backend
 │   ├── app/
 │   │   ├── main.py               # App entry point
-│   │   ├── config.py             # Settings with GitHub OAuth
+│   │   ├── config.py             # Settings
 │   │   ├── models/
-│   │   │   ├── candidate.py      # Candidate + education + GitHub
-│   │   │   └── employer.py       # Employer + verticals/roles
+│   │   │   ├── candidate.py      # Candidate + growth relationships
+│   │   │   ├── employer.py       # Employer + jobs + orgs
+│   │   │   ├── resume_version.py # Resume version tracking
+│   │   │   ├── github_analysis_history.py # GitHub snapshots
+│   │   │   ├── profile_change_log.py # Profile audit trail
+│   │   │   └── activity.py       # Activities + Awards
 │   │   ├── routers/
 │   │   │   ├── auth.py           # Authentication
-│   │   │   ├── candidates.py     # Student endpoints + GitHub OAuth
-│   │   │   ├── employers.py      # Employer endpoints
+│   │   │   ├── candidates.py     # Student endpoints + growth hooks
+│   │   │   ├── employers.py      # Employer endpoints + growth timeline
 │   │   │   ├── interviews.py     # Interview flow
-│   │   │   └── questions.py      # Question management
+│   │   │   └── scheduling.py     # Self-scheduling
 │   │   ├── services/
-│   │   │   ├── scoring.py        # AI scoring (Growth Mindset)
-│   │   │   ├── github.py         # GitHub OAuth service
-│   │   │   └── transcription.py  # Whisper transcription
-│   │   └── schemas/
-│   │       ├── candidate.py      # Pydantic schemas
-│   │       └── question.py       # Student interview questions
-│   └── requirements.txt
+│   │   │   ├── scoring.py        # AI scoring
+│   │   │   ├── growth_tracking.py # Growth tracking service
+│   │   │   ├── github.py         # GitHub OAuth
+│   │   │   ├── github_analysis.py # Code quality analysis
+│   │   │   ├── calendar.py       # Google Calendar
+│   │   │   └── email.py          # Resend emails
+│   │   ├── schemas/
+│   │   │   ├── candidate.py      # Pydantic schemas
+│   │   │   └── growth.py         # Growth timeline schemas
+│   │   └── utils/
+│   │       ├── date_parser.py    # Parse "Fall 2022" to Date
+│   │       └── auth.py           # JWT helpers
+│   └── migrations/               # Alembic migrations
 │
 └── web/                           # Next.js frontend
     ├── app/
-    │   ├── page.tsx              # Landing page (Pathway branding)
-    │   ├── layout.tsx            # Root layout (English)
-    │   ├── (auth)/
-    │   │   ├── login/
-    │   │   └── register/
-    │   ├── auth/
-    │   │   └── github/callback/  # GitHub OAuth callback
-    │   ├── dashboard/            # Student dashboard
-    │   └── employer/
-    │       ├── login/
-    │       └── dashboard/
+    │   ├── page.tsx              # Landing page
+    │   ├── layout.tsx            # Root layout
+    │   ├── (candidate)/          # Student pages
+    │   │   └── dashboard/        # Student dashboard
+    │   ├── (employer)/           # Employer pages
+    │   │   └── dashboard/
+    │   │       ├── talent-pool/
+    │   │       │   └── [profileId]/ # Candidate detail + growth timeline
+    │   │       └── interviews/   # Scheduled interviews
+    │   └── schedule/             # Public scheduling
+    │       └── [slug]/
     ├── components/
-    │   ├── layout/
-    │   │   ├── navbar.tsx        # Pathway logo + nav
-    │   │   └── footer.tsx        # Pathway footer
+    │   ├── employer/
+    │   │   ├── growth-timeline.tsx # Growth timeline display
+    │   │   ├── candidate-notes.tsx # Private notes
+    │   │   └── match-alerts.tsx    # Match notifications
+    │   ├── scheduling/
+    │   │   ├── availability-grid.tsx
+    │   │   └── slot-picker.tsx
     │   └── ui/                   # shadcn components
     └── lib/
-        └── api.ts                # API client (updated types)
+        └── api.ts                # API client (~4700 lines)
 ```
 
-## Interview Questions (Examples)
-
-### Engineering
-
-1. "Tell me about a project you've built. What was the most challenging part?"
-2. "Describe a bug that took you a long time to fix. How did you approach it?"
-3. "What technology are you most excited to learn and why?"
-4. "How do you stay updated with new technologies?"
-5. "Tell me about a time you worked on a team project. What was your role?"
-
-### Data
-
-1. "Describe a time you used data to solve a problem or make a decision."
-2. "How would you explain a complex analysis to a non-technical stakeholder?"
-3. "What's your approach when you encounter messy or incomplete data?"
-4. "Tell me about a project where you had to learn a new tool or technique."
-5. "How do you validate that your analysis is correct?"
-
-### Business
-
-1. "Tell me about a time you had to analyze data to make a decision."
-2. "Describe a project where you had to influence others without authority."
-3. "How do you prioritize when you have multiple deadlines?"
-4. "Tell me about a failure and what you learned from it."
-5. "Why are you interested in this field?"
-
-### Design
-
-1. "Walk me through your design process for a recent project."
-2. "How do you incorporate user feedback into your designs?"
-3. "Describe a time when you had to advocate for your design decisions."
-4. "How do you balance user needs with business requirements?"
-5. "What design trends are you following, and how do they influence your work?"
+---
 
 ## API Endpoints (Key)
 
 ### Candidates
-
 ```
 POST /api/candidates/             # Register
 GET  /api/candidates/me           # Get profile
 PATCH /api/candidates/me          # Update profile
-POST /api/candidates/me/resume    # Upload resume
+POST /api/candidates/{id}/resume  # Upload resume (creates ResumeVersion)
 ```
 
-### GitHub OAuth
-
+### GitHub
 ```
 GET  /api/candidates/auth/github/url      # Get OAuth URL
 POST /api/candidates/auth/github/callback # Exchange code
 GET  /api/candidates/me/github            # Get GitHub info
 DELETE /api/candidates/me/github          # Disconnect
 POST /api/candidates/me/github/refresh    # Refresh data
+POST /api/candidates/me/github/analyze    # Run analysis (creates snapshot)
+GET  /api/candidates/me/github/analysis   # Get latest analysis
 ```
 
 ### Interviews
-
 ```
 POST /api/interviews/start-vertical  # Start vertical interview
 GET  /api/interviews/{id}            # Get session
@@ -360,42 +511,25 @@ POST /api/interviews/{id}/complete   # Complete interview
 GET  /api/interviews/{id}/results    # Get results
 ```
 
-### Employers
-
+### Employers / Talent Pool
 ```
-POST /api/employers/register   # Register
-POST /api/employers/login      # Login
-GET  /api/employers/talent-pool # Browse candidates
-GET  /api/employers/talent-pool/{id} # View candidate
-POST /api/employers/talent-pool/{id}/contact # Contact
+POST /api/employers/register                           # Register
+POST /api/employers/login                              # Login
+GET  /api/employers/talent-pool                        # Browse candidates
+GET  /api/employers/talent-pool/{id}                   # View candidate
+PATCH /api/employers/talent-pool/{id}/status           # Update candidate status
+GET  /api/employers/talent-pool/{id}/growth-timeline   # Get growth timeline
 ```
 
-## Database Models
-
-### Key Model Changes (from China version)
-
-```python
-# Candidate model additions
-university: str
-major: str
-graduation_year: int
-gpa: float
-courses: List[str]  # JSON
-github_username: str
-github_access_token: str  # Encrypted
-github_data: dict  # JSON (repos, languages, contributions)
-github_connected_at: datetime
-
-# CandidateVerticalProfile changes
-total_interviews: int  # Instead of attempt_count
-last_interview_at: datetime
-next_eligible_at: datetime  # 30 days after last
-
-# InterviewHistoryEntry (new)
-interview_session_id: UUID
-score: float
-completed_at: datetime
+### Scheduling
 ```
+POST /api/employers/scheduling-links           # Create self-scheduling link
+GET  /api/employers/scheduling-links           # List links
+GET  /api/schedule/{slug}                      # Public: Get available slots
+POST /api/schedule/{slug}/book                 # Public: Book slot
+```
+
+---
 
 ## Progressive Question System
 
@@ -414,27 +548,7 @@ When candidates re-interview after 30+ days, the AI generates personalized quest
 - **Level 2 (Intermediate)**: Score 5.5-7.5 - Deeper scenarios, trade-offs
 - **Level 3 (Advanced)**: Score > 7.5 - System design, leadership, complex problems
 
-### Key Files
-- `app/services/progressive_questions.py` - AI question generation
-- `app/models/employer.py` - CandidateQuestionHistory model
-- Question tracking in `candidate_question_history` table
-
-## Admin Dashboard
-
-Access at `/admin` with employer credentials:
-
-### Tabs
-- **Universities**: Manage university database, prestige rankings
-- **Courses**: Course difficulty tiers, grade mappings
-- **Clubs**: 147 Berkeley clubs with prestige tiers (1-5)
-- **Candidates**: View all candidates, interview history
-
-### Club Prestige Tiers
-- **Tier 5**: Most prestigious (BIG, Free Ventures, BFR, SEB)
-- **Tier 4**: Highly selective (VCG, NGC, Codeology)
-- **Tier 3**: Selective (most professional clubs)
-- **Tier 2**: Moderate (many academic clubs)
-- **Tier 1**: Open membership
+---
 
 ## Testing Requirements
 
@@ -443,20 +557,75 @@ All new features need tests:
 - Integration tests for API endpoints
 - E2E tests for critical flows (registration, interview, GitHub OAuth)
 
+```bash
+# Backend tests
+cd apps/api
+python -m pytest
+
+# Frontend type check
+cd apps/web
+npm run type-check
+
+# Lint
+npm run lint
+```
+
+---
+
 ## Migration Notes
 
 ### From China (ZhiMian) to US (Pathway)
 
 1. **Verticals**: Changed from `new_energy`/`sales` to `software_engineering`/`data`/`product`/`design`/`finance`
-2. **Roles**: Changed from China-specific (battery_engineer, ev_sales) to US entry-level roles
+2. **Roles**: Changed from China-specific to US entry-level roles
 3. **Auth**: Removed WeChat OAuth, added GitHub OAuth
 4. **Scoring**: Changed "Motivation" dimension to "Growth Mindset"
 5. **Language**: All Chinese strings replaced with English
 6. **Interview Cadence**: Changed from max-3-retries to monthly (30-day cooldown)
 7. **Profile**: Added education fields, GitHub integration, transcript analysis
-8. **Branding**: ZhiMian (智面) → Pathway, green → indigo/purple
-9. **Questions**: Changed from static templates to AI-generated progressive questions
+8. **Branding**: ZhiMian (智面) → Pathway
+9. **Design**: Changed from green/indigo to stone/teal (HEYTEA-inspired)
+10. **Questions**: Changed from static templates to AI-generated progressive questions
+11. **Growth Tracking**: Added resume versioning, GitHub history, profile change logs
 
 ### Backup Branch
 
 The original China market version is preserved in `zhimian-china-backup` branch.
+
+---
+
+## Completed Features
+
+- ✅ Monthly interview system with 30-day cooldown
+- ✅ GitHub OAuth + code quality analysis
+- ✅ Progressive AI question generation
+- ✅ Transcript analysis
+- ✅ Profile sharing preferences
+- ✅ Google Calendar integration
+- ✅ Candidate status management (New/Contacted/In Review/Shortlisted/Rejected/Hired)
+- ✅ GitHub analysis display (visual scores)
+- ✅ Private candidate notes for employers
+- ✅ Scheduled interviews page with Google Meet
+- ✅ Self-scheduling links
+- ✅ Match alerts for high-scoring candidates
+- ✅ Organization teams with roles and invites
+- ✅ **Growth Tracking System** (resume versions, GitHub history, profile change logs)
+- ✅ **Growth Timeline UI** (recruiter-only progressive disclosure)
+
+---
+
+## Known Technical Debt
+
+| File | Issue | Priority |
+|------|-------|----------|
+| `apps/web/lib/api.ts` | ~4700 lines, should be split into modules | Medium |
+
+Recommended split for `api.ts`:
+- `lib/api/types.ts` - All interfaces
+- `lib/api/client.ts` - ApiError, apiRequest helper
+- `lib/api/candidate.ts` - candidateApi
+- `lib/api/employer.ts` - employerApi, talentPoolApi
+- `lib/api/interview.ts` - interviewApi
+- `lib/api/scheduling.ts` - calendarApi, schedulingLinkApi
+- `lib/api/organization.ts` - organizationApi, teamMemberApi
+- `lib/api/index.ts` - Re-export everything (backwards compatible)

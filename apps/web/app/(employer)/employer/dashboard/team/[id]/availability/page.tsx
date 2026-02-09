@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CustomSelect } from '@/components/ui/custom-select'
 import { DashboardNavbar } from '@/components/layout/navbar'
 import { Container, PageWrapper } from '@/components/layout/container'
 import { AvailabilityGrid } from '@/components/scheduling'
@@ -307,17 +308,12 @@ export default function AvailabilitySettingsPage() {
                 <CardTitle>Timezone</CardTitle>
               </CardHeader>
               <CardContent>
-                <select
+                <CustomSelect
                   value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-300"
-                >
-                  {TIMEZONES.map(tz => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setTimezone(v)}
+                  options={TIMEZONES}
+                  searchable
+                />
                 <p className="text-sm text-stone-500 mt-2">
                   All times will be displayed in this timezone
                 </p>

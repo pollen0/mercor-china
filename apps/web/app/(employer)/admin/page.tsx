@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AdminNavbar } from '@/components/layout/navbar'
 import { Container, PageWrapper } from '@/components/layout/container'
+import { CustomSelect } from '@/components/ui/custom-select'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -835,15 +836,16 @@ export default function AdminPage() {
                 placeholder="Search by name, email, phone..."
                 className="flex-1 min-w-[200px] px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-700 placeholder:text-stone-400"
               />
-              <select
+              <CustomSelect
                 value={candidateFilter}
-                onChange={(e) => setCandidateFilter(e.target.value as 'all' | 'verified' | 'unverified')}
-                className="px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-600"
-              >
-                <option value="all">All Status</option>
-                <option value="verified">Verified Only</option>
-                <option value="unverified">Unverified Only</option>
-              </select>
+                onChange={(v) => setCandidateFilter(v as 'all' | 'verified' | 'unverified')}
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'verified', label: 'Verified Only' },
+                  { value: 'unverified', label: 'Unverified Only' },
+                ]}
+                placeholder="All Status"
+              />
             </div>
 
             <p className="text-sm text-stone-400">
@@ -942,15 +944,16 @@ export default function AdminPage() {
                 placeholder="Search by company name, email..."
                 className="flex-1 min-w-[200px] px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-700 placeholder:text-stone-400"
               />
-              <select
+              <CustomSelect
                 value={employerFilter}
-                onChange={(e) => setEmployerFilter(e.target.value as 'all' | 'verified' | 'unverified')}
-                className="px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-600"
-              >
-                <option value="all">All Status</option>
-                <option value="verified">Verified Only</option>
-                <option value="unverified">Unverified Only</option>
-              </select>
+                onChange={(v) => setEmployerFilter(v as 'all' | 'verified' | 'unverified')}
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'verified', label: 'Verified Only' },
+                  { value: 'unverified', label: 'Unverified Only' },
+                ]}
+                placeholder="All Status"
+              />
             </div>
 
             <p className="text-sm text-stone-400">
@@ -1070,28 +1073,30 @@ export default function AdminPage() {
 
             {/* Filters */}
             <div className="flex flex-wrap gap-3">
-              <select
+              <CustomSelect
                 value={selectedUniversity}
-                onChange={(e) => setSelectedUniversity(e.target.value)}
-                className="px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-600"
-              >
-                <option value="">All Universities</option>
-                {universities.map(u => (
-                  <option key={u.id} value={u.id}>{u.short_name}</option>
-                ))}
-              </select>
-              <select
+                onChange={(v) => setSelectedUniversity(v)}
+                options={[
+                  { value: '', label: 'All Universities' },
+                  ...universities.map(u => ({ value: u.id, label: u.short_name })),
+                ]}
+                placeholder="All Universities"
+                searchable
+                searchPlaceholder="Search universities..."
+              />
+              <CustomSelect
                 value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-600"
-              >
-                <option value="">All Departments</option>
-                <option value="CS">CS</option>
-                <option value="EECS">EECS</option>
-                <option value="DATA">DATA</option>
-                <option value="MATH">MATH</option>
-                <option value="ECE">ECE</option>
-              </select>
+                onChange={(v) => setSelectedDepartment(v)}
+                options={[
+                  { value: '', label: 'All Departments' },
+                  { value: 'CS', label: 'CS' },
+                  { value: 'EECS', label: 'EECS' },
+                  { value: 'DATA', label: 'DATA' },
+                  { value: 'MATH', label: 'MATH' },
+                  { value: 'ECE', label: 'ECE' },
+                ]}
+                placeholder="All Departments"
+              />
               <Button
                 variant="outline"
                 onClick={() => setShowAddCourse(true)}
@@ -1203,20 +1208,18 @@ export default function AdminPage() {
                       <label className="block text-sm font-medium text-stone-600 mb-2">
                         Difficulty Tier (1-5)
                       </label>
-                      <select
-                        value={editingCourse.difficulty_tier}
-                        onChange={(e) => setEditingCourse({
-                          ...editingCourse,
-                          difficulty_tier: parseInt(e.target.value)
-                        })}
-                        className="w-full px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                      >
-                        <option value="1">1 - Introductory</option>
-                        <option value="2">2 - Foundational</option>
-                        <option value="3">3 - Challenging</option>
-                        <option value="4">4 - Very Challenging</option>
-                        <option value="5">5 - Elite</option>
-                      </select>
+                      <CustomSelect
+                        value={String(editingCourse.difficulty_tier)}
+                        onChange={(v) => setEditingCourse({...editingCourse, difficulty_tier: parseInt(v)})}
+                        options={[
+                          { value: '1', label: '1 - Introductory' },
+                          { value: '2', label: '2 - Foundational' },
+                          { value: '3', label: '3 - Challenging' },
+                          { value: '4', label: '4 - Very Challenging' },
+                          { value: '5', label: '5 - Elite' },
+                        ]}
+                        placeholder="Select tier"
+                      />
                     </div>
 
                     <div>
@@ -1384,35 +1387,37 @@ export default function AdminPage() {
 
             {/* Filters */}
             <div className="flex flex-wrap gap-3">
-              <select
+              <CustomSelect
                 value={selectedClubCategory}
-                onChange={(e) => setSelectedClubCategory(e.target.value)}
-                className="px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-600"
-              >
-                <option value="">All Categories</option>
-                <option value="engineering">Engineering/Tech</option>
-                <option value="business">Business/Professional</option>
-                <option value="cultural">Cultural</option>
-                <option value="greek">Greek Life</option>
-                <option value="sports">Sports/Recreation</option>
-                <option value="arts">Performing Arts</option>
-                <option value="research">Research/Academic</option>
-                <option value="service">Service/Social Good</option>
-                <option value="honor">Honor Society</option>
-                <option value="other">Other</option>
-              </select>
-              <select
-                value={clubPrestigeFilter}
-                onChange={(e) => setClubPrestigeFilter(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="px-4 py-2.5 border border-stone-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all text-stone-600"
-              >
-                <option value="">All Prestige Tiers</option>
-                <option value="5">Tier 5 - Elite</option>
-                <option value="4">Tier 4 - Selective</option>
-                <option value="3">Tier 3 - Competitive</option>
-                <option value="2">Tier 2 - Active</option>
-                <option value="1">Tier 1 - Casual</option>
-              </select>
+                onChange={(v) => setSelectedClubCategory(v)}
+                options={[
+                  { value: '', label: 'All Categories' },
+                  { value: 'engineering', label: 'Engineering/Tech' },
+                  { value: 'business', label: 'Business/Professional' },
+                  { value: 'cultural', label: 'Cultural' },
+                  { value: 'greek', label: 'Greek Life' },
+                  { value: 'sports', label: 'Sports/Recreation' },
+                  { value: 'arts', label: 'Performing Arts' },
+                  { value: 'research', label: 'Research/Academic' },
+                  { value: 'service', label: 'Service/Social Good' },
+                  { value: 'honor', label: 'Honor Society' },
+                  { value: 'other', label: 'Other' },
+                ]}
+                placeholder="All Categories"
+              />
+              <CustomSelect
+                value={String(clubPrestigeFilter)}
+                onChange={(v) => setClubPrestigeFilter(v === '' ? '' : parseInt(v))}
+                options={[
+                  { value: '', label: 'All Prestige Tiers' },
+                  { value: '5', label: 'Tier 5 - Elite' },
+                  { value: '4', label: 'Tier 4 - Selective' },
+                  { value: '3', label: 'Tier 3 - Competitive' },
+                  { value: '2', label: 'Tier 2 - Active' },
+                  { value: '1', label: 'Tier 1 - Casual' },
+                ]}
+                placeholder="All Prestige Tiers"
+              />
               <Button
                 variant="outline"
                 onClick={seedClubs}

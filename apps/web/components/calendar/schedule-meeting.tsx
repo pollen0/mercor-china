@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { CustomSelect } from '@/components/ui/custom-select'
 import {
   Dialog,
   DialogContent,
@@ -242,19 +243,18 @@ export function ScheduleMeeting({
 
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration</Label>
-                <select
-                  id="duration"
+                <CustomSelect
                   value={duration}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDuration(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <option value="15">15 minutes</option>
-                  <option value="30">30 minutes</option>
-                  <option value="45">45 minutes</option>
-                  <option value="60">1 hour</option>
-                  <option value="90">1.5 hours</option>
-                  <option value="120">2 hours</option>
-                </select>
+                  onChange={(v) => setDuration(v)}
+                  options={[
+                    { value: '15', label: '15 minutes' },
+                    { value: '30', label: '30 minutes' },
+                    { value: '45', label: '45 minutes' },
+                    { value: '60', label: '1 hour' },
+                    { value: '90', label: '1.5 hours' },
+                    { value: '120', label: '2 hours' },
+                  ]}
+                />
               </div>
 
               <div className="space-y-2">

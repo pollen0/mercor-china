@@ -16,6 +16,8 @@ interface CustomSelectProps {
   className?: string
   triggerClassName?: string
   size?: 'sm' | 'md'
+  searchable?: boolean
+  searchPlaceholder?: string
 }
 
 export function CustomSelect({
@@ -27,8 +29,11 @@ export function CustomSelect({
   className = '',
   triggerClassName = '',
   size = 'md',
+  searchable = false,
+  searchPlaceholder = 'Search...',
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const ref = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
@@ -36,6 +41,7 @@ export function CustomSelect({
     const handleClickOutside = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         setIsOpen(false)
+        setSearch('')
       }
     }
 
@@ -59,6 +65,9 @@ export function CustomSelect({
 
   const selectedOption = options.find(o => o.value === value)
   const displayLabel = selectedOption?.label || placeholder
+  const filteredOptions = searchable && search
+    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options
 
   const heightClass = size === 'sm' ? 'h-9' : 'h-10'
   const textClass = size === 'sm' ? 'text-sm' : 'text-sm'
@@ -92,13 +101,27 @@ export function CustomSelect({
 
       {isOpen && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
-          {options.map(option => (
+          {searchable && (
+            <div className="px-3 py-2 sticky top-0 bg-white border-b border-stone-100">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="w-full text-sm border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-stone-400"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
+          {filteredOptions.map(option => (
             <button
               key={option.value}
               type="button"
               onClick={() => {
                 onChange(option.value)
                 setIsOpen(false)
+                setSearch('')
               }}
               className={`
                 w-full px-3 py-2 text-left ${textClass} transition-colors
@@ -111,6 +134,9 @@ export function CustomSelect({
               {option.label}
             </button>
           ))}
+          {filteredOptions.length === 0 && (
+            <p className="px-3 py-2 text-sm text-stone-400">No matches found</p>
+          )}
         </div>
       )}
     </div>

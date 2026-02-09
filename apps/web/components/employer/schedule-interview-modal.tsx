@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CustomSelect } from '@/components/ui/custom-select'
 import { scheduledInterviewApi, InterviewType, ApiError, Job } from '@/lib/api'
 
 interface ScheduleInterviewModalProps {
@@ -214,7 +215,7 @@ export function ScheduleInterviewModal({
             <span>Schedule Interview</span>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-stone-400 hover:text-stone-600"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -235,24 +236,21 @@ export function ScheduleInterviewModal({
 
             {/* Interview Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-stone-700 mb-1">
                 Interview Type
               </label>
-              <select
+              <CustomSelect
                 value={interviewType}
-                onChange={(e) => setInterviewType(e.target.value as InterviewType)}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              >
-                {INTERVIEW_TYPES.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
+                onChange={(v) => setInterviewType(v as InterviewType)}
+                options={INTERVIEW_TYPES}
+                placeholder="Select interview type"
+              />
             </div>
 
             {/* Date and Time */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Date <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -261,11 +259,11 @@ export function ScheduleInterviewModal({
                   onChange={(e) => setDate(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Time <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -273,7 +271,7 @@ export function ScheduleInterviewModal({
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
             </div>
@@ -281,57 +279,50 @@ export function ScheduleInterviewModal({
             {/* Duration and Timezone */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Duration
                 </label>
-                <select
-                  value={duration}
-                  onChange={(e) => setDuration(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  {DURATION_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={String(duration)}
+                  onChange={(v) => setDuration(Number(v))}
+                  options={DURATION_OPTIONS.map(o => ({ value: String(o.value), label: o.label }))}
+                  placeholder="Select duration"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Timezone
                 </label>
-                <select
+                <CustomSelect
                   value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  {TIMEZONE_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setTimezone(v)}
+                  options={TIMEZONE_OPTIONS}
+                  placeholder="Select timezone"
+                />
               </div>
             </div>
 
             {/* Job Selection */}
             {jobs.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Related Job (optional)
                 </label>
-                <select
+                <CustomSelect
                   value={jobId}
-                  onChange={(e) => setJobId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  <option value="">-- Select a job --</option>
-                  {jobs.map(job => (
-                    <option key={job.id} value={job.id}>{job.title}</option>
-                  ))}
-                </select>
+                  onChange={(v) => setJobId(v)}
+                  options={[
+                    { value: '', label: '-- Select a job --' },
+                    ...jobs.map(job => ({ value: job.id, label: job.title })),
+                  ]}
+                  placeholder="-- Select a job --"
+                />
               </div>
             )}
 
             {/* Custom Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-stone-700 mb-1">
                 Custom Title (optional)
               </label>
               <input
@@ -339,13 +330,13 @@ export function ScheduleInterviewModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Auto-generated if left blank"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-stone-700 mb-1">
                 Description / Agenda (optional)
               </label>
               <textarea
@@ -353,13 +344,13 @@ export function ScheduleInterviewModal({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="What will be covered in this interview..."
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
               />
             </div>
 
             {/* Additional Attendees */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-stone-700 mb-1">
                 Additional Attendees (optional)
               </label>
               <textarea
@@ -367,16 +358,16 @@ export function ScheduleInterviewModal({
                 onChange={(e) => setAdditionalAttendees(e.target.value)}
                 rows={2}
                 placeholder="Enter email addresses, separated by commas"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-stone-500 mt-1">
                 Other interviewers who should join. The candidate will be added automatically.
               </p>
             </div>
 
             {/* Private Notes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-stone-700 mb-1">
                 Private Notes (optional)
               </label>
               <textarea
@@ -384,7 +375,7 @@ export function ScheduleInterviewModal({
                 onChange={(e) => setEmployerNotes(e.target.value)}
                 rows={2}
                 placeholder="Internal notes (not visible to candidate)"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
               />
             </div>
 
@@ -416,7 +407,7 @@ export function ScheduleInterviewModal({
               </Button>
             </div>
 
-            <p className="text-xs text-gray-500 text-center">
+            <p className="text-xs text-stone-500 text-center">
               A Google Meet link will be generated and calendar invites will be sent to all attendees.
             </p>
           </form>
