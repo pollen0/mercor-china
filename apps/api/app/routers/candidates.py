@@ -35,6 +35,7 @@ from ..schemas.candidate import (
 )
 from ..services.resume import resume_service
 from ..services.storage import storage_service
+from ..services.growth_tracking import growth_tracking_service
 from ..utils.auth import create_token, create_token_pair, verify_refresh_token, revoke_refresh_token, get_current_candidate, get_current_employer, get_password_hash, verify_password, blacklist_token
 from ..utils.rate_limit import limiter, RateLimits
 from ..utils.crypto import encrypt_token, decrypt_token
@@ -78,7 +79,7 @@ async def create_candidate(
         university=candidate_data.university,
         major=candidate_data.major,
         graduation_year=candidate_data.graduation_year,
-        target_roles=None,  # Use None for SQLite compatibility in tests
+        target_roles=candidate_data.target_roles if candidate_data.target_roles else None,
     )
 
     try:
@@ -823,6 +824,21 @@ async def upload_resume(
         candidate.name = sanitize_name(parsed_data.name)
 
     db.commit()
+
+    # Track resume version for growth tracking
+    if resume_url:
+        try:
+            growth_tracking_service.create_resume_version(
+                db=db,
+                candidate_id=candidate_id,
+                storage_key=resume_url,
+                raw_text=sanitized_raw_text,
+                parsed_data=sanitized_parsed_data,
+                original_filename=filename,
+                file_size_bytes=len(file_bytes) if file_bytes else None,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to create resume version for {candidate_id}: {e}")
 
     # Auto-populate activities and awards from parsed resume
     _auto_populate_from_resume(candidate_id, parsed_data, db)
@@ -1922,6 +1938,21 @@ async def run_github_analysis_background(candidate_id: str):
             db.add(new_analysis)
 
         db.commit()
+
+        # Create growth tracking snapshot
+        try:
+            db_analysis = db.query(GitHubAnalysis).filter(
+                GitHubAnalysis.candidate_id == candidate_id
+            ).first()
+            if db_analysis:
+                growth_tracking_service.create_github_analysis_snapshot(
+                    db=db,
+                    candidate_id=candidate_id,
+                    analysis=db_analysis,
+                )
+        except Exception as e:
+            logger.warning(f"Failed to create GitHub analysis snapshot for {candidate_id}: {e}")
+
         logger.info(f"Completed background GitHub analysis for candidate {candidate_id}, score={analysis.overall_score}")
 
     except Exception as e:
@@ -2051,6 +2082,20 @@ async def analyze_github_profile(
             db.add(new_analysis)
 
         db.commit()
+
+        # Create growth tracking snapshot
+        try:
+            db_analysis = db.query(GitHubAnalysis).filter(
+                GitHubAnalysis.candidate_id == current_candidate.id
+            ).first()
+            if db_analysis:
+                growth_tracking_service.create_github_analysis_snapshot(
+                    db=db,
+                    candidate_id=current_candidate.id,
+                    analysis=db_analysis,
+                )
+        except Exception as e:
+            logger.warning(f"Failed to create GitHub analysis snapshot: {e}")
 
         return GitHubAnalysisResponse(
             overall_score=analysis.overall_score,

@@ -87,6 +87,7 @@ function DashboardContent() {
 
   // Use SWR hooks for data caching
   const {
+    candidateProfile,
     resumeData,
     githubData,
     githubAnalysis,
@@ -141,6 +142,14 @@ function DashboardContent() {
   const [githubError, setGithubError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileForm, setProfileForm] = useState<{
+    university: string
+    major: string
+    graduationYear: string
+    targetRoles: string[]
+  }>({ university: '', major: '', graduationYear: '', targetRoles: [] })
 
   // File input refs
   const resumeInputRef = useRef<HTMLInputElement>(null)
@@ -244,6 +253,45 @@ function DashboardContent() {
     await logout('candidate', true)
     localStorage.removeItem('candidate')
     router.push('/')
+  }
+
+  // Profile edit handlers
+  const handleEditProfile = () => {
+    setProfileForm({
+      university: candidateProfile?.university || '',
+      major: candidateProfile?.major || '',
+      graduationYear: candidateProfile?.graduationYear?.toString() || '',
+      targetRoles: candidateProfile?.targetRoles || [],
+    })
+    setIsEditingProfile(true)
+  }
+
+  const handleSaveProfile = async () => {
+    if (!token) return
+    setIsSavingProfile(true)
+    try {
+      await candidateApi.updateProfile({
+        university: profileForm.university || undefined,
+        major: profileForm.major || undefined,
+        graduationYear: profileForm.graduationYear ? parseInt(profileForm.graduationYear) : undefined,
+        targetRoles: profileForm.targetRoles.length > 0 ? profileForm.targetRoles : undefined,
+      })
+      await mutateCandidate()
+      setIsEditingProfile(false)
+    } catch (error) {
+      console.error('Failed to update profile:', error)
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
+
+  const toggleTargetRole = (role: string) => {
+    setProfileForm(prev => ({
+      ...prev,
+      targetRoles: prev.targetRoles.includes(role)
+        ? prev.targetRoles.filter(r => r !== role)
+        : [...prev.targetRoles, role],
+    }))
   }
 
   // Resume handlers with progress tracking
@@ -824,6 +872,128 @@ function DashboardContent() {
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="space-y-6">
+            {/* Profile Info Section */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">Profile</CardTitle>
+                    <CardDescription>Your education and career interests</CardDescription>
+                  </div>
+                  {!isEditingProfile && (
+                    <Button variant="ghost" size="sm" onClick={handleEditProfile} className="text-stone-500 hover:text-stone-700">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                      Edit
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isEditingProfile ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-stone-700 mb-1">University</label>
+                        <input
+                          type="text"
+                          value={profileForm.university}
+                          onChange={(e) => setProfileForm(prev => ({ ...prev, university: e.target.value }))}
+                          placeholder="e.g., UC Berkeley"
+                          className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-stone-700 mb-1">Major</label>
+                        <input
+                          type="text"
+                          value={profileForm.major}
+                          onChange={(e) => setProfileForm(prev => ({ ...prev, major: e.target.value }))}
+                          placeholder="e.g., Computer Science"
+                          className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-1">Graduation Year</label>
+                      <select
+                        value={profileForm.graduationYear}
+                        onChange={(e) => setProfileForm(prev => ({ ...prev, graduationYear: e.target.value }))}
+                        className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      >
+                        <option value="">Select year</option>
+                        {[2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-2">Target Roles</label>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(ROLE_NAMES).map(([key, label]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => toggleTargetRole(key)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                              profileForm.targetRoles.includes(key)
+                                ? 'bg-teal-100 text-teal-800 border border-teal-300'
+                                : 'bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" onClick={handleSaveProfile} disabled={isSavingProfile}>
+                        {isSavingProfile ? 'Saving...' : 'Save'}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setIsEditingProfile(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-stone-500">University</p>
+                        <p className="text-sm font-medium text-stone-900">{candidateProfile?.university || <span className="text-stone-400 italic">Not set</span>}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-stone-500">Major</p>
+                        <p className="text-sm font-medium text-stone-900">{candidateProfile?.major || <span className="text-stone-400 italic">Not set</span>}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-stone-500">Graduation Year</p>
+                      <p className="text-sm font-medium text-stone-900">{candidateProfile?.graduationYear || <span className="text-stone-400 italic">Not set</span>}</p>
+                    </div>
+                    {candidateProfile?.targetRoles && candidateProfile.targetRoles.length > 0 ? (
+                      <div>
+                        <p className="text-xs text-stone-500 mb-1.5">Target Roles</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {candidateProfile.targetRoles.map(role => (
+                            <span key={role} className="text-xs bg-teal-50 text-teal-700 px-2 py-1 rounded-full">
+                              {ROLE_NAMES[role] || role}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-stone-500">Target Roles</p>
+                        <p className="text-sm text-stone-400 italic">Not set</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Resume Section */}
             <Card>
               <CardHeader className="pb-4">

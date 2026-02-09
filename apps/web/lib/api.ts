@@ -1229,6 +1229,31 @@ export const candidateApi = {
       }),
     }),
 
+  // Update profile (general)
+  updateProfile: (data: {
+    university?: string
+    major?: string
+    graduationYear?: number
+    gpa?: number
+    targetRoles?: string[]
+    bio?: string
+    linkedinUrl?: string
+    portfolioUrl?: string
+  }): Promise<Candidate> =>
+    apiRequest('/api/candidates/me', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        university: data.university,
+        major: data.major,
+        graduation_year: data.graduationYear,
+        gpa: data.gpa,
+        target_roles: data.targetRoles,
+        bio: data.bio,
+        linkedin_url: data.linkedinUrl,
+        portfolio_url: data.portfolioUrl,
+      }),
+    }),
+
   // GitHub Analysis
   analyzeGitHub: async (): Promise<GitHubAnalysis> => {
     const response = await apiRequest<{
@@ -2795,6 +2820,33 @@ export interface MatchingJob {
   matchStatus?: string
 }
 
+// ==================== GROWTH TIMELINE TYPES ====================
+
+export interface GrowthTimelineSummary {
+  total_interviews: number
+  interview_score_change: number | null
+  github_connected: boolean
+  github_score_change: number | null
+  resume_versions_count: number
+  skills_growth_count: number
+}
+
+export interface GrowthTimelineEvent {
+  event_type: 'interview' | 'resume' | 'github' | 'profile'
+  event_date: string | null
+  title: string
+  subtitle: string | null
+  delta: number | null
+  icon: string
+}
+
+export interface GrowthTimelineResponse {
+  candidate_id: string
+  candidate_name: string
+  summary: GrowthTimelineSummary
+  events: GrowthTimelineEvent[]
+}
+
 // ==================== VERTICAL / TALENT POOL API ====================
 
 export const verticalApi = {
@@ -3052,6 +3104,17 @@ export const talentPoolApi = {
         job_id: data.jobId,
       }),
     }),
+
+  // Get growth timeline for a candidate (recruiter only)
+  getGrowthTimeline: async (
+    profileId: string,
+    timeRange: '6m' | '1y' | '2y' | 'all' = '1y'
+  ): Promise<GrowthTimelineResponse> => {
+    const data = await apiRequest<GrowthTimelineResponse>(
+      `/api/employers/talent-pool/${profileId}/growth-timeline?time_range=${timeRange}`
+    )
+    return data
+  },
 }
 
 // ==================== AUTH / VERIFICATION API ====================

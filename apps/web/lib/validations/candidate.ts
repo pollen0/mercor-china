@@ -16,6 +16,7 @@ export const universityOptions = [
   { value: 'ucla', label: 'UCLA' },
   { value: 'uc_san_diego', label: 'UC San Diego' },
   { value: 'ucsb', label: 'UC Santa Barbara' },
+  { value: 'ucsc', label: 'UC Santa Cruz' },
   { value: 'uiuc', label: 'University of Illinois Urbana-Champaign' },
   { value: 'umich', label: 'University of Michigan' },
   { value: 'umd', label: 'University of Maryland' },

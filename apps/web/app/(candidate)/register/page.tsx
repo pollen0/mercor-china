@@ -142,12 +142,19 @@ export default function RegisterPage() {
     setIsSubmitting(true)
 
     try {
-      const payload: Record<string, unknown> = { ...result.data }
-      // Send referral_code in snake_case for the backend
-      if (payload.referralCode) {
-        payload.referral_code = payload.referralCode
+      // Convert camelCase to snake_case for the backend
+      const rawData = result.data
+      const payload: Record<string, unknown> = {
+        name: rawData.name,
+        email: rawData.email,
+        password: rawData.password,
+        phone: rawData.phone,
+        university: rawData.university,
+        major: rawData.major,
+        graduation_year: rawData.graduationYear,
+        target_roles: rawData.targetRoles,
+        referral_code: rawData.referralCode,
       }
-      delete payload.referralCode
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/candidates/`, {
         method: 'POST',
