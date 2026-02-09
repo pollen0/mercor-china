@@ -1659,6 +1659,8 @@ class TalentPoolCandidate(BaseModel):
     # GitHub info
     github_username: Optional[str] = None
     github_languages: list[str] = []  # Top languages
+    # GitHub deep analysis (from GitHubAnalysis model)
+    github_analysis: Optional[dict] = None  # originality, depth, activity, collaboration scores + flags
     # Cohort comparison (e.g., "Top 10% of Berkeley 2026")
     cohort_badge: Optional[CohortBadge] = None
 
@@ -2110,6 +2112,32 @@ async def browse_talent_pool(
                 langs = candidate.github_data.get("languages", {})
                 github_languages = sorted(langs.keys(), key=lambda x: langs.get(x, 0), reverse=True)[:5]
 
+            # Get GitHub deep analysis (originality, code authenticity, etc.)
+            github_analysis_data = None
+            if candidate.github_username:
+                from ..models.github_analysis import GitHubAnalysis as GHA
+                gh_analysis = db.query(GHA).filter(GHA.candidate_id == candidate.id).first()
+                if gh_analysis:
+                    github_analysis_data = {
+                        "overall_score": gh_analysis.overall_score,
+                        "originality_score": gh_analysis.originality_score,
+                        "activity_score": gh_analysis.activity_score,
+                        "depth_score": gh_analysis.depth_score,
+                        "collaboration_score": gh_analysis.collaboration_score,
+                        "total_repos_analyzed": gh_analysis.total_repos_analyzed,
+                        "total_commits": gh_analysis.total_commits_by_user,
+                        "personal_projects": gh_analysis.personal_projects_count,
+                        "class_projects": gh_analysis.class_projects_count,
+                        "ai_assisted_repos": gh_analysis.ai_assisted_repos,
+                        "organic_code_ratio": gh_analysis.organic_code_ratio,
+                        "has_tests": gh_analysis.has_tests,
+                        "has_ci_cd": gh_analysis.has_ci_cd,
+                        "primary_languages": gh_analysis.primary_languages,
+                        "flags": gh_analysis.flags or [],
+                        "requires_review": gh_analysis.requires_review,
+                        "analyzed_at": gh_analysis.analyzed_at.isoformat() if gh_analysis.analyzed_at else None,
+                    }
+
             candidates_result.append(TalentPoolCandidate(
                 profile_id=existing_profile.id if existing_profile else None,
                 candidate_id=candidate.id,
@@ -2135,6 +2163,7 @@ async def browse_talent_pool(
                 gpa=candidate.gpa,
                 github_username=candidate.github_username,
                 github_languages=github_languages,
+                github_analysis=github_analysis_data,
             ))
 
     # Sort all candidates: completed interviews first (by best_score), then profile-only (by profile_score)
@@ -4162,7 +4191,19 @@ async def invite_to_organization(
     db.commit()
     db.refresh(invite)
 
-    # TODO: Send invite email
+    # Send invite email
+    try:
+        from ..services.email import email_service
+        invite_url = f"{settings.frontend_url}/org/invite/{invite.token}"
+        await email_service.send_organization_invite(
+            to_email=invite.email,
+            organization_name=org.name,
+            inviter_name=employer.company_name or employer.email,
+            role=invite.role.value,
+            invite_url=invite_url,
+        )
+    except Exception:
+        pass  # Don't fail the invite creation if email fails
 
     return OrganizationInviteResponse(
         id=invite.id,

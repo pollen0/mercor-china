@@ -244,16 +244,16 @@ export default function TeamManagementPage() {
             teamMembers.map(member => (
               <Card key={member.id} className={!member.isActive ? 'opacity-60' : ''}>
                 <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 sm:gap-4">
                       {/* Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center font-medium">
+                      <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-600 flex items-center justify-center font-medium flex-shrink-0">
                         {member.name.charAt(0).toUpperCase()}
                       </div>
 
                       {/* Info */}
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-medium text-stone-900">{member.name}</h3>
                           <span className={`px-2 py-0.5 text-xs rounded-full ${
                             member.isActive ? 'bg-teal-50 text-teal-700' : 'bg-stone-100 text-stone-500'
@@ -273,7 +273,7 @@ export default function TeamManagementPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                       {/* Calendar status */}
                       {member.googleCalendarConnected ? (
                         <button

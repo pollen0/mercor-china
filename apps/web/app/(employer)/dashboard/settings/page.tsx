@@ -208,7 +208,7 @@ export default function EmployerSettingsPage() {
                       </svg>
                     </button>
                     {industryOpen && (
-                      <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
+                      <div className="absolute z-20 mt-1 w-full max-w-[calc(100vw-2rem)] bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
                         {INDUSTRY_OPTIONS.map(option => (
                           <button
                             key={option.value}
@@ -247,7 +247,7 @@ export default function EmployerSettingsPage() {
                       </svg>
                     </button>
                     {companySizeOpen && (
-                      <div className="absolute z-20 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
+                      <div className="absolute z-20 mt-1 w-full max-w-[calc(100vw-2rem)] bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
                         {COMPANY_SIZE_OPTIONS.map(option => (
                           <button
                             key={option.value}

@@ -14,6 +14,7 @@ import { DocumentPreview } from '@/components/ui/document-preview'
 import { candidateApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward } from '@/lib/api'
 import { useDashboardData, useSkillGap } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
+import VibeCodeSection from '@/components/dashboard/vibe-code-section'
 import { logout, clearAuthTokens } from '@/lib/auth'
 
 interface Candidate {
@@ -661,7 +662,7 @@ function DashboardContent() {
     <main className="min-h-screen bg-stone-50">
       {/* Header */}
       <header className="bg-white border-b border-stone-100 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="text-lg font-semibold text-stone-900">
             Pathway
           </Link>
@@ -735,8 +736,8 @@ function DashboardContent() {
 
       {/* Tab Navigation */}
       <div className="bg-white border-b border-stone-100">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="flex gap-1">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="flex gap-1 overflow-x-auto">
             <button
               onClick={() => setActiveTab('profile')}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${
@@ -764,7 +765,7 @@ function DashboardContent() {
       {/* Opt-in Banner */}
       {showOptInBanner && (
         <div className="bg-gradient-to-r from-teal-600 to-teal-500 text-white">
-          <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
                 <p className="font-semibold mb-1">Get matched with companies automatically</p>
@@ -793,7 +794,7 @@ function DashboardContent() {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Email Verification Banner */}
         {!emailVerified && candidate?.email && (
           <EmailVerificationBanner email={candidate.email} />
@@ -1059,7 +1060,7 @@ function DashboardContent() {
                     {((resumeData.parsedData.languages && resumeData.parsedData.languages.length > 0) ||
                       (resumeData.parsedData.certifications && resumeData.parsedData.certifications.length > 0)) && (
                       <div className="p-4 bg-white border border-gray-100 rounded-lg">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {resumeData.parsedData.languages && resumeData.parsedData.languages.length > 0 && (
                             <div>
                               <h4 className="text-sm font-semibold text-gray-900 mb-2">Languages</h4>
@@ -1223,46 +1224,14 @@ function DashboardContent() {
                       </div>
                     )}
 
-                    {/* GitHub Analysis Results */}
+                    {/* GitHub Analysis Status (scores are employer-only) */}
                     {githubAnalysis && (
                       <div className="border-t pt-3 mt-3">
-                        <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                          <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        <div className="flex items-center gap-2 text-sm text-emerald-600">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                          GitHub Analysis
-                        </h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="p-2 bg-gray-50 rounded-lg text-center">
-                            <p className="text-lg font-semibold text-teal-600">
-                              {githubAnalysis.overallScore.toFixed(1)}
-                            </p>
-                            <p className="text-xs text-gray-500">Overall</p>
-                          </div>
-                          <div className="p-2 bg-gray-50 rounded-lg text-center">
-                            <p className="text-lg font-semibold text-purple-600">
-                              {githubAnalysis.originalityScore.toFixed(1)}
-                            </p>
-                            <p className="text-xs text-gray-500">Originality</p>
-                          </div>
-                          <div className="p-2 bg-gray-50 rounded-lg text-center">
-                            <p className="text-lg font-semibold text-blue-600">
-                              {githubAnalysis.activityScore.toFixed(1)}
-                            </p>
-                            <p className="text-xs text-gray-500">Activity</p>
-                          </div>
-                          <div className="p-2 bg-gray-50 rounded-lg text-center">
-                            <p className="text-lg font-semibold text-amber-600">
-                              {githubAnalysis.depthScore.toFixed(1)}
-                            </p>
-                            <p className="text-xs text-gray-500">Depth</p>
-                          </div>
-                        </div>
-                        <div className="mt-2 p-2 bg-gray-50 rounded-lg text-center">
-                          <p className="text-lg font-semibold text-green-600">
-                            {githubAnalysis.collaborationScore.toFixed(1)}
-                          </p>
-                          <p className="text-xs text-gray-500">Collaboration</p>
+                          GitHub profile analyzed. {githubAnalysis.totalReposAnalyzed} repos reviewed for employers.
                         </div>
                       </div>
                     )}
@@ -1284,6 +1253,9 @@ function DashboardContent() {
                 {githubError && <p className="mt-2 text-sm text-red-500">{githubError}</p>}
               </CardContent>
             </Card>
+
+            {/* Vibe Code / AI Builder Profile Section */}
+            <VibeCodeSection />
 
             {/* Transcript Section */}
             <Card>
@@ -1579,136 +1551,7 @@ function DashboardContent() {
               </CardContent>
             </Card>
 
-            {/* Skill Gap Analysis Section */}
-            {skillGap && (
-              <Card>
-                <CardHeader className="pb-4">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      Skills Analysis
-                    </CardTitle>
-                    <CardDescription>AI-powered analysis of your skills based on your profile</CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Score Overview */}
-                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg mb-4">
-                    <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center">
-                      <span className="text-2xl font-bold text-indigo-600">
-                        {skillGap.avgProficiencyScore?.toFixed(0) || '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Proficiency Score</p>
-                      <p className="text-sm text-gray-500">
-                        Based on {skillGap.matchedRequirements || 0} skills analyzed
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Strongest Areas */}
-                  {skillGap.strongestAreas && skillGap.strongestAreas.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Your Strengths
-                      </h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {skillGap.strongestAreas.slice(0, 6).map((skill, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded-md border border-green-100"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Bonus Skills */}
-                  {skillGap.bonusSkills && skillGap.bonusSkills.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                        </svg>
-                        Bonus Skills
-                      </h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {skillGap.bonusSkills.slice(0, 6).map((skill, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded-md border border-purple-100"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Areas for Growth */}
-                  {skillGap.criticalGaps && skillGap.criticalGaps.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Areas for Growth
-                      </h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {skillGap.criticalGaps.slice(0, 6).map((skill, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs px-2 py-1 bg-amber-50 text-amber-700 rounded-md border border-amber-100"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Learning Priorities */}
-                  {skillGap.learningPriorities && skillGap.learningPriorities.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                        Recommended Learning
-                      </h4>
-                      <div className="space-y-2">
-                        {skillGap.learningPriorities.slice(0, 3).map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="p-2 bg-gray-50 rounded-lg"
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-900">{item.skill}</span>
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                item.priority === 'critical' ? 'bg-red-100 text-red-700' :
-                                item.priority === 'recommended' ? 'bg-blue-100 text-blue-700' :
-                                'bg-gray-100 text-gray-600'
-                              }`}>
-                                {item.priority}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">{item.reason}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+            {/* Skills Analysis removed - all evaluation data is employer-only */}
           </div>
         )}
 
@@ -1750,10 +1593,6 @@ function DashboardContent() {
                             <div className="flex justify-between text-sm">
                               <span className="text-stone-400">Role</span>
                               <span className="text-stone-700">{ROLE_NAMES[profile.roleType] || profile.roleType}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-stone-400">Score</span>
-                              <span className="font-semibold text-stone-900">{profile.bestScore?.toFixed(1)}/10</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-stone-400">Interviews</span>
@@ -1831,9 +1670,7 @@ function DashboardContent() {
                             <span className="text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                               {VERTICAL_CONFIG[job.vertical as keyof typeof VERTICAL_CONFIG]?.name || job.vertical}
                             </span>
-                            {job.matchScore && (
-                              <span className="text-gray-700 font-medium">{job.matchScore.toFixed(0)}% match</span>
-                            )}
+                            {/* Match scores are employer-only */}
                           </div>
                         </CardContent>
                       </Card>

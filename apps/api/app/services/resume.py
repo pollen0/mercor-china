@@ -11,7 +11,7 @@ import httpx
 import asyncio
 from typing import Optional
 from ..config import settings
-from ..schemas.candidate import ParsedResume, ExperienceItem, EducationItem, ProjectItem, PersonalizedQuestion
+from ..schemas.candidate import ParsedResume, ExperienceItem, EducationItem, ProjectItem, ParsedActivity, ParsedAward, PersonalizedQuestion
 
 logger = logging.getLogger("pathway.resume")
 
@@ -190,9 +190,33 @@ Return this exact JSON structure:
             "highlights": ["outcome 1"]
         }}
     ],
+    "activities": [
+        {{
+            "name": "Club or Organization Name",
+            "organization": "Parent org if different from name, or null",
+            "role": "President, Member, Project Lead, etc. or null",
+            "description": "What they did in this activity or null",
+            "start_date": "2022-09 or Fall 2022 or null",
+            "end_date": "Present or Spring 2024 or null"
+        }}
+    ],
+    "awards": [
+        {{
+            "name": "Award, Honor, or Scholarship Name",
+            "issuer": "Who gave the award or null",
+            "date": "When received or null",
+            "description": "Details about the award or null"
+        }}
+    ],
     "languages": ["English", "Spanish"],
     "certifications": ["Cert1", "Cert2"]
-}}"""
+}}
+
+IMPORTANT: Extract ALL activities, clubs, organizations, fraternities/sororities, sports teams,
+student government roles, volunteer work, and any extracurricular involvement into the "activities" array.
+Extract ALL awards, honors, scholarships, Dean's List mentions, competition placements,
+and recognitions into the "awards" array. Look in sections like "Activities", "Leadership",
+"Organizations", "Extracurriculars", "Awards", "Honors", "Achievements", etc."""
 
         try:
             parsed = await self._call_claude(system_prompt, user_prompt, max_tokens=3000)
@@ -212,6 +236,12 @@ Return this exact JSON structure:
                 ],
                 projects=[
                     ProjectItem(**proj) for proj in parsed.get("projects", [])
+                ],
+                activities=[
+                    ParsedActivity(**act) for act in parsed.get("activities", [])
+                ],
+                awards=[
+                    ParsedAward(**awd) for awd in parsed.get("awards", [])
                 ],
                 languages=parsed.get("languages", []),
                 certifications=parsed.get("certifications", [])
@@ -464,6 +494,120 @@ Return JSON:
         except Exception as e:
             logger.error(f"Adaptive question generation error: {e}")
             return []
+
+
+    async def enrich_activities_and_awards(
+        self,
+        activities: list[dict],
+        awards: list[dict],
+        university: str | None = None,
+    ) -> dict:
+        """
+        Use Claude to assess the notability and prestige of activities and awards.
+        Returns enriched data with AI-assessed prestige tiers, descriptions, and context.
+
+        Args:
+            activities: List of dicts with activity_name, role, description, organization
+            awards: List of dicts with name, issuer, date, description
+            university: Candidate's university for context
+
+        Returns:
+            Dict with enriched_activities and enriched_awards
+        """
+        if not self.anthropic_api_key:
+            logger.error("ANTHROPIC_API_KEY not configured - cannot enrich activities")
+            return {"enriched_activities": [], "enriched_awards": []}
+
+        if not activities and not awards:
+            return {"enriched_activities": [], "enriched_awards": []}
+
+        system_prompt = """You are an expert on US college extracurricular activities, honors, and awards.
+You have deep knowledge of university clubs, organizations, honor societies, scholarships,
+competitions, and their relative prestige in the context of college recruiting.
+Respond with valid JSON only - no markdown, no explanations."""
+
+        activities_text = ""
+        if activities:
+            items = []
+            for i, a in enumerate(activities):
+                parts = [f"  {i+1}. \"{a.get('activity_name', '')}\""]
+                if a.get('role'):
+                    parts.append(f"     Role: {a['role']}")
+                if a.get('organization'):
+                    parts.append(f"     Org: {a['organization']}")
+                if a.get('description'):
+                    parts.append(f"     Description: {a['description']}")
+                items.append("\n".join(parts))
+            activities_text = "ACTIVITIES:\n" + "\n".join(items)
+
+        awards_text = ""
+        if awards:
+            items = []
+            for i, a in enumerate(awards):
+                parts = [f"  {i+1}. \"{a.get('name', '')}\""]
+                if a.get('issuer'):
+                    parts.append(f"     Issuer: {a['issuer']}")
+                if a.get('date'):
+                    parts.append(f"     Date: {a['date']}")
+                if a.get('description'):
+                    parts.append(f"     Description: {a['description']}")
+                items.append("\n".join(parts))
+            awards_text = "AWARDS:\n" + "\n".join(items)
+
+        university_ctx = f"University: {university}" if university else "University: Unknown"
+
+        user_prompt = f"""Assess the notability and prestige of these student activities and awards.
+
+{university_ctx}
+
+{activities_text}
+
+{awards_text}
+
+For each item, return:
+- prestige_tier (1-5): 1=general participation, 2=moderate, 3=selective/notable, 4=highly prestigious, 5=nationally/internationally elite
+- award_type (for awards only): "scholarship", "honor", "competition", "certification", "recognition"
+- context: 1 sentence explaining why this tier was assigned (e.g., "HKN is the top EECS honor society, highly selective")
+- enhanced_description: A brief, informative description if the original is missing or vague. If already good, return it unchanged.
+
+Return JSON:
+{{
+    "enriched_activities": [
+        {{
+            "index": 0,
+            "prestige_tier": 3,
+            "activity_score": 6.5,
+            "context": "Why this tier",
+            "enhanced_description": "Brief description of what this activity involves"
+        }}
+    ],
+    "enriched_awards": [
+        {{
+            "index": 0,
+            "prestige_tier": 4,
+            "award_type": "scholarship",
+            "context": "Why this tier",
+            "enhanced_description": "Brief description of the award"
+        }}
+    ]
+}}
+
+Scoring guide for activity_score (0-10):
+- 1-3: Open membership clubs, general participation
+- 4-5: Clubs with some selectivity, active roles
+- 6-7: Selective organizations, leadership positions
+- 8-9: Highly prestigious orgs (VCG, Free Ventures, HKN), significant leadership
+- 10: National-level leadership, elite organizations"""
+
+        try:
+            parsed = await self._call_claude(system_prompt, user_prompt, max_tokens=3000)
+            return {
+                "enriched_activities": parsed.get("enriched_activities", []),
+                "enriched_awards": parsed.get("enriched_awards", []),
+            }
+        except Exception as e:
+            logger.error(f"Activity/award enrichment error: {e}")
+            return {"enriched_activities": [], "enriched_awards": []}
 
 
 # Global instance

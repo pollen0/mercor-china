@@ -698,7 +698,8 @@ export class ApiError extends Error {
 // Helper to make API requests
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  _retried = false,
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
 
@@ -708,6 +709,7 @@ async function apiRequest<T>(
   }
 
   // Add auth token if available - choose the right token based on endpoint
+  let tokenType: 'candidate' | 'employer' = 'candidate'
   if (typeof window !== 'undefined') {
     const employerToken = localStorage.getItem('employer_token')
     const candidateToken = localStorage.getItem('candidate_token')
@@ -716,6 +718,7 @@ async function apiRequest<T>(
     let token: string | null = null
     if (endpoint.startsWith('/api/employers')) {
       token = employerToken || candidateToken
+      tokenType = 'employer'
     } else {
       token = candidateToken || employerToken
     }
@@ -729,6 +732,15 @@ async function apiRequest<T>(
     ...options,
     headers,
   })
+
+  // Auto-refresh token on 401 (expired) — try once
+  if (response.status === 401 && !_retried && typeof window !== 'undefined') {
+    const { refreshAccessToken } = await import('./auth')
+    const newToken = await refreshAccessToken(tokenType)
+    if (newToken) {
+      return apiRequest<T>(endpoint, options, true)
+    }
+  }
 
   if (!response.ok) {
     let message = 'Request failed'
@@ -4385,5 +4397,136 @@ export const organizationApi = {
       createdBy: j.created_by as string,
       createdById: j.created_by_id as string,
     }))
+  },
+}
+
+
+// ============================================================================
+// Vibe Code Sessions - AI Coding Session Analysis
+// ============================================================================
+
+// Student-facing session (qualitative feedback only - NO numerical scores)
+export interface VibeCodeSession {
+  id: string
+  candidateId: string
+  title?: string
+  description?: string
+  source: string
+  projectUrl?: string
+  messageCount?: number
+  wordCount?: number
+  analysisStatus: string  // pending, analyzing, completed, failed
+  builderArchetype?: string  // "architect", "iterative_builder", etc.
+  strengths?: string[]  // What they did well
+  notablePatterns?: string[]  // Interesting behaviors observed
+  uploadedAt?: string
+  analyzedAt?: string
+}
+
+export interface VibeCodeUploadResponse {
+  success: boolean
+  message: string
+  session: VibeCodeSession
+}
+
+export interface VibeCodeSessionList {
+  sessions: VibeCodeSession[]
+  total: number
+}
+
+// Employer-facing types (with scores - used in talent pool)
+export interface VibeCodeProfileSummary {
+  totalSessions: number
+  bestBuilderScore?: number
+  avgBuilderScore?: number
+  primaryArchetype?: string
+  topStrengths: string[]
+  sourcesUsed: string[]
+}
+
+function transformVibeCodeSession(data: Record<string, unknown>): VibeCodeSession {
+  return {
+    id: data.id as string,
+    candidateId: data.candidate_id as string,
+    title: data.title as string | undefined,
+    description: data.description as string | undefined,
+    source: data.source as string,
+    projectUrl: data.project_url as string | undefined,
+    messageCount: data.message_count as number | undefined,
+    wordCount: data.word_count as number | undefined,
+    analysisStatus: data.analysis_status as string,
+    builderArchetype: data.builder_archetype as string | undefined,
+    strengths: data.strengths as string[] | undefined,
+    notablePatterns: data.notable_patterns as string[] | undefined,
+    uploadedAt: data.uploaded_at as string | undefined,
+    analyzedAt: data.analyzed_at as string | undefined,
+  }
+}
+
+export const vibeCodeApi = {
+  // Upload a new AI coding session
+  upload: async (data: {
+    sessionContent: string
+    title?: string
+    description?: string
+    source?: string
+    projectUrl?: string
+  }): Promise<VibeCodeUploadResponse> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/vibe-code/sessions', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_content: data.sessionContent,
+        title: data.title,
+        description: data.description,
+        source: data.source,
+        project_url: data.projectUrl,
+      }),
+    })
+    return {
+      success: response.success as boolean,
+      message: response.message as string,
+      session: transformVibeCodeSession(response.session as Record<string, unknown>),
+    }
+  },
+
+  // List all sessions for current student (no scores returned)
+  listSessions: async (): Promise<VibeCodeSessionList> => {
+    const response = await apiRequest<Record<string, unknown>>('/api/vibe-code/sessions')
+    const sessions = (response.sessions as Array<Record<string, unknown>>).map(transformVibeCodeSession)
+    return {
+      sessions,
+      total: response.total as number,
+    }
+  },
+
+  // Get a single session (student view - no scores)
+  getSession: async (sessionId: string): Promise<VibeCodeSession> => {
+    const data = await apiRequest<Record<string, unknown>>(`/api/vibe-code/sessions/${sessionId}`)
+    return transformVibeCodeSession(data)
+  },
+
+  // Delete a session
+  deleteSession: (sessionId: string): Promise<void> =>
+    apiRequest(`/api/vibe-code/sessions/${sessionId}`, { method: 'DELETE' }),
+
+  // Re-trigger analysis
+  reanalyze: async (sessionId: string): Promise<VibeCodeSession> => {
+    const data = await apiRequest<Record<string, unknown>>(`/api/vibe-code/sessions/${sessionId}/reanalyze`, {
+      method: 'POST',
+    })
+    return transformVibeCodeSession(data)
+  },
+
+  // Get candidate's vibe code profile summary (for talent pool - employer facing)
+  getProfile: async (candidateId: string): Promise<VibeCodeProfileSummary> => {
+    const data = await apiRequest<Record<string, unknown>>(`/api/vibe-code/profile/${candidateId}`)
+    return {
+      totalSessions: data.total_sessions as number,
+      bestBuilderScore: data.best_builder_score as number | undefined,
+      avgBuilderScore: data.avg_builder_score as number | undefined,
+      primaryArchetype: data.primary_archetype as string | undefined,
+      topStrengths: data.top_strengths as string[],
+      sourcesUsed: data.sources_used as string[],
+    }
   },
 }

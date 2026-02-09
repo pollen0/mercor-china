@@ -9,6 +9,7 @@ class CandidateCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
+    phone: Optional[str] = None
     # Optional education info (can be added later)
     university: Optional[str] = None
     major: Optional[str] = None

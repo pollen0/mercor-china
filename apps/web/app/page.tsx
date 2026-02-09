@@ -10,7 +10,7 @@ export default function Home() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-36 pb-28 px-6">
+      <section className="pt-24 sm:pt-36 pb-20 sm:pb-28 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center animate-fade-in">
           <h1 className="text-4xl sm:text-5xl font-semibold text-stone-900 leading-[1.15] tracking-tight mb-6">
             Your growth story,
@@ -31,7 +31,7 @@ export default function Home() {
               Get Started Free
             </Link>
             <Link
-              href="/employer/login"
+              href="/employer"
               className="inline-flex items-center justify-center px-8 py-3.5 text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors duration-300"
             >
               I'm hiring →
@@ -41,9 +41,9 @@ export default function Home() {
       </section>
 
       {/* Problem/Solution */}
-      <section className="py-28 px-6 bg-white">
+      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-white">
         <div className="max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 md:gap-24">
+          <div className="grid md:grid-cols-2 gap-10 md:gap-24">
             <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
               <p className="text-[11px] font-medium text-stone-400 uppercase tracking-[0.2em] mb-4">The problem</p>
               <h2 className="text-xl font-semibold text-stone-900 mb-4 leading-snug">
@@ -71,7 +71,7 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="py-32 px-6 bg-stone-900 text-white">
+      <section className="py-20 sm:py-32 px-4 sm:px-6 bg-stone-900 text-white">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-20">
             <p className="text-[11px] font-medium text-stone-500 uppercase tracking-[0.2em] mb-4">Features</p>
@@ -83,7 +83,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-x-12 gap-y-14">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-x-12 md:gap-y-14">
             {[
               {
                 title: 'Progress tracking',
@@ -102,8 +102,8 @@ export default function Home() {
                 description: 'Tailored interviews for engineering, data, business, and design roles.',
               },
               {
-                title: 'AI-powered feedback',
-                description: 'Get detailed feedback after each interview to help you improve for next time.',
+                title: 'AI-powered analysis',
+                description: 'Each interview is analyzed by AI across 5 dimensions. Employers see your growth over time.',
               },
               {
                 title: 'Employer matching',
@@ -124,7 +124,7 @@ export default function Home() {
       </section>
 
       {/* Career paths */}
-      <section className="py-32 px-6 bg-white">
+      <section className="py-20 sm:py-32 px-4 sm:px-6 bg-white">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-[11px] font-medium text-stone-400 uppercase tracking-[0.2em] mb-4">Verticals</p>
@@ -168,7 +168,7 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-32 px-6 bg-white">
+      <section className="py-20 sm:py-32 px-4 sm:px-6 bg-white">
         <div className="max-w-xl mx-auto text-center">
           <h2 className="text-2xl font-semibold text-stone-900 mb-4">
             Start building your trajectory
