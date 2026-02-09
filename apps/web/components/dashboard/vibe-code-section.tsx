@@ -87,7 +87,6 @@ function SessionCard({
   onDelete: (id: string) => void
   onReanalyze: (id: string) => void
 }) {
-  const archetype = session.builderArchetype ? ARCHETYPE_LABELS[session.builderArchetype] : null
   const isAnalyzing = session.analysisStatus === 'analyzing' || session.analysisStatus === 'pending'
   const isFailed = session.analysisStatus === 'failed'
   const isCompleted = session.analysisStatus === 'completed'
