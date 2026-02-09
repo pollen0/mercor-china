@@ -19,27 +19,27 @@ const SOURCE_LABELS: Record<string, string> = {
 const ARCHETYPE_LABELS: Record<string, { label: string; color: string; description: string }> = {
   architect: {
     label: 'Architect',
-    color: 'bg-indigo-100 text-indigo-800',
+    color: 'bg-stone-900 text-white',
     description: 'Plans thoroughly, designs before building, questions AI decisions',
   },
   iterative_builder: {
     label: 'Iterative Builder',
-    color: 'bg-emerald-100 text-emerald-800',
+    color: 'bg-teal-50 text-teal-700',
     description: 'Builds incrementally, tests often, refines through cycles',
   },
   experimenter: {
     label: 'Experimenter',
-    color: 'bg-amber-100 text-amber-800',
+    color: 'bg-stone-100 text-stone-700',
     description: 'Curious and exploratory, tries multiple approaches before committing',
   },
   ai_dependent: {
     label: 'AI Dependent',
-    color: 'bg-orange-100 text-orange-800',
+    color: 'bg-amber-50 text-amber-700',
     description: 'Relies heavily on AI for decisions - consider leading more',
   },
   copy_paster: {
     label: 'Copy Paster',
-    color: 'bg-red-100 text-red-800',
+    color: 'bg-red-50 text-red-700',
     description: 'Minimal steering of the AI - try being more intentional',
   },
 }
@@ -128,7 +128,7 @@ function SessionCard({
           {isFailed && (
             <button
               onClick={() => onReanalyze(session.id)}
-              className="text-xs text-indigo-600 hover:text-indigo-800"
+              className="text-xs text-stone-600 hover:text-stone-900"
             >
               Retry
             </button>
@@ -145,7 +145,7 @@ function SessionCard({
       {/* Status: Analyzing */}
       {isAnalyzing && (
         <div className="flex items-center gap-2 text-sm text-stone-500">
-          <div className="animate-spin h-4 w-4 border-2 border-indigo-500 border-t-transparent rounded-full" />
+          <div className="animate-spin h-4 w-4 border-2 border-stone-200 border-t-stone-600 rounded-full" />
           Analyzing your session with Claude...
         </div>
       )}
@@ -179,7 +179,7 @@ function SessionCard({
               <ul className="space-y-1">
                 {session.strengths.map((s, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-stone-600">
-                    <svg className="h-3.5 w-3.5 text-emerald-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-3.5 w-3.5 text-teal-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     {s}
@@ -205,7 +205,7 @@ function SessionCard({
 
           {/* Fallback if no analysis details yet */}
           {!session.builderArchetype && !session.strengths?.length && (
-            <div className="flex items-center gap-2 text-sm text-emerald-600">
+            <div className="flex items-center gap-2 text-sm text-teal-700">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
@@ -238,6 +238,7 @@ function UploadForm({
   const [showCli, setShowCli] = useState(false)
   const [showPasteArea, setShowPasteArea] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [sourceDropdownOpen, setSourceDropdownOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileRead = useCallback((file: File) => {
@@ -287,7 +288,7 @@ function UploadForm({
             onClick={() => { setShowGuide(showGuide === key ? null : key); setShowCli(false) }}
             className={`text-xs px-2 py-1 rounded border transition-colors ${
               showGuide === key
-                ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                ? 'border-stone-900 bg-stone-50 text-stone-900'
                 : 'border-stone-200 text-stone-600 hover:border-stone-300'
             }`}
           >
@@ -298,7 +299,7 @@ function UploadForm({
           onClick={() => { setShowCli(!showCli); setShowGuide(null) }}
           className={`text-xs px-2 py-1 rounded border transition-colors ${
             showCli
-              ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+              ? 'border-stone-900 bg-stone-50 text-stone-900'
               : 'border-stone-200 text-stone-600 hover:border-stone-300'
           }`}
         >
@@ -327,7 +328,7 @@ function UploadForm({
       {showCli && (
         <div className="bg-stone-900 rounded-lg p-4 text-sm font-mono">
           <p className="text-stone-400 text-xs mb-2"># Upload from your terminal:</p>
-          <p className="text-emerald-400 text-xs mb-3">
+          <p className="text-stone-400 text-xs mb-3">
             # Get your auth token from browser DevTools: localStorage.getItem(&apos;candidate_token&apos;)
           </p>
           <div className="space-y-3">
@@ -361,16 +362,16 @@ function UploadForm({
         onDrop={handleDrop}
         className={`relative border-2 border-dashed rounded-lg transition-colors ${
           dragOver
-            ? 'border-indigo-400 bg-indigo-50'
+            ? 'border-stone-400 bg-stone-50'
             : content
-              ? 'border-emerald-300 bg-emerald-50'
+              ? 'border-teal-300 bg-teal-50'
               : 'border-stone-200 hover:border-stone-300'
         }`}
       >
         {!content ? (
           <div className="p-6 text-center">
             <div className="text-stone-400 mb-2">
-              <svg className="mx-auto h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
@@ -379,7 +380,7 @@ function UploadForm({
               Drag & drop your conversation file, or{' '}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-stone-900 hover:text-stone-700 font-medium underline"
               >
                 browse files
               </button>
@@ -414,7 +415,7 @@ function UploadForm({
                     setShowPasteArea(true)
                   }
                 }}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                className="text-xs text-stone-900 hover:text-stone-700 font-medium"
               >
                 Paste from clipboard
               </button>
@@ -431,7 +432,7 @@ function UploadForm({
             {showPasteArea && (
               <div className="mt-3 text-left">
                 <textarea
-                  className="w-full h-32 text-xs font-mono border border-stone-200 rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-indigo-300 resize-y"
+                  className="w-full h-32 text-xs font-mono border border-stone-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-stone-900/10 resize-y"
                   placeholder="Paste your AI coding session content here..."
                   onChange={(e) => {
                     if (e.target.value.length > 50) {
@@ -447,7 +448,7 @@ function UploadForm({
         ) : (
           <div className="p-4">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-emerald-700 font-medium">
+              <span className="text-sm text-teal-700 font-medium">
                 Session loaded ({content.length.toLocaleString()} characters)
               </span>
               <button
@@ -474,23 +475,48 @@ function UploadForm({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Built a REST API"
-              className="w-full text-sm border border-stone-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              className="w-full text-sm border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
             />
           </div>
-          <div>
+          <div className="relative">
             <label className="text-xs text-stone-500 block mb-1">Tool (auto-detected)</label>
-            <select
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              className="w-full text-sm border border-stone-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+            <button
+              type="button"
+              onClick={() => setSourceDropdownOpen(!sourceDropdownOpen)}
+              className="w-full flex items-center justify-between px-3 py-1.5 border border-stone-200 rounded-lg text-sm text-left hover:border-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
             >
-              <option value="">Auto-detect</option>
-              <option value="cursor">Cursor</option>
-              <option value="claude_code">Claude Code</option>
-              <option value="copilot">GitHub Copilot</option>
-              <option value="chatgpt">ChatGPT</option>
-              <option value="other">Other</option>
-            </select>
+              <span className="text-stone-900">
+                {source ? (SOURCE_LABELS[source] || source) : 'Auto-detect'}
+              </span>
+              <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {sourceDropdownOpen && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-60 overflow-auto">
+                {[
+                  { value: '', label: 'Auto-detect' },
+                  { value: 'cursor', label: 'Cursor' },
+                  { value: 'claude_code', label: 'Claude Code' },
+                  { value: 'copilot', label: 'GitHub Copilot' },
+                  { value: 'chatgpt', label: 'ChatGPT' },
+                  { value: 'other', label: 'Other' },
+                ].map(option => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => { setSource(option.value); setSourceDropdownOpen(false) }}
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                      source === option.value
+                        ? 'bg-stone-50 text-stone-900 font-medium'
+                        : 'text-stone-700 hover:bg-stone-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="sm:col-span-2">
             <label className="text-xs text-stone-500 block mb-1">What did you build? (optional)</label>
@@ -499,7 +525,7 @@ function UploadForm({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g., Full-stack todo app with auth and real-time updates"
-              className="w-full text-sm border border-stone-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              className="w-full text-sm border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
             />
           </div>
           <div className="sm:col-span-2">
@@ -509,7 +535,7 @@ function UploadForm({
               value={projectUrl}
               onChange={(e) => setProjectUrl(e.target.value)}
               placeholder="https://github.com/you/project"
-              className="w-full text-sm border border-stone-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              className="w-full text-sm border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
             />
           </div>
         </div>
@@ -520,7 +546,7 @@ function UploadForm({
         <button
           onClick={handleSubmit}
           disabled={isUploading || !content.trim()}
-          className="w-full py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all"
+          className="w-full py-2 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 disabled:opacity-50 transition-colors"
         >
           {isUploading ? 'Uploading...' : 'Upload & Analyze Session'}
         </button>
@@ -616,7 +642,7 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
             <CardTitle className="flex items-center gap-2">
               AI Builder Profile
               {completedSessions.length > 0 && (
-                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-teal-50 text-teal-700">
                   {completedSessions.length} session{completedSessions.length !== 1 ? 's' : ''} analyzed
                 </span>
               )}
@@ -653,8 +679,8 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
         {sessions.length === 0 && !showUpload && (
           <div className="text-center py-8">
             <div className="text-stone-300 mb-3">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1}
+              <svg className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                   d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
               </svg>
             </div>
@@ -667,7 +693,7 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
             </p>
             <button
               onClick={() => setShowUpload(true)}
-              className="text-sm px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all"
+              className="text-sm px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
             >
               Upload Your First Session
             </button>
