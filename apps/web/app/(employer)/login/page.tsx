@@ -75,7 +75,7 @@ export default function EmployerLoginPage() {
           </h1>
           <p className="text-teal-100 text-lg leading-relaxed mb-8">
             See how candidates improve over time with monthly AI interviews.
-            Hire students from top universities like UC Berkeley and UIUC.
+            Hire students from top CS programs — MIT, Stanford, Berkeley, CMU, and more.
           </p>
           <div className="space-y-4">
             {[

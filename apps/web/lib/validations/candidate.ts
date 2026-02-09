@@ -1,9 +1,28 @@
 import { z } from 'zod'
 
-// Beta universities - expand as we onboard more schools
+// Top 20 CS schools + UCSB — alphabetical by label
 export const universityOptions = [
+  { value: 'caltech', label: 'Caltech' },
+  { value: 'cmu', label: 'Carnegie Mellon University' },
+  { value: 'columbia', label: 'Columbia University' },
+  { value: 'cornell', label: 'Cornell University' },
+  { value: 'georgia_tech', label: 'Georgia Tech' },
+  { value: 'harvard', label: 'Harvard University' },
+  { value: 'mit', label: 'MIT' },
+  { value: 'princeton', label: 'Princeton University' },
+  { value: 'purdue', label: 'Purdue University' },
+  { value: 'stanford', label: 'Stanford University' },
   { value: 'uc_berkeley', label: 'UC Berkeley' },
+  { value: 'ucla', label: 'UCLA' },
+  { value: 'uc_san_diego', label: 'UC San Diego' },
+  { value: 'ucsb', label: 'UC Santa Barbara' },
   { value: 'uiuc', label: 'University of Illinois Urbana-Champaign' },
+  { value: 'umich', label: 'University of Michigan' },
+  { value: 'umd', label: 'University of Maryland' },
+  { value: 'upenn', label: 'University of Pennsylvania' },
+  { value: 'ut_austin', label: 'University of Texas at Austin' },
+  { value: 'uw', label: 'University of Washington' },
+  { value: 'uwisc', label: 'University of Wisconsin-Madison' },
 ] as const
 
 export const graduationYearOptions = [
@@ -73,4 +92,25 @@ export const targetRoleOptions = [
   { value: 'product', label: 'Product Manager' },
   { value: 'design', label: 'UI/UX Designer' },
   { value: 'qa', label: 'QA Engineer' },
+]
+
+export const majorOptions = [
+  { value: 'Computer Science', label: 'Computer Science' },
+  { value: 'Computer Engineering', label: 'Computer Engineering' },
+  { value: 'Electrical Engineering', label: 'Electrical Engineering' },
+  { value: 'Software Engineering', label: 'Software Engineering' },
+  { value: 'Data Science', label: 'Data Science' },
+  { value: 'Statistics', label: 'Statistics' },
+  { value: 'Mathematics', label: 'Mathematics' },
+  { value: 'Applied Math', label: 'Applied Math' },
+  { value: 'Physics', label: 'Physics' },
+  { value: 'Information Science', label: 'Information Science' },
+  { value: 'Economics', label: 'Economics' },
+  { value: 'Business', label: 'Business' },
+  { value: 'Finance', label: 'Finance' },
+  { value: 'Cognitive Science', label: 'Cognitive Science' },
+  { value: 'Mechanical Engineering', label: 'Mechanical Engineering' },
+  { value: 'Bioengineering', label: 'Bioengineering' },
+  { value: 'Design', label: 'Design' },
+  { value: 'Other', label: 'Other' },
 ]

@@ -66,7 +66,157 @@ UNIVERSITIES = [
         "uses_plus_minus": True,
         "tier": 1,
         "cs_ranking": 20
-    }
+    },
+    {
+        "id": "cornell",
+        "name": "Cornell University",
+        "short_name": "Cornell",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.3,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 6
+    },
+    {
+        "id": "uw",
+        "name": "University of Washington",
+        "short_name": "UW",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 7
+    },
+    {
+        "id": "georgia_tech",
+        "name": "Georgia Institute of Technology",
+        "short_name": "Georgia Tech",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 8
+    },
+    {
+        "id": "princeton",
+        "name": "Princeton University",
+        "short_name": "Princeton",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": False,
+        "tier": 1,
+        "cs_ranking": 9
+    },
+    {
+        "id": "caltech",
+        "name": "California Institute of Technology",
+        "short_name": "Caltech",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 10
+    },
+    {
+        "id": "umich",
+        "name": "University of Michigan",
+        "short_name": "UMich",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 11
+    },
+    {
+        "id": "columbia",
+        "name": "Columbia University",
+        "short_name": "Columbia",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 12
+    },
+    {
+        "id": "ucla",
+        "name": "University of California, Los Angeles",
+        "short_name": "UCLA",
+        "course_pattern": r"([A-Z]+)\s*(\d+[A-Z]?)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 13
+    },
+    {
+        "id": "ut_austin",
+        "name": "University of Texas at Austin",
+        "short_name": "UT Austin",
+        "course_pattern": r"([A-Z]+)\s*(\d+[A-Z]?)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 14
+    },
+    {
+        "id": "uwisc",
+        "name": "University of Wisconsin-Madison",
+        "short_name": "UW-Madison",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 15
+    },
+    {
+        "id": "uc_san_diego",
+        "name": "University of California, San Diego",
+        "short_name": "UC San Diego",
+        "course_pattern": r"([A-Z]+)\s*(\d+[A-Z]?)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 16
+    },
+    {
+        "id": "umd",
+        "name": "University of Maryland, College Park",
+        "short_name": "UMD",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 17
+    },
+    {
+        "id": "upenn",
+        "name": "University of Pennsylvania",
+        "short_name": "UPenn",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 18
+    },
+    {
+        "id": "harvard",
+        "name": "Harvard University",
+        "short_name": "Harvard",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 19
+    },
+    {
+        "id": "ucsb",
+        "name": "University of California, Santa Barbara",
+        "short_name": "UCSB",
+        "course_pattern": r"([A-Z]+)\s*(\d+[A-Z]?)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 30
+    },
 ]
 
 
