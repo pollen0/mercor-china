@@ -151,6 +151,10 @@ function DashboardContent() {
     targetRoles: string[]
   }>({ university: '', major: '', graduationYear: '', targetRoles: [] })
 
+  // Dropdown state for custom selects
+  const [dashGradYearOpen, setDashGradYearOpen] = useState(false)
+  const dashGradYearRef = useRef<HTMLDivElement>(null)
+
   // File input refs
   const resumeInputRef = useRef<HTMLInputElement>(null)
   const transcriptInputRef = useRef<HTMLInputElement>(null)
@@ -160,6 +164,19 @@ function DashboardContent() {
   const [editingAward, setEditingAward] = useState<Award | null>(null)
   const [showActivityForm, setShowActivityForm] = useState(false)
   const [showAwardForm, setShowAwardForm] = useState(false)
+
+  // Close dashboard grad year dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dashGradYearRef.current && !dashGradYearRef.current.contains(e.target as Node)) {
+        setDashGradYearOpen(false)
+      }
+    }
+    if (dashGradYearOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [dashGradYearOpen])
 
   // Auth check effect
   useEffect(() => {
@@ -915,18 +932,59 @@ function DashboardContent() {
                         />
                       </div>
                     </div>
-                    <div>
+                    <div ref={dashGradYearRef}>
                       <label className="block text-sm font-medium text-stone-700 mb-1">Graduation Year</label>
-                      <select
-                        value={profileForm.graduationYear}
-                        onChange={(e) => setProfileForm(prev => ({ ...prev, graduationYear: e.target.value }))}
-                        className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      >
-                        <option value="">Select year</option>
-                        {[2025, 2026, 2027, 2028, 2029, 2030].map(y => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setDashGradYearOpen(!dashGradYearOpen)}
+                          className={`w-full h-10 px-3 rounded-lg border bg-white text-sm text-left flex items-center justify-between focus:outline-none focus:border-stone-400 transition-colors ${
+                            dashGradYearOpen ? 'border-stone-400' : 'border-stone-200'
+                          }`}
+                        >
+                          {profileForm.graduationYear ? (
+                            <span className="text-stone-900">{profileForm.graduationYear}</span>
+                          ) : (
+                            <span className="text-stone-400">Select year</span>
+                          )}
+                          <svg className={`w-4 h-4 text-stone-400 transition-transform ${dashGradYearOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+
+                        {dashGradYearOpen && (
+                          <div className="absolute z-10 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-56 overflow-auto">
+                            {[2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                              <button
+                                key={y}
+                                type="button"
+                                onClick={() => {
+                                  setProfileForm(prev => ({ ...prev, graduationYear: String(y) }))
+                                  setDashGradYearOpen(false)
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2.5 transition-colors ${
+                                  profileForm.graduationYear === String(y)
+                                    ? 'bg-stone-50 text-stone-900'
+                                    : 'text-stone-700 hover:bg-stone-50'
+                                }`}
+                              >
+                                <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${
+                                  profileForm.graduationYear === String(y)
+                                    ? 'bg-stone-900 border-stone-900'
+                                    : 'border-stone-300'
+                                }`}>
+                                  {profileForm.graduationYear === String(y) && (
+                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </span>
+                                {y}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-stone-700 mb-2">Target Roles</label>
