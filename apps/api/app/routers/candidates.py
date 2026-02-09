@@ -92,6 +92,17 @@ async def create_candidate(
             detail="An account with this email already exists"
         )
 
+    # Process referral code if provided
+    if candidate_data.referral_code:
+        try:
+            from ..services.referral import find_referrer_by_code, create_referral_on_signup
+            referrer = find_referrer_by_code(candidate_data.referral_code, db)
+            if referrer and referrer.id != candidate.id:
+                create_referral_on_signup(referrer, candidate, db)
+                logger.info(f"Referral recorded: {referrer.id} -> {candidate.id}")
+        except Exception as e:
+            logger.warning(f"Failed to process referral code for {candidate.email}: {e}")
+
     # Send verification email (non-blocking - don't fail registration if email fails)
     try:
         from .auth import create_verification_for_candidate

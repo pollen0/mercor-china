@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +18,8 @@ type FormErrors = Partial<Record<keyof CandidateRegistrationInput, string>>
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const referralCode = searchParams.get('ref') || ''
   const [formData, setFormData] = useState<CandidateRegistrationInput>({
     name: '',
     email: '',
@@ -27,6 +29,7 @@ export default function RegisterPage() {
     graduationYear: undefined,
     major: '',
     targetRoles: [],
+    referralCode: referralCode,
   })
   const [confirmPassword, setConfirmPassword] = useState('')
   const [errors, setErrors] = useState<FormErrors & { confirmPassword?: string }>({})
@@ -124,10 +127,17 @@ export default function RegisterPage() {
     setIsSubmitting(true)
 
     try {
+      const payload: Record<string, unknown> = { ...result.data }
+      // Send referral_code in snake_case for the backend
+      if (payload.referralCode) {
+        payload.referral_code = payload.referralCode
+      }
+      delete payload.referralCode
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/candidates/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(result.data),
+        body: JSON.stringify(payload),
       })
 
       const data = await response.json()
@@ -436,6 +446,32 @@ export default function RegisterPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="referralCode" className="text-stone-600 text-sm">
+                Referral Code <span className="text-stone-300">(optional)</span>
+              </Label>
+              {referralCode ? (
+                <div>
+                  <div className="flex items-center gap-2 px-3 h-11 rounded-lg border border-teal-200 bg-teal-50/50">
+                    <svg className="w-4 h-4 text-teal-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-sm text-teal-700">{referralCode}</span>
+                  </div>
+                  <p className="text-xs text-stone-400 mt-1.5">You were referred by a friend. After you sign up, you can earn $2 via Zelle for each friend you refer too.</p>
+                </div>
+              ) : (
+                <Input
+                  id="referralCode"
+                  name="referralCode"
+                  value={formData.referralCode || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, referralCode: e.target.value }))}
+                  placeholder="e.g. PATHWAY-A3X7K9"
+                  className="border-stone-200 focus:border-stone-400 focus:ring-0"
+                />
+              )}
             </div>
 
             {submitStatus === 'error' && (

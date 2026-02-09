@@ -7,7 +7,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from .config import settings
 from .database import init_db
-from .routers import health, candidates, questions, interviews, employers, auth, admin, courses, activities, public, calendar, employer_calendar, team_members, scheduling_links, organizations, vibe_code
+from .routers import health, candidates, questions, interviews, employers, auth, admin, courses, activities, public, calendar, employer_calendar, team_members, scheduling_links, organizations, vibe_code, referrals
 from .utils.rate_limit import limiter, rate_limit_exceeded_handler
 
 # Configure logging
@@ -161,6 +161,9 @@ app.include_router(organizations.router, tags=["organizations"])
 # Vibe Code Sessions (AI coding session analysis)
 app.include_router(vibe_code.router, prefix="/api/vibe-code", tags=["vibe-code"])
 
+# Referral system
+app.include_router(referrals.router, prefix="/api/referrals", tags=["referrals"])
+
 
 @app.get("/")
 async def root():
@@ -179,6 +182,7 @@ async def root():
             "team_members": "/api/employers/team-members",
             "scheduling_links": "/api/employers/scheduling-links",
             "vibe_code": "/api/vibe-code",
+            "referrals": "/api/referrals",
         }
     }
 

@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UploadProgress } from '@/components/ui/upload-progress'
 import { DocumentPreview } from '@/components/ui/document-preview'
-import { candidateApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward } from '@/lib/api'
+import { candidateApi, referralApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward, type ReferralStats, type ReferralEntry } from '@/lib/api'
 import { useDashboardData, useSkillGap } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
 import VibeCodeSection from '@/components/dashboard/vibe-code-section'
@@ -81,6 +81,9 @@ function DashboardContent() {
   const [awards, setAwards] = useState<Award[]>([])
   const [optedInToSharing, setOptedInToSharing] = useState<boolean | null>(null)
   const [showOptInBanner, setShowOptInBanner] = useState(false)
+  const [referralStats, setReferralStats] = useState<ReferralStats | null>(null)
+  const [referralList, setReferralList] = useState<ReferralEntry[]>([])
+  const [referralCopied, setReferralCopied] = useState(false)
 
   // Use SWR hooks for data caching
   const {
@@ -197,6 +200,24 @@ function DashboardContent() {
     }
 
     fetchActivitiesAndAwards()
+  }, [token])
+
+  // Fetch referral stats
+  useEffect(() => {
+    const fetchReferralData = async () => {
+      if (!token) return
+      try {
+        const [stats, list] = await Promise.all([
+          referralApi.getStats(token),
+          referralApi.getList(token),
+        ])
+        setReferralStats(stats)
+        setReferralList(list)
+      } catch (error) {
+        console.error('Failed to fetch referral data:', error)
+      }
+    }
+    fetchReferralData()
   }, [token])
 
   // Fetch sharing preferences to show opt-in banner
@@ -1546,6 +1567,116 @@ function DashboardContent() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Referral Section */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Refer Friends</CardTitle>
+                    <CardDescription>Earn $2 via Zelle for every friend who signs up</CardDescription>
+                  </div>
+                  <span className="text-xs font-medium text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">$2 / sign up</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {referralStats ? (
+                  <div className="space-y-5">
+                    {/* Referral link with copy */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 px-3 py-2.5 bg-stone-50 rounded-lg border border-stone-200 text-sm text-stone-700 font-mono truncate">
+                        {referralStats.referralLink}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`flex-shrink-0 ${referralCopied ? 'border-teal-300 text-teal-700 bg-teal-50' : 'border-stone-200'}`}
+                        onClick={() => {
+                          navigator.clipboard.writeText(referralStats.referralLink)
+                          setReferralCopied(true)
+                          setTimeout(() => setReferralCopied(false), 2000)
+                        }}
+                      >
+                        {referralCopied ? (
+                          <span className="flex items-center gap-1.5">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Copied
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Copy
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Stats row */}
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="text-center p-3 bg-stone-50 rounded-lg">
+                        <p className="text-2xl font-semibold text-stone-900">{referralStats.totalReferrals}</p>
+                        <p className="text-xs text-stone-500 mt-0.5">Referred</p>
+                      </div>
+                      <div className="text-center p-3 bg-stone-50 rounded-lg">
+                        <p className="text-2xl font-semibold text-stone-900">{referralStats.registered}</p>
+                        <p className="text-xs text-stone-500 mt-0.5">Signed Up</p>
+                      </div>
+                      <div className="text-center p-3 bg-stone-50 rounded-lg">
+                        <p className="text-2xl font-semibold text-stone-900">{referralStats.interviewed}</p>
+                        <p className="text-xs text-stone-500 mt-0.5">Interviewed</p>
+                      </div>
+                      <div className="text-center p-3 bg-teal-50 rounded-lg">
+                        <p className="text-2xl font-semibold text-teal-700">${referralStats.registered * 2}</p>
+                        <p className="text-xs text-teal-600 mt-0.5">Earned</p>
+                      </div>
+                    </div>
+
+                    {/* Referral list */}
+                    {referralList.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-stone-600">Your Referrals</p>
+                        <div className="space-y-2">
+                          {referralList.map((r) => (
+                            <div key={r.id} className="flex items-center justify-between py-2 px-3 bg-stone-50 rounded-lg">
+                              <div>
+                                <p className="text-sm text-stone-900">{r.refereeName || r.refereeEmail || 'Pending'}</p>
+                                {r.refereeName && r.refereeEmail && (
+                                  <p className="text-xs text-stone-400">{r.refereeEmail}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {r.status !== 'pending' && (
+                                  <span className="text-xs font-medium text-teal-700">+$2</span>
+                                )}
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                  r.status === 'interviewed' ? 'bg-teal-50 text-teal-700' :
+                                  r.status === 'onboarded' ? 'bg-stone-100 text-stone-700' :
+                                  r.status === 'registered' ? 'bg-stone-100 text-stone-500' :
+                                  'bg-stone-50 text-stone-400'
+                                }`}>
+                                  {r.status === 'interviewed' ? 'Interviewed' :
+                                   r.status === 'onboarded' ? 'Onboarded' :
+                                   r.status === 'registered' ? 'Signed up' :
+                                   'Pending'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-stone-400">Loading referral link...</p>
                   </div>
                 )}
               </CardContent>

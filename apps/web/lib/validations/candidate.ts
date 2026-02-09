@@ -66,6 +66,9 @@ export const candidateRegistrationSchema = z.object({
     .array(z.string())
     .optional()
     .default([]),
+  referralCode: z
+    .string()
+    .optional(),
 })
 
 export type CandidateRegistrationInput = z.infer<typeof candidateRegistrationSchema>

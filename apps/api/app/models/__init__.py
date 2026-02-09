@@ -21,6 +21,7 @@ from .activity import (
     ActivityTier, ActivityCategory
 )
 from .vibe_code_session import VibeCodeSession, SessionSource, AnalysisStatus
+from .referral import Referral, ReferralStatus
 from .ml_scoring import (
     # Enums
     ScoringEventType, LabelSource, OutcomeType, OutcomeStage, CompanyTier, ExperimentStatus,
@@ -113,4 +114,7 @@ __all__ = [
     "VibeCodeSession",
     "SessionSource",
     "AnalysisStatus",
+    # Referral system
+    "Referral",
+    "ReferralStatus",
 ]

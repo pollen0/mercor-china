@@ -1894,6 +1894,95 @@ export const interviewApi = {
   },
 }
 
+// Referral types
+export interface ReferralCode {
+  referralCode: string
+  referralLink: string
+}
+
+export interface ReferralStats {
+  referralCode: string
+  referralLink: string
+  totalReferrals: number
+  registered: number
+  onboarded: number
+  interviewed: number
+}
+
+export interface ReferralEntry {
+  id: string
+  refereeName?: string
+  refereeEmail?: string
+  status: string
+  createdAt: string
+  convertedAt?: string
+}
+
+// Referral API
+export const referralApi = {
+  getCode: async (token?: string): Promise<ReferralCode> => {
+    const url = `${API_BASE_URL}/api/referrals/me/code`
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`
+
+    const response = await fetch(url, { headers })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to get referral code')
+    }
+    const data = await response.json()
+    return {
+      referralCode: data.referral_code,
+      referralLink: data.referral_link,
+    }
+  },
+
+  getStats: async (token?: string): Promise<ReferralStats> => {
+    const url = `${API_BASE_URL}/api/referrals/me/stats`
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`
+
+    const response = await fetch(url, { headers })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to get referral stats')
+    }
+    const data = await response.json()
+    return {
+      referralCode: data.referral_code,
+      referralLink: data.referral_link,
+      totalReferrals: data.total_referrals,
+      registered: data.registered,
+      onboarded: data.onboarded,
+      interviewed: data.interviewed,
+    }
+  },
+
+  getList: async (token?: string): Promise<ReferralEntry[]> => {
+    const url = `${API_BASE_URL}/api/referrals/me/list`
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`
+
+    const response = await fetch(url, { headers })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to get referrals')
+    }
+    const data = await response.json()
+    return (data.referrals || []).map((r: Record<string, unknown>) => ({
+      id: r.id,
+      refereeName: r.referee_name,
+      refereeEmail: r.referee_email,
+      status: r.status,
+      createdAt: r.created_at,
+      convertedAt: r.converted_at,
+    }))
+  },
+}
+
 // Helper to transform employer response from snake_case to camelCase
 function transformEmployerResponse(response: Record<string, unknown>): Employer {
   return {

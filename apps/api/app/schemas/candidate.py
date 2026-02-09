@@ -14,6 +14,8 @@ class CandidateCreate(BaseModel):
     university: Optional[str] = None
     major: Optional[str] = None
     graduation_year: Optional[int] = None
+    # Referral
+    referral_code: Optional[str] = None  # Code from a referring candidate
 
     @field_validator("name")
     @classmethod

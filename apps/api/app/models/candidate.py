@@ -128,6 +128,10 @@ class Candidate(Base):
     google_calendar_refresh_token = Column(String, nullable=True)  # Encrypted refresh token
     google_calendar_connected_at = Column(DateTime(timezone=True), nullable=True)
 
+    # Referral system
+    referral_code = Column(String, unique=True, nullable=True)  # Unique code like "PATHWAY-ABC123"
+    referred_by_id = Column(String, ForeignKey("candidates.id", ondelete="SET NULL"), nullable=True)
+
     # Profile Sharing & Preferences (for GTM)
     opted_in_to_sharing = Column(Boolean, default=False, nullable=False)  # Consent to share profile with employers
     sharing_preferences = Column(JSONB, nullable=True)  # {company_stages, locations, industries, email_digest}
