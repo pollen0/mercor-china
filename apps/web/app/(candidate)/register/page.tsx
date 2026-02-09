@@ -40,6 +40,8 @@ export default function RegisterPage() {
   const [customMajor, setCustomMajor] = useState('')
   const [majorDropdownOpen, setMajorDropdownOpen] = useState(false)
   const majorDropdownRef = useRef<HTMLDivElement>(null)
+  const [gradYearDropdownOpen, setGradYearDropdownOpen] = useState(false)
+  const gradYearDropdownRef = useRef<HTMLDivElement>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -98,6 +100,19 @@ export default function RegisterPage() {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [majorDropdownOpen])
+
+  // Close grad year dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (gradYearDropdownRef.current && !gradYearDropdownRef.current.contains(e.target as Node)) {
+        setGradYearDropdownOpen(false)
+      }
+    }
+    if (gradYearDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [gradYearDropdownOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -331,21 +346,59 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="graduationYear" className="text-stone-600 text-sm">Grad Year</Label>
-              <select
-                id="graduationYear"
-                value={formData.graduationYear?.toString() || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, graduationYear: e.target.value ? parseInt(e.target.value) : undefined }))}
-                className="w-full h-11 px-3 rounded-lg border border-stone-200 bg-white text-sm focus:outline-none focus:border-stone-400"
-              >
-                <option value="">Year</option>
-                {graduationYearOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+            <div className="space-y-1.5" ref={gradYearDropdownRef}>
+              <Label className="text-stone-600 text-sm">Grad Year</Label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setGradYearDropdownOpen(!gradYearDropdownOpen)}
+                  className={`w-full h-11 px-3 rounded-lg border bg-white text-sm text-left flex items-center justify-between focus:outline-none focus:border-stone-400 transition-colors ${
+                    gradYearDropdownOpen ? 'border-stone-400' : 'border-stone-200'
+                  }`}
+                >
+                  {formData.graduationYear ? (
+                    <span className="text-stone-900">{formData.graduationYear}</span>
+                  ) : (
+                    <span className="text-stone-400">Year</span>
+                  )}
+                  <svg className={`w-4 h-4 text-stone-400 transition-transform ${gradYearDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {gradYearDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-56 overflow-auto">
+                    {graduationYearOptions.map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, graduationYear: option.value }))
+                          setGradYearDropdownOpen(false)
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2.5 transition-colors ${
+                          formData.graduationYear === option.value
+                            ? 'bg-stone-50 text-stone-900'
+                            : 'text-stone-700 hover:bg-stone-50'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center ${
+                          formData.graduationYear === option.value
+                            ? 'bg-stone-900 border-stone-900'
+                            : 'border-stone-300'
+                        }`}>
+                          {formData.graduationYear === option.value && (
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-1.5" ref={majorDropdownRef}>
