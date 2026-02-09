@@ -1,10 +1,10 @@
 """Add referral system
 
 Revision ID: 035
-Revises: 034
+Revises: 034, 034_add_transcript_verification
 Create Date: 2026-02-09
 
-Adds support for:
+Merges the two 034 branches and adds:
 - Candidate referral codes (unique per candidate)
 - Referred-by tracking on candidates
 - Referrals table to track referral status and conversions
@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '035'
-down_revision = '034'
+down_revision = ('034', '034_add_transcript_verification')
 branch_labels = None
 depends_on = None
 
