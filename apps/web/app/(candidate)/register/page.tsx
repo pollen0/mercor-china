@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { candidateRegistrationSchema, targetRoleOptions, universityOptions, graduationYearOptions, type CandidateRegistrationInput } from '@/lib/validations/candidate'
+import { candidateRegistrationSchema, targetRoleOptions, majorOptions, universityOptions, graduationYearOptions, type CandidateRegistrationInput } from '@/lib/validations/candidate'
 import { setAuthTokens } from '@/lib/auth'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -33,6 +33,10 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [selectedMajors, setSelectedMajors] = useState<string[]>([])
+  const [customMajor, setCustomMajor] = useState('')
+  const [majorDropdownOpen, setMajorDropdownOpen] = useState(false)
+  const majorDropdownRef = useRef<HTMLDivElement>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -50,6 +54,47 @@ export default function RegisterPage() {
         : [...prev.targetRoles, role],
     }))
   }
+
+  const handleMajorToggle = (major: string) => {
+    const updated = selectedMajors.includes(major)
+      ? selectedMajors.filter(m => m !== major)
+      : [...selectedMajors, major]
+    setSelectedMajors(updated)
+    // If removing "Other", clear custom input
+    if (major === 'Other' && selectedMajors.includes('Other')) {
+      setCustomMajor('')
+    }
+    // Join into comma-separated string for backend
+    const allMajors = updated
+      .map(m => m === 'Other' && customMajor ? customMajor : m)
+      .filter(m => m !== 'Other')
+    if (updated.includes('Other') && customMajor) {
+      allMajors.push(customMajor)
+    }
+    setFormData(prev => ({ ...prev, major: allMajors.join(', ') }))
+  }
+
+  const handleCustomMajorChange = (value: string) => {
+    setCustomMajor(value)
+    // Update the joined major string
+    const allMajors = selectedMajors
+      .filter(m => m !== 'Other')
+    if (value) allMajors.push(value)
+    setFormData(prev => ({ ...prev, major: allMajors.join(', ') }))
+  }
+
+  // Close major dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (majorDropdownRef.current && !majorDropdownRef.current.contains(e.target as Node)) {
+        setMajorDropdownOpen(false)
+      }
+    }
+    if (majorDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [majorDropdownOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -276,34 +321,100 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="graduationYear" className="text-stone-600 text-sm">Grad Year</Label>
-                <select
-                  id="graduationYear"
-                  value={formData.graduationYear?.toString() || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, graduationYear: e.target.value ? parseInt(e.target.value) : undefined }))}
-                  className="w-full h-11 px-3 rounded-lg border border-stone-200 bg-white text-sm focus:outline-none focus:border-stone-400"
-                >
-                  <option value="">Year</option>
-                  {graduationYearOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="graduationYear" className="text-stone-600 text-sm">Grad Year</Label>
+              <select
+                id="graduationYear"
+                value={formData.graduationYear?.toString() || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, graduationYear: e.target.value ? parseInt(e.target.value) : undefined }))}
+                className="w-full h-11 px-3 rounded-lg border border-stone-200 bg-white text-sm focus:outline-none focus:border-stone-400"
+              >
+                <option value="">Year</option>
+                {graduationYearOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="major" className="text-stone-600 text-sm">Major</Label>
-                <Input
-                  id="major"
-                  name="major"
-                  value={formData.major || ''}
-                  onChange={handleInputChange}
-                  placeholder="CS"
-                  className="border-stone-200 focus:border-stone-400 focus:ring-0"
-                />
+            <div className="space-y-1.5" ref={majorDropdownRef}>
+              <Label className="text-stone-600 text-sm">Major(s)</Label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMajorDropdownOpen(!majorDropdownOpen)}
+                  className={`w-full min-h-[2.75rem] px-3 py-2 rounded-lg border bg-white text-sm text-left flex items-center gap-1.5 flex-wrap focus:outline-none focus:border-stone-400 transition-colors ${
+                    majorDropdownOpen ? 'border-stone-400' : 'border-stone-200'
+                  }`}
+                >
+                  {selectedMajors.length === 0 ? (
+                    <span className="text-stone-400">Select major(s)</span>
+                  ) : (
+                    selectedMajors.map(m => (
+                      <span
+                        key={m}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-stone-100 text-stone-700 text-xs"
+                      >
+                        {m === 'Other' && customMajor ? customMajor : m}
+                        <span
+                          role="button"
+                          onClick={(e) => { e.stopPropagation(); handleMajorToggle(m) }}
+                          className="text-stone-400 hover:text-stone-600 cursor-pointer"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </span>
+                      </span>
+                    ))
+                  )}
+                  <svg className={`w-4 h-4 text-stone-400 ml-auto flex-shrink-0 transition-transform ${majorDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {majorDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-stone-200 rounded-lg shadow-lg py-1 max-h-56 overflow-auto">
+                    {majorOptions.map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleMajorToggle(option.value)}
+                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2.5 transition-colors ${
+                          selectedMajors.includes(option.value)
+                            ? 'bg-stone-50 text-stone-900'
+                            : 'text-stone-700 hover:bg-stone-50'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
+                          selectedMajors.includes(option.value)
+                            ? 'bg-stone-900 border-stone-900'
+                            : 'border-stone-300'
+                        }`}>
+                          {selectedMajors.includes(option.value) && (
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        {option.label}
+                      </button>
+                    ))}
+                    {selectedMajors.includes('Other') && (
+                      <div className="px-3 py-2 border-t border-stone-100">
+                        <input
+                          type="text"
+                          value={customMajor}
+                          onChange={(e) => handleCustomMajorChange(e.target.value)}
+                          placeholder="Type your major..."
+                          className="w-full text-sm border border-stone-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-stone-900/10"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
