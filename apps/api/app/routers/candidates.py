@@ -73,6 +73,7 @@ async def create_candidate(
         id=generate_cuid(),
         name=candidate_data.name,
         email=candidate_data.email,
+        phone=candidate_data.phone,
         password_hash=password_hash,
         university=candidate_data.university,
         major=candidate_data.major,
@@ -447,27 +448,31 @@ async def get_candidate(
 
 def _match_club(activity_name: str, db: Session) -> tuple:
     """Try to match an activity name to a known club. Returns (club, score) or (None, 3.0)."""
-    name_lower = activity_name.lower()
+    from sqlalchemy import func as sqlfunc
 
-    # Search all clubs for a match (name, short_name, or aliases)
-    clubs = db.query(Club).all()
-    for club in clubs:
-        if (name_lower in club.name.lower() or
-            club.name.lower() in name_lower or
-            (club.short_name and (
-                name_lower == club.short_name.lower() or
-                club.short_name.lower() in name_lower
-            ))):
-            return club, club.prestige_score
+    name_lower = activity_name.lower().strip()
 
-        # Check aliases
-        if club.aliases:
-            for alias in club.aliases:
-                if isinstance(alias, str) and (
-                    name_lower == alias.lower() or
-                    alias.lower() in name_lower
-                ):
-                    return club, club.prestige_score
+    # 1. SQL-level search: exact short_name match or name containment
+    club = db.query(Club).filter(
+        (sqlfunc.lower(Club.name).contains(name_lower)) |
+        (sqlfunc.lower(Club.short_name) == name_lower)
+    ).first()
+
+    if club:
+        return club, club.prestige_score
+
+    # 2. Reverse: check if any club name is contained within the activity name (limited query)
+    candidates = db.query(Club).filter(
+        sqlfunc.length(Club.name) >= 4  # Skip very short names to avoid false matches
+    ).limit(200).all()
+
+    for c in candidates:
+        if c.name.lower() in name_lower or (c.short_name and c.short_name.lower() in name_lower):
+            return c, c.prestige_score
+        if c.aliases:
+            for alias in c.aliases:
+                if isinstance(alias, str) and alias.lower() in name_lower:
+                    return c, c.prestige_score
 
     return None, 3.0
 
@@ -2569,21 +2574,20 @@ class CandidateSkillGapResponse(PydanticBaseModel):
     strongest_areas: list[str]
 
 
-@router.post("/me/skill-gap", response_model=CandidateSkillGapResponse)
+@router.post("/me/skill-gap", response_model=CandidateSkillGapResponse, include_in_schema=False)
 async def get_my_skill_gap(
     data: CandidateSkillGapRequest,
     current_candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db),
 ):
     """
-    Analyze the current student's skill gap against a job or custom requirements.
-
-    Returns:
-    - Overall match score
-    - Critical skill gaps
-    - Learning priorities with estimated effort
-    - Strongest areas
+    Internal: Skill gap analysis is employer-only data.
+    This endpoint is deprecated for students. Use employer endpoints instead.
     """
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Skill gap analysis is available to employers only"
+    )
     from ..models import Job
 
     # Get job requirements

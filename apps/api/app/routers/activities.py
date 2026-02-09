@@ -185,13 +185,15 @@ async def seed_clubs(
 
 @router.get("/me/activities", response_model=List[ActivityResponse])
 async def get_my_activities(
+    limit: int = 50,
+    offset: int = 0,
     candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db)
 ):
     """Get current candidate's activities."""
     activities = db.query(CandidateActivity).filter(
         CandidateActivity.candidate_id == candidate.id
-    ).all()
+    ).order_by(CandidateActivity.activity_score.desc().nullslast()).offset(offset).limit(min(limit, 100)).all()
 
     result = []
     for activity in activities:
@@ -344,13 +346,15 @@ async def delete_activity(
 
 @router.get("/me/awards", response_model=List[AwardResponse])
 async def get_my_awards(
+    limit: int = 50,
+    offset: int = 0,
     candidate: Candidate = Depends(get_current_candidate),
     db: Session = Depends(get_db)
 ):
     """Get current candidate's awards."""
     awards = db.query(CandidateAward).filter(
         CandidateAward.candidate_id == candidate.id
-    ).all()
+    ).order_by(CandidateAward.prestige_tier.desc()).offset(offset).limit(min(limit, 100)).all()
 
     return [
         AwardResponse(

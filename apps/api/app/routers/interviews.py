@@ -367,6 +367,13 @@ async def start_vertical_interview(
     # Use authenticated candidate - ignore candidate_id from request body
     candidate = current_candidate
 
+    # Enforce email verification before interviews
+    if not candidate.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email before starting an interview. Check your inbox for a verification link."
+        )
+
     # Parse and validate vertical and role_type
     try:
         vertical = Vertical(data.vertical)
@@ -397,6 +404,21 @@ async def start_vertical_interview(
             existing_session = db.query(InterviewSession).filter(
                 InterviewSession.id == profile.interview_session_id
             ).first()
+
+            # Auto-expire stale sessions (older than 2 hours with no responses)
+            if existing_session and existing_session.status == InterviewStatus.IN_PROGRESS:
+                session_age = datetime.utcnow() - (existing_session.created_at.replace(tzinfo=None) if existing_session.created_at.tzinfo else existing_session.created_at)
+                response_count = db.query(InterviewResponse).filter(
+                    InterviewResponse.session_id == existing_session.id
+                ).count()
+                if session_age.total_seconds() > 7200 and response_count == 0:
+                    # Stale session — expire it so candidate can start fresh
+                    existing_session.status = InterviewStatus.CANCELLED
+                    profile.status = VerticalProfileStatus.PENDING
+                    profile.interview_session_id = None
+                    db.commit()
+                    logger.info(f"Auto-expired stale session {existing_session.id} for candidate {candidate.id}")
+                    # Fall through to create new session below
 
             if existing_session and existing_session.status == InterviewStatus.IN_PROGRESS:
                 # Retrieve the questions that were already recorded for this session
@@ -907,9 +929,12 @@ async def complete_interview(
     current_candidate: Candidate = Depends(get_current_candidate),
 ):
     """Mark interview as complete and trigger final scoring."""
+    from sqlalchemy import text
+
+    # Use SELECT ... FOR UPDATE to prevent race conditions on concurrent completion calls
     session = db.query(InterviewSession).filter(
         InterviewSession.id == session_id
-    ).first()
+    ).with_for_update().first()
 
     if not session:
         raise HTTPException(

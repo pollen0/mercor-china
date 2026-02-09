@@ -386,12 +386,14 @@ async def reanalyze_session(
 @router.get("/profile/{candidate_id}", response_model=VibeCodeProfileSummary)
 async def get_candidate_vibe_profile(
     candidate_id: str,
+    employer=Depends(get_current_employer),
     db: Session = Depends(get_db),
 ):
     """
     Get a summary of a candidate's vibe code profile.
     Used by employers in the talent pool to see builder quality at a glance.
     Includes numerical scores - this is the employer-facing view.
+    Requires employer authentication.
     """
     sessions = db.query(VibeCodeSession).filter(
         VibeCodeSession.candidate_id == candidate_id,

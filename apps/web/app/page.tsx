@@ -31,7 +31,7 @@ export default function Home() {
               Get Started Free
             </Link>
             <Link
-              href="/employer/login"
+              href="/employer"
               className="inline-flex items-center justify-center px-8 py-3.5 text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors duration-300"
             >
               I'm hiring →
@@ -102,8 +102,8 @@ export default function Home() {
                 description: 'Tailored interviews for engineering, data, business, and design roles.',
               },
               {
-                title: 'AI-powered feedback',
-                description: 'Get detailed feedback after each interview to help you improve for next time.',
+                title: 'AI-powered analysis',
+                description: 'Each interview is analyzed by AI across 5 dimensions. Employers see your growth over time.',
               },
               {
                 title: 'Employer matching',

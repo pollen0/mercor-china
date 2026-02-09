@@ -698,7 +698,8 @@ export class ApiError extends Error {
 // Helper to make API requests
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  _retried = false,
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
 
@@ -708,6 +709,7 @@ async function apiRequest<T>(
   }
 
   // Add auth token if available - choose the right token based on endpoint
+  let tokenType: 'candidate' | 'employer' = 'candidate'
   if (typeof window !== 'undefined') {
     const employerToken = localStorage.getItem('employer_token')
     const candidateToken = localStorage.getItem('candidate_token')
@@ -716,6 +718,7 @@ async function apiRequest<T>(
     let token: string | null = null
     if (endpoint.startsWith('/api/employers')) {
       token = employerToken || candidateToken
+      tokenType = 'employer'
     } else {
       token = candidateToken || employerToken
     }
@@ -729,6 +732,15 @@ async function apiRequest<T>(
     ...options,
     headers,
   })
+
+  // Auto-refresh token on 401 (expired) — try once
+  if (response.status === 401 && !_retried && typeof window !== 'undefined') {
+    const { refreshAccessToken } = await import('./auth')
+    const newToken = await refreshAccessToken(tokenType)
+    if (newToken) {
+      return apiRequest<T>(endpoint, options, true)
+    }
+  }
 
   if (!response.ok) {
     let message = 'Request failed'
