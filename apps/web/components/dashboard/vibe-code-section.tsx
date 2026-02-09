@@ -48,28 +48,37 @@ const EXPORT_GUIDES: Record<string, { tool: string; steps: string[] }> = {
   cursor: {
     tool: 'Cursor',
     steps: [
-      'Open Cursor and go to the chat/composer panel',
-      'Click the "..." menu at the top of the conversation',
-      'Select "Export Chat" or "Copy Conversation"',
-      'Paste or upload the exported content here',
+      'Open the Composer or Chat panel with your session',
+      'Select all the conversation text (Cmd/Ctrl+A) and copy it',
+      'Or find your session logs in ~/Library/Application Support/Cursor/User/workspaceStorage/',
+      'Paste the conversation or upload the .json log file here',
     ],
   },
   claude_code: {
     tool: 'Claude Code',
     steps: [
-      'In your terminal, run: claude export --format json',
-      'Or copy the conversation from the Claude Code transcript',
-      'You can also find session logs in ~/.claude/sessions/',
-      'Upload the .json file or paste the content here',
+      'Your session transcripts are saved in ~/.claude/projects/',
+      'Find the .jsonl file for your session in the project folder',
+      'Or select the full conversation in your terminal and copy it',
+      'Upload the .jsonl file or paste the conversation here',
     ],
   },
   copilot: {
     tool: 'GitHub Copilot Chat',
     steps: [
-      'Open VS Code with Copilot Chat active',
-      'Click the "..." menu in the chat panel',
-      'Select "Export Chat Session"',
-      'Upload the exported file here',
+      'Open VS Code with the Copilot Chat panel visible',
+      'Select the full conversation (Cmd/Ctrl+A) and copy it',
+      'You can also find logs via VS Code: Help > Toggle Developer Tools > Console',
+      'Paste the conversation text here',
+    ],
+  },
+  chatgpt: {
+    tool: 'ChatGPT',
+    steps: [
+      'Open your coding conversation on chat.openai.com',
+      'Click the share icon at the top of the conversation',
+      'Select "Copy Link" or select all text and copy',
+      'Paste the conversation content here',
     ],
   },
 }
@@ -317,24 +326,25 @@ function UploadForm({
       {/* CLI Instructions */}
       {showCli && (
         <div className="bg-stone-900 rounded-lg p-4 text-sm font-mono">
-          <p className="text-stone-400 text-xs mb-2"># Upload directly from your terminal:</p>
+          <p className="text-stone-400 text-xs mb-2"># Upload from your terminal:</p>
           <p className="text-emerald-400 text-xs mb-3">
-            # Get your auth token from browser: localStorage.getItem(&apos;candidate_token&apos;)
+            # Get your auth token from browser DevTools: localStorage.getItem(&apos;candidate_token&apos;)
           </p>
           <div className="space-y-3">
             <div>
-              <p className="text-stone-500 text-xs mb-1"># Claude Code - pipe session directly</p>
+              <p className="text-stone-500 text-xs mb-1"># Upload a Claude Code session transcript</p>
               <p className="text-white text-xs break-all">
-                claude export --format json | jq -Rs &apos;{'{'}session_content: .{'}'}&apos; | \<br />
+                cat ~/.claude/projects/YOUR_PROJECT/*.jsonl | \<br />
+                &nbsp;&nbsp;jq -Rs &apos;{'{'}session_content: .{'}'}&apos; | \<br />
                 &nbsp;&nbsp;curl -X POST -H &quot;Authorization: Bearer $TOKEN&quot; \<br />
                 &nbsp;&nbsp;-H &quot;Content-Type: application/json&quot; -d @- \<br />
                 &nbsp;&nbsp;https://pathway.careers/api/vibe-code/sessions/raw
               </p>
             </div>
             <div>
-              <p className="text-stone-500 text-xs mb-1"># Upload any session file</p>
+              <p className="text-stone-500 text-xs mb-1"># Upload any conversation file (.json, .txt, .md)</p>
               <p className="text-white text-xs break-all">
-                jq -Rs &apos;{'{'}session_content: .{'}'}&apos; session.json | \<br />
+                jq -Rs &apos;{'{'}session_content: .{'}'}&apos; my-session.json | \<br />
                 &nbsp;&nbsp;curl -X POST -H &quot;Authorization: Bearer $TOKEN&quot; \<br />
                 &nbsp;&nbsp;-H &quot;Content-Type: application/json&quot; -d @- \<br />
                 &nbsp;&nbsp;https://pathway.careers/api/vibe-code/sessions/raw
@@ -366,7 +376,7 @@ function UploadForm({
               </svg>
             </div>
             <p className="text-sm text-stone-600 mb-1">
-              Drag & drop your session file, or{' '}
+              Drag & drop your conversation file, or{' '}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="text-indigo-600 hover:text-indigo-800 font-medium"
@@ -375,12 +385,12 @@ function UploadForm({
               </button>
             </p>
             <p className="text-xs text-stone-400 mb-3">
-              Supports .json, .md, .txt exports from Cursor, Claude Code, Copilot
+              Upload .json, .jsonl, .md, or .txt — your AI chat logs from any coding project
             </p>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".json,.md,.txt,.log"
+              accept=".json,.jsonl,.md,.txt,.log"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0]
@@ -482,7 +492,7 @@ function UploadForm({
               <option value="other">Other</option>
             </select>
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="text-xs text-stone-500 block mb-1">What did you build? (optional)</label>
             <input
               type="text"
@@ -492,7 +502,7 @@ function UploadForm({
               className="w-full text-sm border border-stone-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-300"
             />
           </div>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="text-xs text-stone-500 block mb-1">Project URL (optional)</label>
             <input
               type="url"
@@ -612,7 +622,7 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
               )}
             </CardTitle>
             <CardDescription>
-              Upload your AI coding sessions to show employers how you think and build with tools like Cursor, Claude Code, and Copilot
+              Upload your AI coding conversations from building real projects. We analyze how you direct the AI, make decisions, and iterate — not the code itself.
             </CardDescription>
           </div>
           <button
@@ -649,9 +659,11 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
               </svg>
             </div>
             <h4 className="text-sm font-medium text-stone-700 mb-1">Show employers how you build</h4>
-            <p className="text-xs text-stone-500 mb-4 max-w-sm mx-auto">
-              Upload your AI coding sessions from Cursor, Claude Code, or Copilot.
-              We&apos;ll analyze how you think and give you feedback on your building style.
+            <p className="text-xs text-stone-500 mb-2 max-w-sm mx-auto">
+              Already built a project with AI tools? Upload the conversation log from Cursor, Claude Code, Copilot, or ChatGPT.
+            </p>
+            <p className="text-xs text-stone-400 mb-4 max-w-sm mx-auto">
+              We analyze your AI conversations — how you direct the AI, handle errors, and make design decisions. Upload as many sessions as you want from different projects.
             </p>
             <button
               onClick={() => setShowUpload(true)}
