@@ -917,7 +917,7 @@ ${employer?.companyName || 'Our Company'}`)
     <main className="min-h-screen bg-stone-50">
       {/* Header */}
       <header className="bg-white border-b border-stone-100 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="text-lg font-semibold text-stone-900">
             Pathway
           </Link>
@@ -1009,8 +1009,8 @@ ${employer?.companyName || 'Our Company'}`)
 
       {/* Tab Navigation */}
       <div className="bg-white border-b border-stone-100">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="flex gap-1">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="flex gap-1 overflow-x-auto">
             {[
               { key: 'overview', label: 'Overview' },
               { key: 'interviews', label: 'Interviews' },
@@ -1035,7 +1035,7 @@ ${employer?.companyName || 'Our Company'}`)
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         {/* Email Verification Banner */}
         {employer && !employer.isVerified && (
           <EmployerVerificationBanner email={employer.email} />
@@ -1188,8 +1188,8 @@ ${employer?.companyName || 'Our Company'}`)
             {/* Filters */}
             <Card>
               <CardContent className="p-4">
-                <div className="flex flex-wrap gap-4 items-end">
-                  <div className="w-40">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-stretch sm:items-end">
+                  <div className="w-full sm:w-40">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Job</Label>
                     <CustomSelect
                       value={selectedJob}
@@ -1201,7 +1201,7 @@ ${employer?.companyName || 'Our Company'}`)
                       size="sm"
                     />
                   </div>
-                  <div className="w-40">
+                  <div className="w-full sm:w-40">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Status</Label>
                     <CustomSelect
                       value={statusFilter}
@@ -1215,7 +1215,7 @@ ${employer?.companyName || 'Our Company'}`)
                       size="sm"
                     />
                   </div>
-                  <div className="w-24">
+                  <div className="w-full sm:w-24">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Min Score</Label>
                     <Input
                       type="number"
@@ -1802,8 +1802,8 @@ ${employer?.companyName || 'Our Company'}`)
                   </div>
                 </form>
 
-                <div className="flex flex-wrap gap-4 items-end">
-                  <div className="w-44">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-stretch sm:items-end">
+                  <div className="w-full sm:w-44">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Industry Vertical</Label>
                     <CustomSelect
                       value={talentVertical}
@@ -1815,7 +1815,7 @@ ${employer?.companyName || 'Our Company'}`)
                       size="sm"
                     />
                   </div>
-                  <div className="w-40">
+                  <div className="w-full sm:w-40">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Role Type</Label>
                     <CustomSelect
                       value={talentRole}
@@ -1828,7 +1828,7 @@ ${employer?.companyName || 'Our Company'}`)
                       size="sm"
                     />
                   </div>
-                  <div className="w-32">
+                  <div className="w-full sm:w-32">
                     <Label className="text-xs text-stone-500 mb-1.5 block">Min Score</Label>
                     <CustomSelect
                       value={String(talentMinScore)}
@@ -1899,7 +1899,7 @@ ${employer?.companyName || 'Our Company'}`)
                           className={`p-4 cursor-pointer transition-colors ${isExpanded ? 'bg-teal-50' : 'hover:bg-stone-50'}`}
                           onClick={() => toggleExpand(candidate)}
                         >
-                          <div className="flex items-center gap-4">
+                          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
                             {/* Expand/Collapse Icon */}
                             <div className="flex-shrink-0 w-6">
                               <svg
@@ -1970,7 +1970,7 @@ ${employer?.companyName || 'Our Company'}`)
                             </div>
 
                             {/* Score */}
-                            <div className="text-center w-16 flex-shrink-0">
+                            <div className="hidden sm:block text-center w-16 flex-shrink-0">
                               {displayScore ? (
                                 <>
                                   <div className={`text-lg font-bold ${isProfileOnly ? 'text-blue-600' : 'text-teal-600'}`}>
@@ -1986,7 +1986,7 @@ ${employer?.companyName || 'Our Company'}`)
                             </div>
 
                             {/* Status Dropdown */}
-                            <div className="flex-shrink-0 w-28" onClick={(e) => e.stopPropagation()}>
+                            <div className="hidden sm:block flex-shrink-0 w-28" onClick={(e) => e.stopPropagation()}>
                               {(() => {
                                 const currentStatus = getCandidateStatus(candidate)
                                 const isUpdating = updatingStatus === rowId
@@ -2002,7 +2002,7 @@ ${employer?.companyName || 'Our Company'}`)
                             </div>
 
                             {/* Interview Button */}
-                            <div className="flex-shrink-0">
+                            <div className="hidden sm:block flex-shrink-0">
                               <Button
                                 size="sm"
                                 className="bg-teal-600 hover:bg-teal-700"
@@ -2025,7 +2025,7 @@ ${employer?.companyName || 'Our Company'}`)
                                 <div className="w-8 h-8 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin"></div>
                               </div>
                             ) : detail ? (
-                              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                              <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-3">
                                 {/* Left: Contact & Basic Info */}
                                 <div className="space-y-4">
                                   <div>
@@ -2547,7 +2547,7 @@ ${employer?.companyName || 'Our Company'}`)
 
                   <div>
                     <Label>Duration *</Label>
-                    <div className="grid grid-cols-5 gap-2 mt-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-2">
                       {SCHEDULING_DURATION_OPTIONS.map(option => (
                         <button
                           key={option.value}
@@ -2615,7 +2615,7 @@ ${employer?.companyName || 'Our Company'}`)
 
                       <div className="border-t border-stone-100 pt-4 mt-4">
                         <h3 className="font-medium text-stone-900 mb-4">Booking Settings</h3>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="edit-bufferBefore">Buffer Before (minutes)</Label>
                             <Input
@@ -2737,7 +2737,7 @@ ${employer?.companyName || 'Our Company'}`)
                     Configure how far in advance candidates can book and buffer times between interviews.
                   </p>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="create-bufferBefore">Buffer Before (minutes)</Label>
                       <Input
@@ -3213,7 +3213,7 @@ ${employer?.companyName || 'Our Company'}`)
                     {(transcriptData.interview.overallStrengths?.length || transcriptData.interview.overallConcerns?.length) ? (
                       <div className="px-4 py-3 bg-stone-50 border-b border-stone-200">
                         <h5 className="text-sm font-medium text-stone-800 mb-2">Interview Assessment</h5>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {transcriptData.interview.overallStrengths && transcriptData.interview.overallStrengths.length > 0 && (
                             <div>
                               <p className="text-xs font-medium text-green-700 mb-1">Strengths</p>

@@ -149,7 +149,7 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-50 p-8">
+      <div className="min-h-screen bg-stone-50 p-4 sm:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-stone-200 rounded w-1/4 mb-4"></div>
@@ -161,7 +161,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 p-8">
+    <div className="min-h-screen bg-stone-50 p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -171,7 +171,7 @@ export default function SettingsPage() {
           >
             ← Back
           </button>
-          <h1 className="text-3xl font-bold text-stone-900">Settings</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">Settings</h1>
           <p className="text-stone-500 mt-2">
             Manage your integrations and profile visibility
           </p>
@@ -230,7 +230,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-stone-500 mb-4">
                   Select up to 2 stages to be prioritized for those companies (optional)
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {COMPANY_STAGES.map((stage) => {
                     const isSelected = companyStages.includes(stage.value)
                     const isDisabled = !isSelected && companyStages.length >= 2
@@ -272,7 +272,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-stone-500 mb-4">
                   Select up to 4 locations to be prioritized for those areas (optional)
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {LOCATIONS.map((location) => {
                     const isSelected = locations.includes(location.value)
                     const isDisabled = !isSelected && locations.length >= 4
@@ -314,7 +314,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-stone-500 mb-4">
                   Select up to 3 industries to be prioritized for those companies (optional)
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {INDUSTRIES.map((industry) => {
                     const isSelected = industries.includes(industry.value)
                     const isDisabled = !isSelected && industries.length >= 3

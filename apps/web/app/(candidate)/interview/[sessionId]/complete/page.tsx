@@ -169,7 +169,7 @@ export default function InterviewCompletePage() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="bg-white rounded-2xl shadow-soft-lg border border-stone-100 overflow-hidden">
           {/* Success Header */}
-          <div className="bg-gradient-to-br from-teal-600 to-teal-600 p-8 text-center text-white">
+          <div className="bg-gradient-to-br from-teal-600 to-teal-600 p-5 sm:p-8 text-center text-white">
             <div className="mx-auto w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -181,7 +181,7 @@ export default function InterviewCompletePage() {
             </p>
           </div>
 
-          <div className="p-8 space-y-6">
+          <div className="p-4 sm:p-8 space-y-6">
             {/* Scores, AI summary, strengths, and concerns are employer-only */}
 
             {/* Next steps */}

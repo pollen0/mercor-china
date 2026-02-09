@@ -4191,7 +4191,19 @@ async def invite_to_organization(
     db.commit()
     db.refresh(invite)
 
-    # TODO: Send invite email
+    # Send invite email
+    try:
+        from ..services.email import email_service
+        invite_url = f"{settings.frontend_url}/org/invite/{invite.token}"
+        await email_service.send_organization_invite(
+            to_email=invite.email,
+            organization_name=org.name,
+            inviter_name=employer.company_name or employer.email,
+            role=invite.role.value,
+            invite_url=invite_url,
+        )
+    except Exception:
+        pass  # Don't fail the invite creation if email fails
 
     return OrganizationInviteResponse(
         id=invite.id,

@@ -122,10 +122,10 @@ export default function InterviewStartPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="grid lg:grid-cols-5 gap-8">
+        <div className="grid lg:grid-cols-5 gap-4 sm:gap-8">
           {/* Left side - Job info */}
           <div className="lg:col-span-2">
-            <div className="sticky top-8">
+            <div className="lg:sticky lg:top-8">
               <div className="bg-gradient-to-br from-teal-600 to-teal-600 rounded-2xl p-6 text-white mb-6">
                 <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,7 +179,7 @@ export default function InterviewStartPage() {
 
           {/* Right side - Instructions */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-soft-sm border border-stone-200 p-8">
+            <div className="bg-white rounded-2xl shadow-soft-sm border border-stone-200 p-4 sm:p-8">
               <h1 className="text-2xl font-semibold text-stone-900 mb-2">Ready to Begin</h1>
               <p className="text-stone-500 mb-8">Review the instructions below, then start your interview</p>
 
@@ -231,7 +231,7 @@ export default function InterviewStartPage() {
               </div>
 
               {/* Status indicators */}
-              <div className="flex items-center justify-center gap-6 mb-8 py-4 border-y border-stone-100">
+              <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mb-8 py-4 border-y border-stone-100">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${permissionGranted ? 'bg-teal-500' : 'bg-stone-300'}`} />
                   <span className="text-sm text-stone-600">Camera Ready</span>

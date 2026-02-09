@@ -277,7 +277,22 @@ async def list_candidates(
     if graduation_year:
         query = query.filter(Candidate.graduation_year == graduation_year)
 
-    # TODO: Filter by vertical (needs join with vertical profiles)
+    # Filter by vertical (join with vertical profiles)
+    if vertical:
+        try:
+            vertical_enum = Vertical(vertical)
+            query = query.join(
+                CandidateVerticalProfile,
+                CandidateVerticalProfile.candidate_id == Candidate.id
+            ).filter(
+                CandidateVerticalProfile.vertical == vertical_enum,
+                CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
+            )
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid vertical: {vertical}"
+            )
 
     total = query.count()
     candidates = query.order_by(Candidate.created_at.desc()).offset(skip).limit(limit).all()

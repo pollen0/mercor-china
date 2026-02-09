@@ -10,7 +10,7 @@ export default function EmployerLandingPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-36 pb-28 px-6">
+      <section className="pt-24 sm:pt-36 pb-20 sm:pb-28 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-[11px] font-medium text-teal-600/70 uppercase tracking-[0.2em] mb-6">For Employers</p>
           <h1 className="text-4xl sm:text-5xl font-semibold text-stone-900 leading-[1.15] tracking-tight mb-6">
@@ -42,7 +42,7 @@ export default function EmployerLandingPage() {
       </section>
 
       {/* Problem/Solution */}
-      <section className="py-28 px-6 bg-white">
+      <section className="py-16 sm:py-28 px-4 sm:px-6 bg-white">
         <div className="max-w-4xl mx-auto">
           <div className="grid md:grid-cols-2 gap-16 md:gap-24">
             <div>
@@ -72,7 +72,7 @@ export default function EmployerLandingPage() {
       </section>
 
       {/* What you see */}
-      <section id="how-it-works" className="py-32 px-6 bg-stone-900 text-white">
+      <section id="how-it-works" className="py-20 sm:py-32 px-4 sm:px-6 bg-stone-900 text-white">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-20">
             <p className="text-[11px] font-medium text-stone-500 uppercase tracking-[0.2em] mb-4">What you get</p>
@@ -84,7 +84,7 @@ export default function EmployerLandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-x-12 gap-y-14">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-x-12 md:gap-y-14">
             {[
               {
                 title: 'AI Interview Scores',
@@ -121,7 +121,7 @@ export default function EmployerLandingPage() {
       </section>
 
       {/* Sample profile preview */}
-      <section className="py-32 px-6 bg-white">
+      <section className="py-20 sm:py-32 px-4 sm:px-6 bg-white">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-[11px] font-medium text-stone-400 uppercase tracking-[0.2em] mb-4">Sample candidate</p>
@@ -130,7 +130,7 @@ export default function EmployerLandingPage() {
             </h2>
           </div>
 
-          <div className="bg-stone-50 rounded-2xl p-8 md:p-12 border border-stone-200">
+          <div className="bg-stone-50 rounded-2xl p-5 sm:p-8 md:p-12 border border-stone-200">
             <div className="flex items-start gap-6 mb-8">
               <div className="w-14 h-14 bg-stone-200 rounded-full flex items-center justify-center text-stone-500 text-lg font-medium">
                 JD
@@ -141,7 +141,7 @@ export default function EmployerLandingPage() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[
                 { label: 'Interview Score', value: '8.2/10', sub: '4 interviews, improving' },
                 { label: 'GitHub Analysis', value: '92% organic', sub: '12 repos, 847 commits' },
@@ -156,7 +156,7 @@ export default function EmployerLandingPage() {
               ))}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="text-xs bg-teal-100 text-teal-700 px-3 py-1 rounded-full font-medium">Engineering</span>
               <span className="text-xs bg-stone-100 text-stone-600 px-3 py-1 rounded-full">Python</span>
               <span className="text-xs bg-stone-100 text-stone-600 px-3 py-1 rounded-full">React</span>
@@ -168,7 +168,7 @@ export default function EmployerLandingPage() {
       </section>
 
       {/* How it works */}
-      <section className="py-32 px-6 bg-stone-50/50">
+      <section className="py-20 sm:py-32 px-4 sm:px-6 bg-stone-50/50">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-2xl font-semibold text-stone-900 mb-4">
@@ -214,7 +214,7 @@ export default function EmployerLandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-32 px-6 bg-white">
+      <section className="py-20 sm:py-32 px-4 sm:px-6 bg-white">
         <div className="max-w-2xl mx-auto text-center">
           <p className="text-[11px] font-medium text-stone-400 uppercase tracking-[0.2em] mb-4">Pricing</p>
           <h2 className="text-2xl font-semibold text-stone-900 mb-4">

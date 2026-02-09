@@ -13,10 +13,10 @@ export function Footer({ variant = 'minimal', className, ...props }: FooterProps
         className={cn('py-16 border-t border-stone-100 bg-white', className)}
         {...props}
       >
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <span className="font-medium text-stone-900">Pathway</span>
-            <div className="flex items-center gap-8 text-sm text-stone-400">
+            <div className="flex items-center gap-4 sm:gap-8 text-sm text-stone-400">
               <Link href="/privacy" className="hover:text-stone-600 transition-colors duration-300">
                 Privacy
               </Link>
@@ -36,8 +36,8 @@ export function Footer({ variant = 'minimal', className, ...props }: FooterProps
       className={cn('py-20 bg-stone-50/50 border-t border-stone-100', className)}
       {...props}
     >
-      <div className="max-w-5xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 md:gap-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <span className="font-semibold text-stone-900 text-lg">Pathway</span>

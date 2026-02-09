@@ -381,8 +381,26 @@ async def upload_transcript(
     # Score the transcript
     score = await transcript_service.score_transcript(parsed, db)
 
-    # TODO: Upload file to R2 storage
-    file_url = None  # Would be R2 URL
+    # Upload file to R2 storage
+    file_url = None
+    try:
+        from ..services.storage import storage_service
+        from ..config import settings
+        from io import BytesIO
+        timestamp = datetime.utcnow().strftime("%Y%m%d")
+        unique_id = uuid.uuid4().hex[:8]
+        storage_key = f"transcripts/{candidate.id}/{timestamp}_{unique_id}.pdf"
+        storage_service.client.upload_fileobj(
+            BytesIO(file_bytes),
+            settings.r2_bucket_name,
+            storage_key,
+            ExtraArgs={"ContentType": "application/pdf"}
+        )
+        file_url = storage_key
+    except Exception:
+        # Storage upload failed — continue without persisting the file
+        # The parsed data is still saved to the database
+        pass
 
     # Create or update transcript record
     existing = db.query(CandidateTranscript).filter(

@@ -166,7 +166,7 @@ export default function InterviewSelectPage() {
       <main className="min-h-screen bg-white">
         {/* Header */}
         <header className="border-b border-stone-100">
-          <div className="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
             <Link href="/" className="text-lg font-semibold text-stone-900">
               Pathway
             </Link>
@@ -228,7 +228,7 @@ export default function InterviewSelectPage() {
     <main className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-stone-100">
-        <div className="max-w-2xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="text-lg font-semibold text-stone-900">
             Pathway
           </Link>
@@ -238,7 +238,7 @@ export default function InterviewSelectPage() {
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-6 py-12">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-2xl font-semibold text-stone-900 mb-2">Start Interview</h1>
