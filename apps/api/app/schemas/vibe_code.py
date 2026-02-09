@@ -65,8 +65,8 @@ class VibeCodeRawUpload(BaseModel):
 class VibeCodeStudentResponse(BaseModel):
     """
     Student-facing session response.
-    Shows upload status ONLY - no scores, no qualitative feedback.
-    All evaluation data is employer-only.
+    Shows builder archetype and strengths (qualitative growth signals).
+    NO numerical scores — those are employer-only.
     """
     id: str
     candidate_id: str
@@ -77,8 +77,13 @@ class VibeCodeStudentResponse(BaseModel):
     message_count: Optional[int] = None
     word_count: Optional[int] = None
 
-    # Analysis status only - students just see if it's done
+    # Analysis status
     analysis_status: str
+
+    # Qualitative feedback for student (no scores)
+    builder_archetype: Optional[str] = None  # "architect", "iterative_builder", etc.
+    strengths: Optional[list[str]] = None  # What they did well
+    notable_patterns: Optional[list[str]] = None  # Interesting behaviors observed
 
     # Timestamps
     uploaded_at: Optional[datetime] = None
