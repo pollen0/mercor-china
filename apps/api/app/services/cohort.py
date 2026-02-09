@@ -205,6 +205,9 @@ class CohortService:
             "Ohio State University": "Ohio State",
             "Pennsylvania State University": "Penn State",
             "University of Maryland": "Maryland",
+            "University of Maryland, College Park": "Maryland",
+            "University of California, Santa Barbara": "UCSB",
+            "UC Santa Barbara": "UCSB",
             "University of Virginia": "UVA",
             "University of North Carolina at Chapel Hill": "UNC",
         }

@@ -138,9 +138,11 @@ TOP_COMPANIES = {
 
 # Top universities
 TOP_UNIVERSITIES = {
-    "tier_1": ["stanford", "mit", "harvard", "berkeley", "cmu", "carnegie mellon", "princeton", "yale", "caltech"],
-    "tier_2": ["columbia", "cornell", "georgia tech", "michigan", "illinois", "uiuc", "ucla", "washington", "uw",
-               "purdue", "ut austin", "texas", "usc", "duke", "northwestern", "brown", "penn", "upenn"],
+    "tier_1": ["stanford", "mit", "harvard", "berkeley", "cmu", "carnegie mellon", "princeton", "yale", "caltech",
+               "cornell", "georgia tech", "michigan", "umich", "columbia", "ucla"],
+    "tier_2": ["illinois", "uiuc", "washington", "uw", "purdue", "ut austin", "texas", "usc", "duke",
+               "northwestern", "brown", "penn", "upenn", "uc san diego", "ucsd", "umd", "maryland",
+               "wisconsin", "uwisc", "ucsb", "santa barbara"],
 }
 
 

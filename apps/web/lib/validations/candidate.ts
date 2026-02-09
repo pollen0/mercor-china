@@ -1,9 +1,28 @@
 import { z } from 'zod'
 
-// Beta universities - expand as we onboard more schools
+// Top 20 CS schools + UCSB — alphabetical by label
 export const universityOptions = [
+  { value: 'caltech', label: 'Caltech' },
+  { value: 'cmu', label: 'Carnegie Mellon University' },
+  { value: 'columbia', label: 'Columbia University' },
+  { value: 'cornell', label: 'Cornell University' },
+  { value: 'georgia_tech', label: 'Georgia Tech' },
+  { value: 'harvard', label: 'Harvard University' },
+  { value: 'mit', label: 'MIT' },
+  { value: 'princeton', label: 'Princeton University' },
+  { value: 'purdue', label: 'Purdue University' },
+  { value: 'stanford', label: 'Stanford University' },
   { value: 'uc_berkeley', label: 'UC Berkeley' },
+  { value: 'ucla', label: 'UCLA' },
+  { value: 'uc_san_diego', label: 'UC San Diego' },
+  { value: 'ucsb', label: 'UC Santa Barbara' },
   { value: 'uiuc', label: 'University of Illinois Urbana-Champaign' },
+  { value: 'umich', label: 'University of Michigan' },
+  { value: 'umd', label: 'University of Maryland' },
+  { value: 'upenn', label: 'University of Pennsylvania' },
+  { value: 'ut_austin', label: 'University of Texas at Austin' },
+  { value: 'uw', label: 'University of Washington' },
+  { value: 'uwisc', label: 'University of Wisconsin-Madison' },
 ] as const
 
 export const graduationYearOptions = [
