@@ -93,3 +93,24 @@ export const targetRoleOptions = [
   { value: 'design', label: 'UI/UX Designer' },
   { value: 'qa', label: 'QA Engineer' },
 ]
+
+export const majorOptions = [
+  { value: 'Computer Science', label: 'Computer Science' },
+  { value: 'Computer Engineering', label: 'Computer Engineering' },
+  { value: 'Electrical Engineering', label: 'Electrical Engineering' },
+  { value: 'Software Engineering', label: 'Software Engineering' },
+  { value: 'Data Science', label: 'Data Science' },
+  { value: 'Statistics', label: 'Statistics' },
+  { value: 'Mathematics', label: 'Mathematics' },
+  { value: 'Applied Math', label: 'Applied Math' },
+  { value: 'Physics', label: 'Physics' },
+  { value: 'Information Science', label: 'Information Science' },
+  { value: 'Economics', label: 'Economics' },
+  { value: 'Business', label: 'Business' },
+  { value: 'Finance', label: 'Finance' },
+  { value: 'Cognitive Science', label: 'Cognitive Science' },
+  { value: 'Mechanical Engineering', label: 'Mechanical Engineering' },
+  { value: 'Bioengineering', label: 'Bioengineering' },
+  { value: 'Design', label: 'Design' },
+  { value: 'Other', label: 'Other' },
+]
