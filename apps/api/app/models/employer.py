@@ -40,6 +40,8 @@ class RoleType(str, enum.Enum):
     """Specific entry-level role types within each vertical."""
     # Software Engineering Vertical (most common titles from 2026 job boards)
     SOFTWARE_ENGINEER = "software_engineer"  # Software Engineer I, Associate SWE
+    FRONTEND_ENGINEER = "frontend_engineer"  # Frontend Engineer
+    BACKEND_ENGINEER = "backend_engineer"  # Backend Engineer
     EMBEDDED_ENGINEER = "embedded_engineer"  # Embedded Software Engineer
     QA_ENGINEER = "qa_engineer"  # Software Quality Engineer
     # Data Vertical
@@ -58,6 +60,10 @@ class RoleType(str, enum.Enum):
     IB_ANALYST = "ib_analyst"  # Investment Banking Analyst
     FINANCE_ANALYST = "finance_analyst"
     EQUITY_RESEARCH = "equity_research"
+    # Business/Consulting Vertical
+    CONSULTANT = "consultant"  # Strategy/Management Consultant
+    MARKETING_ASSOCIATE = "marketing_associate"  # Marketing Associate
+    BUSINESS_ANALYST = "business_analyst"  # Business Analyst
 
 
 class Employer(Base):

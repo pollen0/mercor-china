@@ -5,10 +5,13 @@ Uses synchronous functions compatible with FastAPI's BackgroundTasks.
 import asyncio
 import json
 import logging
+import time
+import traceback
 from datetime import datetime
+from functools import wraps
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from typing import Optional
+from typing import Optional, Callable, Any
 
 from .transcription import transcription_service
 from .scoring import scoring_service
@@ -17,6 +20,58 @@ from .matching import matching_service
 from .code_execution import code_execution_service
 
 logger = logging.getLogger("pathway.tasks")
+
+
+def with_retry(max_retries: int = 3, base_delay: float = 1.0, task_name: str = None):
+    """
+    Decorator that adds retry logic with exponential backoff to background tasks.
+
+    Args:
+        max_retries: Maximum number of retry attempts
+        base_delay: Base delay in seconds (doubles with each retry)
+        task_name: Name of the task for logging
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            name = task_name or func.__name__
+            last_exception = None
+
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries:
+                        delay = base_delay * (2 ** attempt)
+                        logger.warning(
+                            f"[{name}] Attempt {attempt + 1}/{max_retries + 1} failed: {e}. "
+                            f"Retrying in {delay}s..."
+                        )
+                        time.sleep(delay)
+                    else:
+                        # Final attempt failed - log full details for debugging
+                        logger.error(
+                            f"[{name}] FAILED after {max_retries + 1} attempts. "
+                            f"Error: {e}\n"
+                            f"Args: {args}\n"
+                            f"Kwargs: {kwargs}\n"
+                            f"Traceback: {traceback.format_exc()}"
+                        )
+            return None  # Return None instead of raising to avoid crashing background worker
+        return wrapper
+    return decorator
+
+
+def log_task_failure(task_name: str, session_id: str, error: Exception, context: dict = None):
+    """
+    Log a task failure with full context for debugging and potential manual retry.
+    """
+    logger.error(
+        f"BACKGROUND_TASK_FAILURE | task={task_name} | session_id={session_id} | "
+        f"error={str(error)} | context={json.dumps(context or {})} | "
+        f"traceback={traceback.format_exc()}"
+    )
 
 
 def _run_async(coro):
@@ -70,6 +125,8 @@ def process_interview_response(
         is_followup = response.is_followup
 
         # Transcribe
+        transcript = None
+        transcription_failed = False
         try:
             transcript = _run_async(
                 transcription_service.transcribe_from_key(video_key)
@@ -79,7 +136,32 @@ def process_interview_response(
         except Exception as e:
             logger.error(f"Transcription failed for {response_id}: {e}")
             response.transcription = f"[Transcription failed: {str(e)}]"
+            transcription_failed = True
             db.commit()
+            # Don't return - continue to set a default score so interview can complete
+
+        # If transcription failed, set default score and mark as needing review
+        if transcription_failed or not transcript:
+            response.ai_score = 5.0  # Neutral score - requires human review
+            response.ai_analysis = json.dumps({
+                "error": "Transcription failed - default score applied",
+                "analysis": "Unable to analyze response due to transcription failure. This response requires manual review.",
+                "strengths": [],
+                "concerns": ["Transcription failed - unable to evaluate content"],
+                "highlight_quotes": [],
+                "scores": {
+                    "communication": 5.0,
+                    "problem_solving": 5.0,
+                    "domain_knowledge": 5.0,
+                    "motivation": 5.0,
+                    "culture_fit": 5.0,
+                },
+                "requires_review": True,
+            }, ensure_ascii=False)
+            response.scoring_algorithm_version = "1.0.0-fallback"
+            response.scored_at = datetime.utcnow()
+            db.commit()
+            logger.warning(f"Applied fallback score for response {response_id} due to transcription failure")
             return
 
         # Score (with or without follow-up generation)
@@ -161,12 +243,14 @@ def process_interview_response(
         db.close()
 
 
+@with_retry(max_retries=3, base_delay=2.0, task_name="generate_interview_summary")
 def generate_interview_summary(
     session_id: str,
     db_url: str,
 ):
     """
     Generate AI summary for a completed interview.
+    Retries up to 3 times on failure.
     """
     from ..models import InterviewSession, InterviewResponse
 
@@ -202,37 +286,46 @@ def generate_interview_summary(
                 "score": r.ai_score,
             })
 
-        try:
-            summary = _run_async(
-                scoring_service.generate_summary(
-                    responses=response_data,
-                    job_title=session.job.title,
-                    job_requirements=session.job.requirements or [],
-                )
-            )
+        # Handle vertical interviews (no job) vs job-specific interviews
+        job_title = "General Interview"
+        job_requirements = []
+        if session.job:
+            job_title = session.job.title
+            job_requirements = session.job.requirements or []
+        elif session.is_vertical_interview and session.vertical:
+            job_title = f"{session.vertical.value.replace('_', ' ').title()} Interview"
 
-            session.ai_summary = json.dumps({
-                "summary": summary.summary,
-                "recommendation": summary.recommendation,
-                "overall_strengths": summary.overall_strengths,
-                "overall_concerns": summary.overall_concerns,
-            }, ensure_ascii=False)
-            session.total_score = summary.total_score
-            db.commit()
-            logger.info(f"Generated summary for session {session_id}")
-        except Exception as e:
-            logger.error(f"Failed to generate summary for {session_id}: {e}")
+        summary = _run_async(
+            scoring_service.generate_summary(
+                responses=response_data,
+                job_title=job_title,
+                job_requirements=job_requirements,
+            )
+        )
+
+        session.ai_summary = json.dumps({
+            "summary": summary.summary,
+            "recommendation": summary.recommendation,
+            "overall_strengths": summary.overall_strengths,
+            "overall_concerns": summary.overall_concerns,
+            "overall_improvements": getattr(summary, 'overall_improvements', []),
+        }, ensure_ascii=False)
+        session.total_score = summary.total_score
+        db.commit()
+        logger.info(f"Generated summary for session {session_id}")
 
     finally:
         db.close()
 
 
+@with_retry(max_retries=3, base_delay=2.0, task_name="send_completion_emails")
 def send_completion_emails(
     session_id: str,
     db_url: str,
 ):
     """
     Send email notifications when interview is complete.
+    Retries up to 3 times on failure.
     """
     from ..models import InterviewSession
 
@@ -246,34 +339,75 @@ def send_completion_emails(
         ).first()
 
         if not session:
+            logger.warning(f"[send_completion_emails] Session {session_id} not found")
             return
 
-        # Email to employer
-        employer = session.job.employer
-        if employer.email:
-            email_service.send_interview_complete_to_employer(
-                employer_email=employer.email,
-                employer_name=employer.company_name,
-                candidate_name=session.candidate.name,
-                job_title=session.job.title,
-                interview_id=session_id,
-                score=session.total_score,
-            )
+        # Handle vertical interviews (no job) vs job-specific interviews
+        if session.job:
+            # Job-specific interview - email both employer and candidate
+            employer = session.job.employer
+            job_title = session.job.title
+            company_name = employer.company_name
 
-        # Email to candidate
-        candidate = session.candidate
-        if candidate.email and not candidate.email.endswith("@placeholder.local"):
-            email_service.send_interview_complete_to_candidate(
-                candidate_email=candidate.email,
-                candidate_name=candidate.name,
-                job_title=session.job.title,
-                company_name=employer.company_name,
-            )
+            # Email to employer
+            if employer.email:
+                try:
+                    email_service.send_interview_complete_to_employer(
+                        employer_email=employer.email,
+                        employer_name=company_name,
+                        candidate_name=session.candidate.name,
+                        job_title=job_title,
+                        interview_id=session_id,
+                        score=session.total_score,
+                    )
+                    logger.info(f"Sent employer completion email for session {session_id}")
+                except Exception as e:
+                    log_task_failure("send_completion_emails.employer", session_id, e, {
+                        "employer_email": employer.email,
+                    })
+                    raise  # Re-raise to trigger retry
+
+            # Email to candidate
+            candidate = session.candidate
+            if candidate.email and not candidate.email.endswith("@placeholder.local"):
+                try:
+                    email_service.send_interview_complete_to_candidate(
+                        candidate_email=candidate.email,
+                        candidate_name=candidate.name,
+                        job_title=job_title,
+                        company_name=company_name,
+                    )
+                    logger.info(f"Sent candidate completion email for session {session_id}")
+                except Exception as e:
+                    log_task_failure("send_completion_emails.candidate", session_id, e, {
+                        "candidate_email": candidate.email,
+                    })
+                    raise  # Re-raise to trigger retry
+
+        else:
+            # Vertical interview - only email candidate
+            candidate = session.candidate
+            if candidate.email and not candidate.email.endswith("@placeholder.local"):
+                vertical_name = session.vertical.value.replace('_', ' ').title() if session.vertical else "General"
+                try:
+                    email_service.send_interview_complete_to_candidate(
+                        candidate_email=candidate.email,
+                        candidate_name=candidate.name,
+                        job_title=f"{vertical_name} Interview",
+                        company_name="Pathway",
+                    )
+                    logger.info(f"Sent vertical interview completion email for session {session_id}")
+                except Exception as e:
+                    log_task_failure("send_completion_emails.candidate_vertical", session_id, e, {
+                        "candidate_email": candidate.email,
+                    })
+                    raise  # Re-raise to trigger retry
 
     finally:
         db.close()
 
 
+@with_retry(max_retries=3, base_delay=2.0, task_name="process_match_after_interview")
 def process_match_after_interview(
     session_id: str,
     db_url: str,
@@ -281,6 +415,7 @@ def process_match_after_interview(
     """
     Calculate and store match score after an interview is completed.
     This creates/updates the Match record with detailed scoring.
+    Retries up to 3 times on failure.
 
     For vertical (talent pool) interviews:
     - Updates the CandidateVerticalProfile
@@ -323,56 +458,59 @@ def process_match_after_interview(
         candidate_data = candidate.resume_parsed_data if candidate else None
 
         # Calculate match
-        try:
-            match_result = _run_async(
-                matching_service.calculate_match(
-                    interview_score=session.total_score or 5.0,  # Default to 5 if not scored
-                    candidate_data=candidate_data,
-                    job_title=session.job.title,
-                    job_requirements=session.job.requirements or [],
-                    job_location=session.job.location,
-                    job_vertical=session.job.vertical.value if session.job.vertical else None,
-                )
+        match_result = _run_async(
+            matching_service.calculate_match(
+                interview_score=session.total_score or 5.0,  # Default to 5 if not scored
+                candidate_data=candidate_data,
+                job_title=session.job.title,
+                job_requirements=session.job.requirements or [],
+                job_location=session.job.location,
+                job_vertical=session.job.vertical.value if session.job.vertical else None,
             )
+        )
 
-            # Create or update match record
-            match = db.query(Match).filter(
-                Match.candidate_id == session.candidate_id,
-                Match.job_id == session.job_id
-            ).first()
+        # Create or update match record
+        match = db.query(Match).filter(
+            Match.candidate_id == session.candidate_id,
+            Match.job_id == session.job_id
+        ).first()
 
-            if match:
-                # Update existing match
-                match.score = session.total_score or 0
-                match.interview_score = match_result.interview_score
-                match.skills_match_score = match_result.skills_match_score
-                match.experience_match_score = match_result.experience_match_score
-                match.location_match = match_result.location_match
-                match.overall_match_score = match_result.overall_match_score
-                match.factors = json.dumps(match_result.factors, ensure_ascii=False)
-                match.ai_reasoning = match_result.ai_reasoning
-            else:
-                # Create new match
-                match = Match(
-                    id=f"m{uuid.uuid4().hex[:24]}",
-                    candidate_id=session.candidate_id,
-                    job_id=session.job_id,
-                    score=session.total_score or 0,
-                    interview_score=match_result.interview_score,
-                    skills_match_score=match_result.skills_match_score,
-                    experience_match_score=match_result.experience_match_score,
-                    location_match=match_result.location_match,
-                    overall_match_score=match_result.overall_match_score,
-                    factors=json.dumps(match_result.factors, ensure_ascii=False),
-                    ai_reasoning=match_result.ai_reasoning,
-                )
-                db.add(match)
+        if match:
+            # Update existing match
+            match.score = session.total_score or 0
+            match.interview_score = match_result.interview_score
+            match.skills_match_score = match_result.skills_match_score
+            match.experience_match_score = match_result.experience_match_score
+            match.location_match = match_result.location_match
+            match.overall_match_score = match_result.overall_match_score
+            match.factors = json.dumps(match_result.factors, ensure_ascii=False)
+            match.ai_reasoning = match_result.ai_reasoning
+        else:
+            # Create new match
+            match = Match(
+                id=f"m{uuid.uuid4().hex[:24]}",
+                candidate_id=session.candidate_id,
+                job_id=session.job_id,
+                score=session.total_score or 0,
+                interview_score=match_result.interview_score,
+                skills_match_score=match_result.skills_match_score,
+                experience_match_score=match_result.experience_match_score,
+                location_match=match_result.location_match,
+                overall_match_score=match_result.overall_match_score,
+                factors=json.dumps(match_result.factors, ensure_ascii=False),
+                ai_reasoning=match_result.ai_reasoning,
+            )
+            db.add(match)
 
-            db.commit()
-            logger.info(f"Processed match for session {session_id}, score: {match_result.overall_match_score}")
+        db.commit()
+        logger.info(f"Processed match for session {session_id}, score: {match_result.overall_match_score}")
 
-        except Exception as e:
-            logger.error(f"Failed to calculate match for {session_id}: {e}")
+    except Exception as e:
+        log_task_failure("process_match_after_interview", session_id, e, {
+            "job_id": session.job_id if session else None,
+            "candidate_id": session.candidate_id if session else None,
+        })
+        raise  # Re-raise to trigger retry
 
     finally:
         db.close()

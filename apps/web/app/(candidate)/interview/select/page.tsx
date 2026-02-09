@@ -77,6 +77,7 @@ export default function InterviewSelectPage() {
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [selectedVertical, setSelectedVertical] = useState<Vertical | null>(null)
   const [selectedRole, setSelectedRole] = useState<RoleType | null>(null)
+  const [isPractice, setIsPractice] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -139,7 +140,8 @@ export default function InterviewSelectPage() {
       const response = await verticalApi.startVerticalInterview(
         candidate.id,
         selectedVertical,
-        selectedRole
+        selectedRole,
+        isPractice
       )
       router.push(`/interview/${response.sessionId}`)
     } catch (err) {
@@ -317,6 +319,42 @@ export default function InterviewSelectPage() {
           </div>
         )}
 
+        {/* Practice Mode Toggle */}
+        {selectedRole && (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setIsPractice(!isPractice)}
+              className={`w-full p-4 border rounded-xl transition-all duration-200 text-left ${
+                isPractice
+                  ? 'border-teal-500 bg-teal-50'
+                  : 'border-stone-200 hover:border-stone-300'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🎯</span>
+                    <h3 className="font-medium text-stone-900">Practice Mode</h3>
+                  </div>
+                  <p className="text-xs text-stone-400 mt-1">
+                    Get the same questions and feedback without affecting your profile score
+                  </p>
+                </div>
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  isPractice ? 'border-teal-500 bg-teal-500' : 'border-stone-300'
+                }`}>
+                  {isPractice && (
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
         {/* Interview Info */}
         {selectedRole && (
           <div className="mb-10 py-5 border-t border-stone-100">
@@ -326,8 +364,17 @@ export default function InterviewSelectPage() {
               {VERTICALS[selectedVertical!].roles.find(r => r.value === selectedRole)?.technical && (
                 <li>1 coding challenge</li>
               )}
-              <li>Visible to all employers in this vertical</li>
-              <li>Interview monthly to show your growth</li>
+              {isPractice ? (
+                <>
+                  <li className="text-teal-600">Practice only - won&apos;t count toward your profile</li>
+                  <li className="text-teal-600">Get immediate AI feedback on your answers</li>
+                </>
+              ) : (
+                <>
+                  <li>Visible to all employers in this vertical</li>
+                  <li>Interview monthly to show your growth</li>
+                </>
+              )}
             </ul>
           </div>
         )}
@@ -341,11 +388,11 @@ export default function InterviewSelectPage() {
         <div className="flex justify-center">
           <Button
             size="lg"
-            className="bg-stone-900 hover:bg-stone-800 text-white rounded-full px-10"
+            className={`${isPractice ? 'bg-teal-600 hover:bg-teal-700' : 'bg-stone-900 hover:bg-stone-800'} text-white rounded-full px-10`}
             disabled={!selectedVertical || !selectedRole || isStarting}
             onClick={startInterview}
           >
-            {isStarting ? 'Starting...' : 'Start Interview'}
+            {isStarting ? 'Starting...' : isPractice ? 'Start Practice' : 'Start Interview'}
           </Button>
         </div>
       </div>

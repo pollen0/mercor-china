@@ -1174,9 +1174,11 @@ Respond in JSON format:
                 profile_parts.append(f"- Education: {edu_summary}")
 
         if github_data:
-            repos = github_data.get("repos", [])
+            # Support both key formats: top_repos (from github.py) and repos (legacy)
+            repos = github_data.get("top_repos", github_data.get("repos", []))
             languages = github_data.get("languages", {})
-            contributions = github_data.get("totalContributions", 0)
+            # Support both: total_contributions (from github.py) and totalContributions (legacy camelCase)
+            contributions = github_data.get("total_contributions", github_data.get("totalContributions", 0))
             profile_parts.append(f"\nGITHUB DATA:")
             profile_parts.append(f"- Repositories: {len(repos)}")
             profile_parts.append(f"- Languages: {', '.join(list(languages.keys())[:5])}")

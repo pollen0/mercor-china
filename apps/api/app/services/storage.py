@@ -170,12 +170,12 @@ class StorageService:
         except ClientError as e:
             raise Exception(f"Failed to generate upload URL: {e}")
 
-    async def delete_video(self, key: str) -> bool:
+    async def delete_object(self, key: str) -> bool:
         """
-        Delete a video from R2 storage.
+        Delete any object from R2 storage.
 
         Args:
-            key: Storage key of the video to delete
+            key: Storage key of the object to delete
 
         Returns:
             True if deletion was successful
@@ -187,7 +187,19 @@ class StorageService:
             )
             return True
         except ClientError as e:
-            raise Exception(f"Failed to delete video: {e}")
+            raise Exception(f"Failed to delete object: {e}")
+
+    async def delete_video(self, key: str) -> bool:
+        """
+        Delete a video from R2 storage. Alias for delete_object().
+
+        Args:
+            key: Storage key of the video to delete
+
+        Returns:
+            True if deletion was successful
+        """
+        return await self.delete_object(key)
 
     async def video_exists(self, key: str) -> bool:
         """

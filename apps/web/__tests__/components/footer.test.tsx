@@ -53,7 +53,7 @@ describe('Footer', () => {
       render(<Footer variant="default" />)
 
       expect(screen.getByRole('link', { name: /create account/i })).toHaveAttribute('href', '/register')
-      expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login')
+      expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/candidate/login')
     })
 
     it('shows employer links', () => {

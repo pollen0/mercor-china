@@ -128,7 +128,7 @@ export default function TalentProfilePage() {
   useEffect(() => {
     const token = localStorage.getItem('employer_token')
     if (!token) {
-      router.push('/login')
+      router.push('/employer/login')
       return
     }
 
@@ -155,7 +155,7 @@ export default function TalentProfilePage() {
   const handleLogout = () => {
     localStorage.removeItem('employer_token')
     localStorage.removeItem('employer')
-    router.push('/login')
+    router.push('/employer/login')
   }
 
   const fetchProfile = async () => {

@@ -445,7 +445,7 @@ async def reset_password(
             )
 
         # Update password
-        user.password = pwd_context.hash(data.new_password)
+        user.password_hash = pwd_context.hash(data.new_password)
         user.password_reset_token = None
         user.password_reset_expires_at = None
         db.commit()

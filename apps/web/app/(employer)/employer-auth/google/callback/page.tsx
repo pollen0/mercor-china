@@ -163,7 +163,7 @@ function EmployerGoogleCallbackContent() {
                 Return to Dashboard
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/employer/login">
               <Button variant="outline" className="w-full">
                 Log In Again
               </Button>

@@ -332,18 +332,49 @@ async def generate_progressive_questions(
     # Resume summary
     if candidate.resume_parsed_data:
         resume_data = candidate.resume_parsed_data
-        # Handle both flat and nested resume formats
+
+        # Handle skills (can be list or string)
         skills = resume_data.get('skills', [])
         if isinstance(skills, list):
-            skills_str = ', '.join(skills) if skills else 'Not specified'
+            skills_str = ', '.join(skills[:15]) if skills else 'Not specified'  # Limit to 15 skills
         else:
             skills_str = str(skills)
 
+        # Handle education (list of objects with school, degree, field, etc.)
+        education = resume_data.get('education', [])
+        if isinstance(education, list) and education:
+            edu_str = '; '.join([
+                f"{e.get('degree', 'Degree')} in {e.get('field', e.get('major', 'Field'))} from {e.get('school', e.get('institution', 'School'))}"
+                for e in education[:3]  # Limit to 3 entries
+            ])
+        else:
+            edu_str = str(education) if education else 'Not specified'
+
+        # Handle experience (list of objects with company, title, description, etc.)
+        experience = resume_data.get('experience', [])
+        if isinstance(experience, list) and experience:
+            exp_str = '; '.join([
+                f"{e.get('title', 'Role')} at {e.get('company', 'Company')}"
+                for e in experience[:4]  # Limit to 4 entries
+            ])
+        else:
+            exp_str = str(experience) if experience else 'Not specified'
+
+        # Handle projects (list of objects with name, description, technologies, etc.)
+        projects = resume_data.get('projects', [])
+        if isinstance(projects, list) and projects:
+            proj_str = '; '.join([
+                f"{p.get('name', 'Project')}: {p.get('description', '')[:80]}" if p.get('description') else p.get('name', 'Project')
+                for p in projects[:4]  # Limit to 4 projects
+            ])
+        else:
+            proj_str = str(projects) if projects else 'Not specified'
+
         candidate_data["resume_summary"] = f"""
-- Education: {resume_data.get('education', resume_data.get('education_summary', 'Not specified'))}
+- Education: {edu_str}
 - Skills: {skills_str}
-- Experience: {resume_data.get('experience_summary', resume_data.get('experience', 'Not specified'))}
-- Projects: {resume_data.get('projects_summary', resume_data.get('projects', 'Not specified'))}
+- Experience: {exp_str}
+- Projects: {proj_str}
 """
     elif candidate.resume_raw_text:
         # Use raw resume text if parsed data isn't available
@@ -358,7 +389,8 @@ async def generate_progressive_questions(
     # GitHub summary
     if candidate.github_username and candidate.github_data:
         gh_data = candidate.github_data
-        repos = gh_data.get('repos', [])[:5]  # Top 5 repos
+        # Support both key formats: top_repos (from github.py) and repos (legacy)
+        repos = gh_data.get('top_repos', gh_data.get('repos', []))[:5]  # Top 5 repos
         languages = gh_data.get('languages', {})
 
         repos_summary = "\n".join([

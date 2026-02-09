@@ -61,6 +61,8 @@ class ResponseSubmitResult(BaseModel):
     question_index: int
     status: str
     video_url: Optional[str] = None
+    is_resubmission: bool = False  # True if this overwrote a previous response
+    previous_score: Optional[float] = None  # Previous score if resubmitting
 
 
 class ScoreDetails(BaseModel):
@@ -121,6 +123,7 @@ class InterviewResults(BaseModel):
     recommendation: Optional[str] = None
     overall_strengths: list[str] = []
     overall_concerns: list[str] = []
+    overall_improvements: list[str] = []  # Areas for candidate improvement
     responses: list[ResponseDetail] = []
 
 
@@ -238,6 +241,7 @@ class VerticalInterviewStart(BaseModel):
     candidate_id: str
     vertical: str  # 'engineering', 'data', 'business', or 'design'
     role_type: str  # e.g., 'software_engineer', 'data_analyst', 'product_manager'
+    is_practice: bool = False  # Practice mode - doesn't count toward profile, immediate feedback
 
 
 class VerticalProfileResponse(BaseModel):

@@ -205,35 +205,52 @@ export default function InterviewRoomPage() {
           handleContinueAfterFeedback()
         }
       } else {
-        // Non-practice mode: move to next question IMMEDIATELY
-        // No waiting for follow-ups - this makes transitions instant
+        // Non-practice mode: handle follow-ups properly
         const questionJustAnswered = currentQuestionIndex
+        const isLastQuestion = currentQuestionIndex >= questions.length - 1
 
-        if (currentQuestionIndex < questions.length - 1) {
-          // Move to next question immediately - no blocking
-          setCurrentQuestionIndex(prev => prev + 1)
-          setRoomState('question')
-        } else {
-          // Last question - complete the interview
-          setUploadProgress('Completing interview...')
-          await interviewApi.complete(sessionId)
-          router.push(`/interview/${sessionId}/complete`)
-        }
+        if (isLastQuestion) {
+          // For the last question, check follow-ups BEFORE completing
+          // This prevents the race condition where we navigate away before showing follow-ups
+          setRoomState('checking_followup')
+          setUploadProgress('Checking for follow-up questions...')
 
-        // Check for follow-ups in TRUE background (fire and forget, don't await)
-        // This allows the UI to transition immediately while follow-ups are checked
-        interviewApi.getFollowups(sessionId, questionJustAnswered)
-          .then(followups => {
+          try {
+            const followups = await interviewApi.getFollowups(sessionId, questionJustAnswered)
             if (followups.hasFollowups && followups.followupQuestions.length > 0) {
-              // Show follow-up prompt if we're still on the question state
+              // Show follow-up prompt - don't complete yet
               setFollowupData(followups)
               setRoomState('followup_prompt')
+            } else {
+              // No follow-ups, complete the interview
+              setUploadProgress('Completing interview...')
+              await interviewApi.complete(sessionId)
+              router.push(`/interview/${sessionId}/complete`)
             }
-          })
-          .catch(err => {
-            console.error('Failed to check follow-ups (background):', err)
-            // Silent failure - user continues normally
-          })
+          } catch (err) {
+            console.error('Failed to check follow-ups:', err)
+            // On error, complete the interview anyway
+            setUploadProgress('Completing interview...')
+            await interviewApi.complete(sessionId)
+            router.push(`/interview/${sessionId}/complete`)
+          }
+        } else {
+          // Not last question - move to next immediately
+          setCurrentQuestionIndex(prev => prev + 1)
+          setRoomState('question')
+
+          // Check for follow-ups in background (fire and forget)
+          interviewApi.getFollowups(sessionId, questionJustAnswered)
+            .then(followups => {
+              if (followups.hasFollowups && followups.followupQuestions.length > 0) {
+                setFollowupData(followups)
+                setRoomState('followup_prompt')
+              }
+            })
+            .catch(err => {
+              console.error('Failed to check follow-ups (background):', err)
+            })
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload video')

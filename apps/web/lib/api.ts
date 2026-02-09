@@ -143,6 +143,20 @@ export interface ParsedResumeData {
     technologies?: string[]
     highlights?: string[]
   }>
+  activities?: Array<{
+    name: string
+    organization?: string
+    role?: string
+    description?: string
+    startDate?: string
+    endDate?: string
+  }>
+  awards?: Array<{
+    name: string
+    issuer?: string
+    date?: string
+    description?: string
+  }>
   languages?: string[]
   certifications?: string[]
 }
@@ -591,6 +605,20 @@ export function transformParsedResume(data: unknown): ParsedResumeData | undefin
       description: proj.description as string | undefined,
       technologies: (proj.technologies as string[]) || [],
       highlights: (proj.highlights as string[]) || [],
+    })),
+    activities: ((d.activities as Array<Record<string, unknown>>) || []).map(act => ({
+      name: act.name as string,
+      organization: act.organization as string | undefined,
+      role: act.role as string | undefined,
+      description: act.description as string | undefined,
+      startDate: (act.start_date || act.startDate) as string | undefined,
+      endDate: (act.end_date || act.endDate) as string | undefined,
+    })),
+    awards: ((d.awards as Array<Record<string, unknown>>) || []).map(awd => ({
+      name: awd.name as string,
+      issuer: awd.issuer as string | undefined,
+      date: awd.date as string | undefined,
+      description: awd.description as string | undefined,
     })),
     languages: (d.languages as string[]) || [],
     certifications: (d.certifications as string[]) || [],
@@ -1118,7 +1146,7 @@ export const candidateApi = {
           updatedAt: r.updated_at || '',
           isFork: r.is_fork || false,
           owner: r.owner,
-          isOwner: r.is_owner !== false,  // default to true if not specified
+          isOwner: r.is_owner === true,  // default to true if not specified
         })),
         languages: response.languages || {},
         totalContributions: response.total_contributions,
@@ -1175,7 +1203,7 @@ export const candidateApi = {
         updatedAt: r.updated_at || '',
         isFork: r.is_fork || false,
         owner: r.owner,
-        isOwner: r.is_owner !== false,
+        isOwner: r.is_owner === true,
       })),
       languages: response.github_data.languages || {},
       totalContributions: response.github_data.total_contributions,
@@ -2685,7 +2713,8 @@ export const verticalApi = {
   startVerticalInterview: async (
     candidateId: string,
     vertical: Vertical,
-    roleType: RoleType
+    roleType: RoleType,
+    isPractice: boolean = false
   ): Promise<InterviewStartResponse> => {
     const response = await apiRequest<{
       session_id: string
@@ -2706,6 +2735,7 @@ export const verticalApi = {
         candidate_id: candidateId,
         vertical,
         role_type: roleType,
+        is_practice: isPractice,
       }),
     })
 

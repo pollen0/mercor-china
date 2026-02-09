@@ -46,6 +46,12 @@ class CodingChallenge(Base):
     # Category (algorithms, data-structures, etc.)
     category = Column(String, nullable=True)
 
+    # Target vertical (engineering, data, etc.) - for filtering challenges by interview type
+    vertical = Column(String, nullable=True)
+
+    # Target role types (comma-separated, e.g. "software_engineer,backend_engineer")
+    role_types = Column(String, nullable=True)
+
     # Active status
     is_active = Column(Boolean, default=True)
 

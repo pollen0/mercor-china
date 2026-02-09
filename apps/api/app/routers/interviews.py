@@ -70,6 +70,50 @@ def generate_cuid(prefix: str = "i") -> str:
     return f"{prefix}{uuid.uuid4().hex[:24]}"
 
 
+def select_coding_challenge(db: Session, vertical: str, role_type: str) -> Optional[CodingChallenge]:
+    """
+    Select a coding challenge appropriate for the given vertical and role.
+    Uses random selection from matching challenges to provide variety.
+    Falls back to any active challenge if no exact match found.
+    """
+    from sqlalchemy.sql.expression import func as sql_func
+
+    # Try to find challenges matching the vertical
+    matching_challenges = db.query(CodingChallenge).filter(
+        CodingChallenge.is_active == True,
+        CodingChallenge.vertical == vertical
+    ).all()
+
+    # If we have matches, filter further by role_type if specified in the challenge
+    if matching_challenges:
+        role_specific = [
+            c for c in matching_challenges
+            if c.role_types is None or role_type in (c.role_types or '').split(',')
+        ]
+        if role_specific:
+            matching_challenges = role_specific
+
+    # If still no matches, try challenges with no specific vertical (generic)
+    if not matching_challenges:
+        matching_challenges = db.query(CodingChallenge).filter(
+            CodingChallenge.is_active == True,
+            CodingChallenge.vertical.is_(None)
+        ).all()
+
+    # Final fallback: any active challenge
+    if not matching_challenges:
+        matching_challenges = db.query(CodingChallenge).filter(
+            CodingChallenge.is_active == True
+        ).all()
+
+    # Randomly select from available challenges
+    if matching_challenges:
+        import random
+        return random.choice(matching_challenges)
+
+    return None
+
+
 @router.post("/start", response_model=InterviewStartResponse)
 @limiter.limit(RateLimits.INTERVIEW_START)
 async def start_interview(
@@ -84,6 +128,13 @@ async def start_interview(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Candidate not found"
+        )
+
+    # Enforce email verification for non-practice interviews
+    if not data.is_practice and not candidate.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email address before starting an interview. Check your inbox for the verification email."
         )
 
     # If job_id provided, verify job exists
@@ -391,13 +442,22 @@ async def start_vertical_interview(
             detail=f"Invalid role type: {data.role_type}"
         )
 
-    # Check for existing vertical profile
-    profile = db.query(CandidateVerticalProfile).filter(
-        CandidateVerticalProfile.candidate_id == candidate.id,
-        CandidateVerticalProfile.vertical == vertical
-    ).first()
+    # Practice mode: skip profile checks and cooldowns
+    is_practice = data.is_practice
 
-    if profile:
+    # For practice mode, create a standalone session without affecting the vertical profile
+    if is_practice:
+        logger.info(f"Starting practice interview for candidate {candidate.id}, vertical={vertical.value}, role={role_type.value}")
+        # Skip directly to creating a new practice session (handled below)
+        profile = None
+    else:
+        # Check for existing vertical profile
+        profile = db.query(CandidateVerticalProfile).filter(
+            CandidateVerticalProfile.candidate_id == candidate.id,
+            CandidateVerticalProfile.vertical == vertical
+        ).first()
+
+    if profile and not is_practice:
         # Check if there's an in-progress interview
         if profile.status == VerticalProfileStatus.IN_PROGRESS:
             # Return existing session
@@ -453,7 +513,7 @@ async def start_vertical_interview(
 
                 # Add coding challenge for technical roles
                 if role_type.value in TECHNICAL_ROLES:
-                    coding_challenge = db.query(CodingChallenge).first()  # Get any challenge for now
+                    coding_challenge = select_coding_challenge(db, vertical.value, role_type.value)
                     if coding_challenge:
                         question_list.append(QuestionInfo(
                             index=len(question_list),
@@ -477,11 +537,16 @@ async def start_vertical_interview(
             if last_interview:
                 cooldown_end = last_interview + timedelta(days=MONTHLY_COOLDOWN_DAYS)
                 if datetime.utcnow() < cooldown_end:
-                    days_remaining = (cooldown_end - datetime.utcnow()).days + 1
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"You can interview again in {days_remaining} days. Next available: {cooldown_end.strftime('%B %d, %Y')}"
-                    )
+                    # Calculate remaining time properly (don't add 1 - causes off-by-one showing "1 day" when eligible)
+                    time_remaining = cooldown_end - datetime.utcnow()
+                    days_remaining = time_remaining.days
+                    # Only show message if there's actually time remaining
+                    if days_remaining > 0 or time_remaining.seconds > 0:
+                        display_days = max(1, days_remaining) if time_remaining.seconds > 0 and days_remaining == 0 else days_remaining
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"You can interview again in {display_days} day{'s' if display_days != 1 else ''}. Next available: {cooldown_end.strftime('%B %d, %Y')}"
+                        )
 
     # Import progressive question system
     from ..services.progressive_questions import (
@@ -540,7 +605,7 @@ async def start_vertical_interview(
     session = InterviewSession(
         id=generate_cuid("i"),
         status=InterviewStatus.IN_PROGRESS,
-        is_practice=False,
+        is_practice=is_practice,  # Mark as practice if requested
         is_vertical_interview=True,
         vertical=vertical,
         role_type=role_type,
@@ -552,23 +617,24 @@ async def start_vertical_interview(
     db.add(session)
     db.flush()  # Get session ID
 
-    # Create or update vertical profile
-    if not profile:
-        profile = CandidateVerticalProfile(
-            id=generate_cuid("vp"),
-            candidate_id=candidate.id,
-            vertical=vertical,
-            role_type=role_type,
-            interview_session_id=session.id,
-            status=VerticalProfileStatus.IN_PROGRESS,
-            total_interviews=0,
-        )
-        db.add(profile)
-    else:
-        # Update for retake
-        profile.interview_session_id = session.id
-        profile.role_type = role_type  # Allow changing role within vertical on retake
-        profile.status = VerticalProfileStatus.IN_PROGRESS
+    # Create or update vertical profile (skip for practice mode)
+    if not is_practice:
+        if not profile:
+            profile = CandidateVerticalProfile(
+                id=generate_cuid("vp"),
+                candidate_id=candidate.id,
+                vertical=vertical,
+                role_type=role_type,
+                interview_session_id=session.id,
+                status=VerticalProfileStatus.IN_PROGRESS,
+                total_interviews=0,
+            )
+            db.add(profile)
+        else:
+            # Update for retake
+            profile.interview_session_id = session.id
+            profile.role_type = role_type  # Allow changing role within vertical on retake
+            profile.status = VerticalProfileStatus.IN_PROGRESS
 
     db.commit()
     db.refresh(session)
@@ -598,7 +664,7 @@ async def start_vertical_interview(
 
     # Add coding challenge for technical roles
     if role_type.value in TECHNICAL_ROLES:
-        coding_challenge = db.query(CodingChallenge).first()  # Get any challenge
+        coding_challenge = select_coding_challenge(db, vertical.value, role_type.value)
         if coding_challenge:
             question_list.append(QuestionInfo(
                 index=len(question_list),
@@ -625,9 +691,9 @@ async def start_vertical_interview(
     return InterviewStartResponse(
         session_id=session.id,
         questions=question_list,
-        job_title=f"{vertical.value.replace('_', ' ').title()} - {role_type.value.replace('_', ' ').title()}",
+        job_title=f"{'[Practice] ' if is_practice else ''}{vertical.value.replace('_', ' ').title()} - {role_type.value.replace('_', ' ').title()}",
         company_name="Pathway Talent Pool",
-        is_practice=False,
+        is_practice=is_practice,
     )
 
 
@@ -877,12 +943,33 @@ async def submit_response(
         InterviewResponse.question_index == question_index
     ).first()
 
+    is_resubmission = False
+    previous_score = None
+
     if existing_response:
-        # Update existing response
+        # Debounce check: reject rapid resubmissions (within 5 seconds)
+        if existing_response.created_at:
+            time_since_last = (datetime.utcnow() - existing_response.created_at).total_seconds()
+            if time_since_last < 5:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Please wait a moment before resubmitting. Your previous submission is still being processed."
+                )
+
+        # Track resubmission info for frontend awareness
+        is_resubmission = True
+        previous_score = existing_response.ai_score
+
+        # Log the resubmission for monitoring
+        logger.info(f"Resubmission detected: session={session_id}, question={question_index}, "
+                   f"previous_score={previous_score}, time_since_last={time_since_last if existing_response.created_at else 'unknown'}s")
+
+        # Update existing response (clear previous analysis)
         existing_response.video_url = storage_key
         existing_response.transcription = None
         existing_response.ai_score = None
         existing_response.ai_analysis = None
+        existing_response.created_at = datetime.utcnow()  # Update timestamp for debounce
         response = existing_response
     else:
         # Create new response
@@ -918,6 +1005,8 @@ async def submit_response(
         question_index=question_index,
         status="processing",
         video_url=storage_service.get_signed_url(storage_key),
+        is_resubmission=is_resubmission,
+        previous_score=previous_score,
     )
 
 
@@ -955,17 +1044,24 @@ async def complete_interview(
             detail="Interview is already completed"
         )
 
+    # Calculate total score from responses
+    responses = db.query(InterviewResponse).filter(
+        InterviewResponse.session_id == session_id
+    ).all()
+
+    # Validate that at least one response exists
+    if not responses:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot complete interview without any submitted responses. Please record at least one video answer."
+        )
+
     # Invalidate any existing cache for this session
     cache_service.invalidate_interview(session_id)
 
     # Update session status
     session.status = InterviewStatus.COMPLETED
     session.completed_at = datetime.utcnow()
-
-    # Calculate total score from responses
-    responses = db.query(InterviewResponse).filter(
-        InterviewResponse.session_id == session_id
-    ).all()
 
     scored_responses = [r for r in responses if r.ai_score is not None]
     if scored_responses:

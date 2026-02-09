@@ -26,7 +26,7 @@ export default function InterviewDetailPage() {
       try {
         const token = localStorage.getItem('employer_token')
         if (!token) {
-          router.push('/login')
+          router.push('/employer/login')
           return
         }
 

@@ -154,6 +154,38 @@ class TranscriptService:
 
         return "\n\n".join(text_parts)
 
+    def extract_pdf_metadata(self, file_bytes: bytes) -> dict:
+        """
+        Extract metadata from PDF file for verification purposes.
+
+        Returns dict with:
+        - Creator: Software that created the PDF
+        - Producer: PDF producer software
+        - CreationDate: When PDF was created
+        - ModDate: When PDF was last modified
+        - Author: Document author
+        """
+        try:
+            import pdfplumber
+        except ImportError:
+            logger.warning("pdfplumber not installed, skipping metadata extraction")
+            return {}
+
+        try:
+            with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                metadata = pdf.metadata or {}
+                # Normalize keys to common format
+                result = {}
+                for key in ["Creator", "Producer", "CreationDate", "ModDate", "Author", "Title"]:
+                    # Check various case formats
+                    value = metadata.get(key) or metadata.get(key.lower()) or metadata.get(f"/{key}")
+                    if value:
+                        result[key] = str(value)
+                return result
+        except Exception as e:
+            logger.warning(f"Failed to extract PDF metadata: {e}")
+            return {}
+
     async def parse_transcript(self, raw_text: str) -> ParsedTranscript:
         """
         Parse raw transcript text using AI to extract structured data.

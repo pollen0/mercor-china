@@ -219,7 +219,7 @@ and recognitions into the "awards" array. Look in sections like "Activities", "L
 "Organizations", "Extracurriculars", "Awards", "Honors", "Achievements", etc."""
 
         try:
-            parsed = await self._call_claude(system_prompt, user_prompt, max_tokens=3000)
+            parsed = await self._call_claude(system_prompt, user_prompt, max_tokens=4000)
 
             return ParsedResume(
                 name=parsed.get("name"),

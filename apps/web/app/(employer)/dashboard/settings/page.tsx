@@ -71,7 +71,7 @@ export default function EmployerSettingsPage() {
       try {
         const token = localStorage.getItem('employer_token')
         if (!token) {
-          router.push('/login')
+          router.push('/employer/login')
           return
         }
 
@@ -85,7 +85,7 @@ export default function EmployerSettingsPage() {
         console.error('Failed to load profile:', err)
         if (err instanceof Error && err.message.includes('401')) {
           localStorage.removeItem('employer_token')
-          router.push('/login')
+          router.push('/employer/login')
         }
       } finally {
         setIsLoading(false)
