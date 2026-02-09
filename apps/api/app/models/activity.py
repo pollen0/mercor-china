@@ -4,7 +4,7 @@ Stores clubs/organizations from universities with prestige rankings and metadata
 Similar to course difficulty ratings but for extracurricular activities.
 """
 
-from sqlalchemy import Column, String, DateTime, Float, Integer, Boolean, Text, Index, ForeignKey
+from sqlalchemy import Column, String, DateTime, Date, Float, Integer, Boolean, Text, Index, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -127,6 +127,11 @@ class CandidateActivity(Base):
     end_date = Column(String, nullable=True)  # "Present", "Spring 2024"
     duration_semesters = Column(Integer, nullable=True)  # Calculated duration
 
+    # Parsed dates for querying (populated from start_date/end_date strings)
+    parsed_start_date = Column(Date, nullable=True)
+    parsed_end_date = Column(Date, nullable=True)
+    is_current = Column(Boolean, default=False, nullable=True)  # True if end_date = "Present"
+
     # Achievements within the activity
     achievements = Column(JSONB, nullable=True)  # List of specific accomplishments
 
@@ -168,8 +173,12 @@ class CandidateAward(Base):
     # Additional details
     description = Column(Text, nullable=True)
 
+    # Parsed date for querying (populated from date string)
+    parsed_date = Column(Date, nullable=True)
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
     candidate = relationship("Candidate", back_populates="awards")

@@ -148,6 +148,11 @@ class Candidate(Base):
     awards = relationship("CandidateAward", back_populates="candidate", cascade="all, delete-orphan")
     profile_tokens = relationship("ProfileToken", back_populates="candidate", cascade="all, delete-orphan")
 
+    # Growth tracking relationships
+    resume_versions = relationship("ResumeVersion", back_populates="candidate", cascade="all, delete-orphan", order_by="desc(ResumeVersion.version_number)")
+    github_analysis_history = relationship("GitHubAnalysisHistory", back_populates="candidate", cascade="all, delete-orphan", order_by="desc(GitHubAnalysisHistory.analyzed_at)")
+    profile_change_logs = relationship("ProfileChangeLog", back_populates="candidate", cascade="all, delete-orphan", order_by="desc(ProfileChangeLog.changed_at)")
+
     # Indexes for common query patterns (talent pool filtering)
     __table_args__ = (
         Index('ix_candidates_university', 'university'),

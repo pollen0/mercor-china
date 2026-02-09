@@ -61,6 +61,8 @@ from ..config import settings
 from ..services.storage import storage_service
 from ..services.cache import cache_service
 from ..services.matching import matching_service
+from ..services.growth_tracking import growth_tracking_service
+from ..schemas.growth import GrowthTimelineResponse
 from ..utils.rate_limit import limiter, RateLimits
 import logging
 
@@ -2715,6 +2717,62 @@ async def update_talent_pool_status(
         "job_id": job.id,
         "job_title": job.title,
     }
+
+
+@router.get("/talent-pool/{profile_id}/growth-timeline", response_model=GrowthTimelineResponse)
+async def get_talent_pool_growth_timeline(
+    profile_id: str,
+    time_range: str = "1y",
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """
+    Get growth timeline for a talent pool candidate.
+    Shows interviews, resume updates, GitHub changes, and profile updates over time.
+
+    Args:
+        profile_id: The vertical profile ID or candidate ID
+        time_range: Time range filter - "6m", "1y", "2y", or "all" (default: "1y")
+
+    Returns:
+        Growth timeline with summary statistics and chronological events
+    """
+    # First try to find by profile ID
+    profile = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.id == profile_id,
+        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
+    ).first()
+
+    if profile:
+        candidate_id = profile.candidate_id
+    else:
+        # Try to find by candidate ID directly
+        candidate = db.query(Candidate).filter(Candidate.id == profile_id).first()
+        if not candidate:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Candidate profile not found"
+            )
+        candidate_id = candidate.id
+
+    # Validate time_range
+    if time_range not in ("6m", "1y", "2y", "all"):
+        time_range = "1y"
+
+    # Get the growth timeline
+    timeline = growth_tracking_service.get_growth_timeline(
+        db=db,
+        candidate_id=candidate_id,
+        time_range=time_range
+    )
+
+    if "error" in timeline:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=timeline["error"]
+        )
+
+    return timeline
 
 
 @router.post("/talent-pool/{profile_id}/contact")

@@ -9,6 +9,7 @@ import { DashboardNavbar } from '@/components/layout/navbar'
 import { Container, PageWrapper } from '@/components/layout/container'
 import { talentPoolApi, employerApi, employerCalendarApi, type TalentProfileDetail, type MatchStatus, type CalendarStatus, type Job } from '@/lib/api'
 import { ScheduleInterviewModal } from '@/components/employer/schedule-interview-modal'
+import { GrowthTimeline } from '@/components/employer/growth-timeline'
 
 // Use the TalentProfileDetail type from API
 type TalentProfile = TalentProfileDetail & {
@@ -580,6 +581,16 @@ ${companyName}`)
                 </CardContent>
               </Card>
             )}
+
+            {/* Growth Timeline - Shows candidate progress over time */}
+            <Card>
+              <CardContent className="py-4">
+                <GrowthTimeline
+                  candidateId={candidate.id}
+                  profileId={profile.profile.id}
+                />
+              </CardContent>
+            </Card>
 
             {/* Profile Score Breakdown (for candidates without interviews) */}
             {profile.profileScore && !profile.profile.bestScore && (

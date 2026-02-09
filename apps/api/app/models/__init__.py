@@ -22,6 +22,10 @@ from .activity import (
 )
 from .vibe_code_session import VibeCodeSession, SessionSource, AnalysisStatus
 from .referral import Referral, ReferralStatus
+# Growth tracking models
+from .resume_version import ResumeVersion
+from .github_analysis_history import GitHubAnalysisHistory
+from .profile_change_log import ProfileChangeLog, ProfileChangeType
 from .ml_scoring import (
     # Enums
     ScoringEventType, LabelSource, OutcomeType, OutcomeStage, CompanyTier, ExperimentStatus,
@@ -117,4 +121,9 @@ __all__ = [
     # Referral system
     "Referral",
     "ReferralStatus",
+    # Growth tracking
+    "ResumeVersion",
+    "GitHubAnalysisHistory",
+    "ProfileChangeLog",
+    "ProfileChangeType",
 ]
