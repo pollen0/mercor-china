@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { UploadProgress } from '@/components/ui/upload-progress'
 import { DocumentPreview } from '@/components/ui/document-preview'
 import { CustomSelect } from '@/components/ui/custom-select'
-import { candidateApi, referralApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward, type ReferralStats, type ReferralEntry } from '@/lib/api'
+import { candidateApi, referralApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward, type ClubOption, type ReferralStats, type ReferralEntry } from '@/lib/api'
 import { useDashboardData, useSkillGap } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
 import VibeCodeSection from '@/components/dashboard/vibe-code-section'
@@ -2057,6 +2057,7 @@ function DashboardContent() {
       {showActivityForm && (
         <ActivityFormModal
           activity={editingActivity}
+          universityId={candidateProfile?.university || ''}
           onSave={saveActivity}
           onClose={() => { setShowActivityForm(false); setEditingActivity(null); }}
         />
@@ -2083,19 +2084,66 @@ function DashboardContent() {
   )
 }
 
-// Activity Form Modal - Memoized to prevent unnecessary re-renders
+// Activity Form Modal - With school-specific club picker
 const ActivityFormModal = memo(function ActivityFormModal({
   activity,
+  universityId,
   onSave,
   onClose,
 }: {
   activity: Activity | null
+  universityId: string
   onSave: (activity: Activity) => void
   onClose: () => void
 }) {
   const [form, setForm] = useState<Activity>(
     activity || { id: '', activityName: '', organization: '', role: '', description: '' }
   )
+  const [clubs, setClubs] = useState<ClubOption[]>([])
+  const [clubSearch, setClubSearch] = useState('')
+  const [showClubDropdown, setShowClubDropdown] = useState(false)
+  const [isCustom, setIsCustom] = useState(!!activity)
+  const [loadingClubs, setLoadingClubs] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (universityId && !activity) {
+      setLoadingClubs(true)
+      candidateApi.getClubsByUniversity(universityId).then(data => {
+        setClubs(data)
+        setLoadingClubs(false)
+      }).catch(() => setLoadingClubs(false))
+    }
+  }, [universityId, activity])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowClubDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const filteredClubs = clubs.filter(c =>
+    c.name.toLowerCase().includes(clubSearch.toLowerCase()) ||
+    (c.short_name && c.short_name.toLowerCase().includes(clubSearch.toLowerCase()))
+  )
+
+  const selectClub = (club: ClubOption) => {
+    setForm({ ...form, activityName: club.name, clubId: club.id, organization: universityId })
+    setClubSearch('')
+    setShowClubDropdown(false)
+    setIsCustom(false)
+  }
+
+  const switchToCustom = () => {
+    setIsCustom(true)
+    setForm({ ...form, activityName: clubSearch || '', clubId: undefined })
+    setShowClubDropdown(false)
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -2104,24 +2152,81 @@ const ActivityFormModal = memo(function ActivityFormModal({
           <CardTitle>{activity ? 'Edit Activity' : 'Add Activity'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="activityName">Activity/Organization Name *</Label>
-            <Input
-              id="activityName"
-              value={form.activityName}
-              onChange={(e) => setForm({ ...form, activityName: e.target.value })}
-              placeholder="e.g., Computer Science Club"
-            />
-          </div>
-          <div>
-            <Label htmlFor="organization">Institution/Affiliation</Label>
-            <Input
-              id="organization"
-              value={form.organization || ''}
-              onChange={(e) => setForm({ ...form, organization: e.target.value })}
-              placeholder="e.g., UC Berkeley"
-            />
-          </div>
+          {/* Club Picker (for new activities when university is set) */}
+          {!activity && clubs.length > 0 && !isCustom ? (
+            <div ref={dropdownRef}>
+              <Label>Select Club/Organization *</Label>
+              <div className="relative">
+                <Input
+                  value={clubSearch || form.activityName}
+                  onChange={(e) => {
+                    setClubSearch(e.target.value)
+                    setShowClubDropdown(true)
+                    if (form.clubId) {
+                      setForm({ ...form, activityName: '', clubId: undefined })
+                    }
+                  }}
+                  onFocus={() => setShowClubDropdown(true)}
+                  placeholder="Search your school's clubs..."
+                />
+                {form.clubId && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-teal-700 text-xs font-medium">Matched</span>
+                )}
+                {showClubDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-stone-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {loadingClubs ? (
+                      <div className="px-3 py-2 text-sm text-stone-500">Loading clubs...</div>
+                    ) : (
+                      <>
+                        {filteredClubs.slice(0, 20).map(club => (
+                          <button
+                            key={club.id}
+                            type="button"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-stone-50 flex items-center justify-between"
+                            onClick={() => selectClub(club)}
+                          >
+                            <span className="truncate">{club.name}</span>
+                            {club.is_selective && (
+                              <span className="text-xs text-teal-700 ml-2 shrink-0">Selective</span>
+                            )}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm text-stone-500 hover:bg-stone-50 border-t border-stone-100"
+                          onClick={switchToCustom}
+                        >
+                          Other (custom entry)
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="activityName">Activity/Organization Name *</Label>
+                {!activity && clubs.length > 0 && isCustom && (
+                  <button
+                    type="button"
+                    className="text-xs text-teal-700 hover:underline"
+                    onClick={() => { setIsCustom(false); setForm({ ...form, activityName: '', clubId: undefined }) }}
+                  >
+                    Browse clubs
+                  </button>
+                )}
+              </div>
+              <Input
+                id="activityName"
+                value={form.activityName}
+                onChange={(e) => setForm({ ...form, activityName: e.target.value })}
+                placeholder="e.g., Computer Science Club"
+              />
+            </div>
+          )}
+
           <div>
             <Label htmlFor="role">Your Role</Label>
             <Input
@@ -2138,7 +2243,7 @@ const ActivityFormModal = memo(function ActivityFormModal({
               value={form.description || ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Brief description of your involvement..."
-              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm resize-none h-20"
+              className="w-full border border-stone-200 rounded-md px-3 py-2 text-sm resize-none h-20"
             />
           </div>
           <div className="flex gap-3 justify-end pt-2">
@@ -2146,7 +2251,7 @@ const ActivityFormModal = memo(function ActivityFormModal({
             <Button
               onClick={() => form.activityName && onSave(form)}
               disabled={!form.activityName}
-              className="bg-gray-900 hover:bg-gray-800 text-white"
+              className="bg-stone-900 hover:bg-stone-800 text-white"
             >
               {activity ? 'Save Changes' : 'Add Activity'}
             </Button>

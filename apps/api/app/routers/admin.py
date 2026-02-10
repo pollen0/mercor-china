@@ -22,6 +22,7 @@ from ..models import (
     MatchStatus,
 )
 from ..models.candidate import CandidateVerticalProfile
+from ..models.referral import Referral
 from ..utils.auth import get_current_employer
 from ..config import settings
 
@@ -571,4 +572,105 @@ async def generate_batch_profile_links(
         "count": len(results),
         "expires_in_days": expires_in_days,
         "links": results,
+    }
+
+
+# ============= Referral Admin Endpoints =============
+
+@router.get("/referrals")
+async def get_admin_referrals(
+    status_filter: Optional[str] = None,
+    limit: int = Query(200, le=500),
+    offset: int = 0,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Get all referrals with referrer/referee details."""
+    query = db.query(Referral)
+    if status_filter:
+        query = query.filter(Referral.status == status_filter)
+
+    total = query.count()
+    referrals = query.order_by(Referral.created_at.desc()).offset(offset).limit(limit).all()
+
+    result = []
+    for ref in referrals:
+        referrer = db.query(Candidate).filter(Candidate.id == ref.referrer_id).first()
+        referee = db.query(Candidate).filter(Candidate.id == ref.referee_id).first() if ref.referee_id else None
+
+        result.append({
+            "id": ref.id,
+            "referrer_id": ref.referrer_id,
+            "referrer_name": referrer.name if referrer else "Unknown",
+            "referrer_email": referrer.email if referrer else "",
+            "referee_id": ref.referee_id,
+            "referee_name": referee.name if referee else ref.referee_email or "Pending",
+            "referee_email": referee.email if referee else ref.referee_email or "",
+            "status": ref.status,
+            "created_at": ref.created_at.isoformat() if ref.created_at else None,
+            "converted_at": ref.converted_at.isoformat() if ref.converted_at else None,
+        })
+
+    return {"referrals": result, "total": total}
+
+
+@router.get("/referrals/leaderboard")
+async def get_referral_leaderboard(
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Get referral leaderboard — top referrers sorted by total referrals."""
+    # Get all candidates who have made at least one referral
+    referrer_stats = (
+        db.query(
+            Referral.referrer_id,
+            func.count(Referral.id).label("total"),
+            func.count(func.nullif(Referral.status != "registered", True)).label("registered"),
+            func.count(func.nullif(Referral.status != "onboarded", True)).label("onboarded"),
+            func.count(func.nullif(Referral.status != "interviewed", True)).label("interviewed"),
+        )
+        .group_by(Referral.referrer_id)
+        .order_by(desc("total"))
+        .all()
+    )
+
+    leaderboard = []
+    for row in referrer_stats:
+        candidate = db.query(Candidate).filter(Candidate.id == row.referrer_id).first()
+        if candidate:
+            leaderboard.append({
+                "referrer_id": candidate.id,
+                "referrer_name": candidate.name,
+                "referrer_email": candidate.email,
+                "referral_code": candidate.referral_code,
+                "total_referrals": row.total,
+                "registered": row.registered,
+                "onboarded": row.onboarded,
+                "interviewed": row.interviewed,
+            })
+
+    return {"leaderboard": leaderboard, "total_referrers": len(leaderboard)}
+
+
+@router.get("/referrals/stats")
+async def get_referral_stats(
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Get overall referral program statistics."""
+    total = db.query(Referral).count()
+    pending = db.query(Referral).filter(Referral.status == "pending").count()
+    registered = db.query(Referral).filter(Referral.status == "registered").count()
+    onboarded = db.query(Referral).filter(Referral.status == "onboarded").count()
+    interviewed = db.query(Referral).filter(Referral.status == "interviewed").count()
+    unique_referrers = db.query(func.count(func.distinct(Referral.referrer_id))).scalar() or 0
+
+    return {
+        "total_referrals": total,
+        "pending": pending,
+        "registered": registered,
+        "onboarded": onboarded,
+        "interviewed": interviewed,
+        "unique_referrers": unique_referrers,
+        "conversion_rate": round(interviewed / total * 100, 1) if total > 0 else 0,
     }

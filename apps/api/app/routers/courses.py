@@ -18,17 +18,8 @@ from ..services.candidate_scoring import candidate_scoring_service
 from ..data.seed_courses import get_all_courses, get_all_universities
 from ..utils.auth import get_current_candidate
 
-# Admin password - must match admin.py
-ADMIN_PASSWORD = "123456789"
-
-def verify_admin(x_admin_password: str = Header(None, alias="X-Admin-Password")):
-    """Verify admin access via password only."""
-    if x_admin_password != ADMIN_PASSWORD:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required. Invalid or missing admin password."
-        )
-    return True
+# Use the same verify_admin from admin router
+from .admin import verify_admin
 
 
 router = APIRouter()
@@ -41,8 +32,21 @@ class UniversityResponse(BaseModel):
     name: str
     short_name: str
     gpa_scale: float
+    uses_plus_minus: bool = True
     tier: int
     cs_ranking: Optional[int]
+
+
+class UniversityDetailResponse(BaseModel):
+    id: str
+    name: str
+    short_name: str
+    gpa_scale: float
+    uses_plus_minus: bool
+    tier: int
+    cs_ranking: Optional[int]
+    course_count: int = 0
+    club_count: int = 0
 
 
 class CourseResponse(BaseModel):
@@ -135,6 +139,30 @@ async def list_universities(db: Session = Depends(get_db)):
     """List all universities in the database."""
     universities = db.query(University).order_by(University.tier, University.name).all()
     return universities
+
+
+@router.get("/universities/detailed", response_model=List[UniversityDetailResponse])
+async def list_universities_detailed(db: Session = Depends(get_db)):
+    """List all universities with course and club counts."""
+    from ..models.activity import Club
+
+    universities = db.query(University).order_by(University.cs_ranking.asc().nullslast(), University.name).all()
+    result = []
+    for uni in universities:
+        course_count = db.query(Course).filter(Course.university_id == uni.id).count()
+        club_count = db.query(Club).filter(Club.university_id == uni.id).count()
+        result.append(UniversityDetailResponse(
+            id=uni.id,
+            name=uni.name,
+            short_name=uni.short_name,
+            gpa_scale=uni.gpa_scale,
+            uses_plus_minus=uni.uses_plus_minus,
+            tier=uni.tier,
+            cs_ranking=uni.cs_ranking,
+            course_count=course_count,
+            club_count=club_count,
+        ))
+    return result
 
 
 @router.get("/courses", response_model=List[CourseResponse])

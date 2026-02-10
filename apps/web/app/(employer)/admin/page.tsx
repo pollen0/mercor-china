@@ -118,7 +118,7 @@ interface UniversityDetail {
   club_count: number
 }
 
-type Tab = 'overview' | 'candidates' | 'employers' | 'universities' | 'courses' | 'clubs'
+type Tab = 'overview' | 'candidates' | 'employers' | 'universities' | 'courses' | 'clubs' | 'referrals'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -164,6 +164,12 @@ export default function AdminPage() {
   const [clubPrestigeFilter, setClubPrestigeFilter] = useState<number | ''>('')
   const [selectedClubUniversity, setSelectedClubUniversity] = useState<string>('')
 
+  // Referral state
+  const [referralData, setReferralData] = useState<{ referrals: any[]; total: number }>({ referrals: [], total: 0 })
+  const [referralLeaderboard, setReferralLeaderboard] = useState<any[]>([])
+  const [referralStats, setReferralStats] = useState<any>(null)
+  const [referralStatusFilter, setReferralStatusFilter] = useState<string>('')
+
   // Nudge dropdown state
   const [openNudgeDropdown, setOpenNudgeDropdown] = useState<string | null>(null)
   const [sendingNudge, setSendingNudge] = useState<string | null>(null)
@@ -200,8 +206,12 @@ export default function AdminPage() {
       fetchCourseStats()
     } else if (activeTab === 'clubs') {
       fetchClubs()
+    } else if (activeTab === 'referrals') {
+      fetchReferrals()
+      fetchReferralLeaderboard()
+      fetchReferralStats()
     }
-  }, [activeTab, searchQuery, selectedUniversity, selectedDepartment, adminPassword, candidateSort, employerSort, candidateFilter, employerFilter, selectedClubCategory, clubPrestigeFilter, selectedClubUniversity])
+  }, [activeTab, searchQuery, selectedUniversity, selectedDepartment, adminPassword, candidateSort, employerSort, candidateFilter, employerFilter, selectedClubCategory, clubPrestigeFilter, selectedClubUniversity, referralStatusFilter])
 
   const getAuthHeaders = () => {
     const password = adminPassword || localStorage.getItem('admin_password')
@@ -378,19 +388,49 @@ export default function AdminPage() {
     }
   }
 
-  const seedClubs = async () => {
+
+  const fetchReferrals = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/activities/admin/clubs/seed`, {
-        method: 'POST',
+      const params = new URLSearchParams()
+      if (referralStatusFilter) params.set('status_filter', referralStatusFilter)
+      params.set('limit', '200')
+      const response = await fetch(`${API_BASE_URL}/api/admin/referrals?${params}`, {
         headers: getAuthHeaders(),
       })
       if (response.ok) {
         const data = await response.json()
-        alert(`Seeded ${data.clubs_added} clubs. Total: ${data.total_clubs}`)
-        fetchClubs()
+        setReferralData(data)
       }
     } catch (err) {
-      console.error('Failed to seed clubs:', err)
+      console.error('Failed to fetch referrals:', err)
+    }
+  }
+
+  const fetchReferralLeaderboard = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/referrals/leaderboard`, {
+        headers: getAuthHeaders(),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setReferralLeaderboard(data.leaderboard)
+      }
+    } catch (err) {
+      console.error('Failed to fetch referral leaderboard:', err)
+    }
+  }
+
+  const fetchReferralStats = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/referrals/stats`, {
+        headers: getAuthHeaders(),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setReferralStats(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch referral stats:', err)
     }
   }
 
@@ -640,7 +680,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-8 border-b border-stone-200">
-          {(['overview', 'candidates', 'employers', 'universities', 'courses', 'clubs'] as Tab[]).map((tab) => (
+          {(['overview', 'candidates', 'employers', 'universities', 'courses', 'clubs', 'referrals'] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1702,13 +1742,6 @@ export default function AdminPage() {
                 ]}
                 placeholder="All Prestige Tiers"
               />
-              <Button
-                variant="outline"
-                onClick={seedClubs}
-                className="border-stone-200 text-stone-600 hover:bg-stone-50 rounded-xl"
-              >
-                Seed/Refresh Clubs
-              </Button>
             </div>
 
             <p className="text-sm text-stone-400">{clubs.length} clubs found</p>
@@ -1801,9 +1834,178 @@ export default function AdminPage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-stone-700 mb-2">No clubs found</h3>
-                <p className="text-stone-400 mb-4">Click "Seed/Refresh Clubs" to populate the club database</p>
+                <p className="text-stone-400 mb-4">Club data will be auto-seeded on next API restart</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Referrals Tab */}
+        {activeTab === 'referrals' && (
+          <div className="space-y-6">
+            {/* Stats */}
+            {referralStats && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <Card className="border-stone-100 shadow-sm">
+                  <CardContent className="pt-6 pb-5">
+                    <div className="text-2xl font-semibold text-teal-600">{referralStats.total_referrals}</div>
+                    <p className="text-sm text-stone-400 mt-1">Total Referrals</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-stone-100 shadow-sm">
+                  <CardContent className="pt-6 pb-5">
+                    <div className="text-2xl font-semibold text-stone-700">{referralStats.by_status?.registered || 0}</div>
+                    <p className="text-sm text-stone-400 mt-1">Registered</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-stone-100 shadow-sm">
+                  <CardContent className="pt-6 pb-5">
+                    <div className="text-2xl font-semibold text-stone-700">{referralStats.by_status?.onboarded || 0}</div>
+                    <p className="text-sm text-stone-400 mt-1">Onboarded</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-stone-100 shadow-sm">
+                  <CardContent className="pt-6 pb-5">
+                    <div className="text-2xl font-semibold text-emerald-600">{referralStats.by_status?.interviewed || 0}</div>
+                    <p className="text-sm text-stone-400 mt-1">Interviewed</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-stone-100 shadow-sm">
+                  <CardContent className="pt-6 pb-5">
+                    <div className="text-2xl font-semibold text-teal-600">
+                      {referralStats.conversion_rate ? `${(referralStats.conversion_rate * 100).toFixed(1)}%` : '0%'}
+                    </div>
+                    <p className="text-sm text-stone-400 mt-1">Conversion Rate</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Leaderboard */}
+            {referralLeaderboard.length > 0 && (
+              <div>
+                <h3 className="text-lg font-medium text-stone-800 mb-4">Referral Leaderboard</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-stone-200">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">#</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Referrer</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Email</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Code</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Total</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Registered</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Onboarded</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Interviewed</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {referralLeaderboard.map((entry: any, idx: number) => (
+                        <tr key={entry.referrer_id} className="hover:bg-stone-50/50 transition-colors">
+                          <td className="px-4 py-4">
+                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
+                              idx === 0 ? 'bg-amber-100 text-amber-700' :
+                              idx === 1 ? 'bg-stone-200 text-stone-700' :
+                              idx === 2 ? 'bg-orange-100 text-orange-700' :
+                              'bg-stone-100 text-stone-500'
+                            }`}>
+                              {idx + 1}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-medium text-stone-800">{entry.referrer_name}</td>
+                          <td className="px-4 py-4 text-sm text-stone-500">{entry.referrer_email}</td>
+                          <td className="px-4 py-4">
+                            <span className="px-2 py-1 text-xs font-mono bg-stone-100 text-stone-600 rounded">
+                              {entry.referral_code || '—'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-semibold text-stone-800">{entry.total}</td>
+                          <td className="px-4 py-4 text-sm text-stone-600">{entry.registered}</td>
+                          <td className="px-4 py-4 text-sm text-stone-600">{entry.onboarded}</td>
+                          <td className="px-4 py-4 text-sm text-emerald-600 font-medium">{entry.interviewed}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* All Referrals */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-stone-800">All Referrals</h3>
+                <CustomSelect
+                  value={referralStatusFilter}
+                  onChange={(v) => setReferralStatusFilter(v)}
+                  options={[
+                    { value: '', label: 'All Status' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'registered', label: 'Registered' },
+                    { value: 'onboarded', label: 'Onboarded' },
+                    { value: 'interviewed', label: 'Interviewed' },
+                  ]}
+                  placeholder="All Status"
+                />
+              </div>
+
+              <p className="text-sm text-stone-400 mb-4">{referralData.total} referrals found</p>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-stone-200">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Referrer</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Referee Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Referee Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Referred On</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Converted On</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {referralData.referrals.map((ref: any) => (
+                      <tr key={ref.id} className="hover:bg-stone-50/50 transition-colors">
+                        <td className="px-4 py-4">
+                          <div className="text-sm font-medium text-stone-800">{ref.referrer_name}</div>
+                          <div className="text-xs text-stone-400">{ref.referrer_email}</div>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-stone-600">{ref.referee_email}</td>
+                        <td className="px-4 py-4 text-sm text-stone-600">{ref.referee_name || '—'}</td>
+                        <td className="px-4 py-4">
+                          <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                            ref.status === 'interviewed' ? 'bg-emerald-50 text-emerald-700' :
+                            ref.status === 'onboarded' ? 'bg-teal-50 text-teal-700' :
+                            ref.status === 'registered' ? 'bg-sky-50 text-sky-700' :
+                            'bg-stone-100 text-stone-500'
+                          }`}>
+                            {ref.status.charAt(0).toUpperCase() + ref.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-stone-400">
+                          {new Date(ref.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-stone-400">
+                          {ref.converted_at ? new Date(ref.converted_at).toLocaleDateString() : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {referralData.referrals.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-stone-700 mb-2">No referrals yet</h3>
+                  <p className="text-stone-400">Referrals will appear here when users share their referral codes</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Container>

@@ -43,6 +43,7 @@ class ClubResponse(BaseModel):
 
 class ActivityCreate(BaseModel):
     activity_name: str
+    club_id: Optional[str] = None
     institution: Optional[str] = None
     role: Optional[str] = None
     description: Optional[str] = None
@@ -246,21 +247,29 @@ async def add_activity(
     club = None
     activity_score = 3.0  # Default score for unknown activities
 
-    if data.institution:
-        # Try to find matching club
-        university_id = _get_university_id(data.institution)
-        if university_id:
-            # Search by name similarity
-            potential_clubs = db.query(Club).filter(
-                Club.university_id == university_id
-            ).all()
+    if data.club_id:
+        # Direct club lookup by ID (from club picker)
+        club = db.query(Club).filter(Club.id == data.club_id).first()
+        if club:
+            club_id = club.id
 
-            for c in potential_clubs:
-                if (data.activity_name.lower() in c.name.lower() or
-                    (c.short_name and data.activity_name.lower() in c.short_name.lower())):
-                    club = c
-                    club_id = c.id
-                    break
+    if not club:
+        # Determine university: use institution field, or fall back to candidate's university
+        institution = data.institution or getattr(candidate, 'university', None)
+        if institution:
+            university_id = _get_university_id(institution)
+            if university_id:
+                # Search by name similarity
+                potential_clubs = db.query(Club).filter(
+                    Club.university_id == university_id
+                ).all()
+
+                for c in potential_clubs:
+                    if (data.activity_name.lower() in c.name.lower() or
+                        (c.short_name and data.activity_name.lower() in c.short_name.lower())):
+                        club = c
+                        club_id = c.id
+                        break
 
     # Calculate activity score
     if club:
@@ -431,9 +440,27 @@ async def delete_award(
 
 def _get_university_id(institution: str) -> Optional[str]:
     """Convert institution name to university ID."""
-    inst_lower = institution.lower() if institution else ""
+    if not institution:
+        return None
+
+    inst_lower = institution.lower().strip()
+
+    # Direct match: if the input is already a known university ID, return it
+    KNOWN_IDS = {
+        "berkeley", "uiuc", "stanford", "mit", "cmu", "purdue", "cornell",
+        "uw", "georgia_tech", "princeton", "caltech", "umich", "columbia",
+        "ucla", "ut_austin", "uwisc", "uc_san_diego", "umd", "upenn",
+        "harvard", "ucsb", "ucsc", "usc", "duke", "northwestern", "rice", "nyu",
+        "uc_davis", "uc_irvine", "ohio_state", "penn_state", "virginia_tech",
+        "uva", "brown", "yale", "johns_hopkins", "nc_state", "unc", "umn",
+        "stony_brook", "rutgers", "asu", "uf", "northeastern", "cu_boulder",
+        "indiana", "umass", "tamu", "rochester", "dartmouth", "washu",
+    }
+    if inst_lower in KNOWN_IDS:
+        return inst_lower
 
     mapping = [
+        # Original 21 schools
         (["berkeley", "ucb", "uc berkeley", "cal"], "berkeley"),
         (["illinois", "uiuc", "urbana"], "uiuc"),
         (["stanford"], "stanford"),
@@ -449,12 +476,43 @@ def _get_university_id(institution: str) -> Optional[str]:
         (["columbia"], "columbia"),
         (["ucla", "uc los angeles"], "ucla"),
         (["ut austin", "university of texas at austin", "texas austin"], "ut_austin"),
-        (["uw madison", "uw-madison", "wisconsin", "wisc"], "uw_madison"),
-        (["uc san diego", "ucsd"], "ucsd"),
+        (["uw madison", "uw-madison", "wisconsin-madison", "wisc"], "uwisc"),
+        (["uc san diego", "ucsd"], "uc_san_diego"),
         (["maryland", "umd", "college park"], "umd"),
-        (["upenn", "u penn", "penn", "university of pennsylvania"], "upenn"),
+        (["upenn", "u penn", "university of pennsylvania"], "upenn"),
         (["harvard"], "harvard"),
         (["uc santa barbara", "ucsb"], "ucsb"),
+        (["uc santa cruz", "ucsc"], "ucsc"),
+        # 29 new schools
+        (["usc", "southern california", "trojan"], "usc"),
+        (["duke"], "duke"),
+        (["northwestern"], "northwestern"),
+        (["rice"], "rice"),
+        (["nyu", "new york university"], "nyu"),
+        (["uc davis", "davis"], "uc_davis"),
+        (["uc irvine", "uci"], "uc_irvine"),
+        (["ohio state", "osu"], "ohio_state"),
+        (["penn state", "psu"], "penn_state"),
+        (["virginia tech", "vt "], "virginia_tech"),
+        (["uva", "university of virginia"], "uva"),
+        (["brown"], "brown"),
+        (["yale"], "yale"),
+        (["johns hopkins", "jhu"], "johns_hopkins"),
+        (["nc state", "ncsu"], "nc_state"),
+        (["unc", "chapel hill"], "unc"),
+        (["minnesota", "umn"], "umn"),
+        (["stony brook", "suny stony"], "stony_brook"),
+        (["rutgers"], "rutgers"),
+        (["arizona state", "asu"], "asu"),
+        (["university of florida", "uf ", "gators"], "uf"),
+        (["northeastern"], "northeastern"),
+        (["cu boulder", "colorado boulder"], "cu_boulder"),
+        (["indiana university", "iu bloomington"], "indiana"),
+        (["umass", "massachusetts amherst"], "umass"),
+        (["texas a&m", "tamu"], "tamu"),
+        (["rochester"], "rochester"),
+        (["dartmouth"], "dartmouth"),
+        (["washu", "wash u", "washington university in st"], "washu"),
     ]
 
     for keywords, uni_id in mapping:

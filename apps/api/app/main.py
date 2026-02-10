@@ -58,12 +58,138 @@ def validate_required_env_vars():
         logger.warning("ADMIN_PASSWORD not set - admin endpoints will be inaccessible")
 
 
+def auto_seed_data():
+    """Auto-seed universities, courses, and clubs on startup if tables are empty."""
+    from .database import SessionLocal
+    from .models.course import University, Course
+    from .models.activity import Club
+    from .data.seed_courses import get_all_universities, get_all_courses
+    from .data.seed_clubs import get_all_clubs
+
+    db = SessionLocal()
+    try:
+        # Seed universities
+        uni_count = db.query(University).count()
+        if uni_count == 0:
+            universities = get_all_universities()
+            for uni_data in universities:
+                db.add(University(**uni_data))
+            db.commit()
+            logger.info(f"Auto-seeded {len(universities)} universities")
+        else:
+            # Still add any new universities that don't exist yet
+            universities = get_all_universities()
+            added = 0
+            for uni_data in universities:
+                if not db.query(University).filter(University.id == uni_data["id"]).first():
+                    db.add(University(**uni_data))
+                    added += 1
+            if added:
+                db.commit()
+                logger.info(f"Auto-seeded {added} new universities (total: {uni_count + added})")
+
+        # Seed courses
+        course_count = db.query(Course).count()
+        if course_count == 0:
+            courses = get_all_courses()
+            for course_data in courses:
+                db.add(Course(**course_data))
+            db.commit()
+            logger.info(f"Auto-seeded {len(courses)} courses")
+        else:
+            courses = get_all_courses()
+            added = 0
+            for course_data in courses:
+                if not db.query(Course).filter(Course.id == course_data["id"]).first():
+                    db.add(Course(**course_data))
+                    added += 1
+            if added:
+                db.commit()
+                logger.info(f"Auto-seeded {added} new courses (total: {course_count + added})")
+
+        # Seed clubs
+        club_count = db.query(Club).count()
+        if club_count == 0:
+            clubs_data = get_all_clubs()
+            for club_data in clubs_data:
+                club = Club(
+                    id=club_data["id"],
+                    university_id=club_data["university_id"],
+                    name=club_data["name"],
+                    short_name=club_data.get("short_name"),
+                    category=club_data.get("category", "other"),
+                    aliases=club_data.get("aliases"),
+                    prestige_tier=club_data["prestige_tier"],
+                    prestige_score=club_data["prestige_score"],
+                    is_selective=club_data.get("is_selective", False),
+                    acceptance_rate=club_data.get("acceptance_rate"),
+                    typical_members=club_data.get("typical_members"),
+                    leadership_bonus=club_data.get("leadership_bonus", 1.0),
+                    is_technical=club_data.get("is_technical", False),
+                    is_professional=club_data.get("is_professional", False),
+                    has_projects=club_data.get("has_projects", False),
+                    has_competitions=club_data.get("has_competitions", False),
+                    has_corporate_sponsors=club_data.get("has_corporate_sponsors", False),
+                    is_honor_society=club_data.get("is_honor_society", False),
+                    relevant_to=club_data.get("relevant_to"),
+                    description=club_data.get("description"),
+                    confidence=club_data.get("confidence", 1.0),
+                    source="research",
+                )
+                db.add(club)
+            db.commit()
+            logger.info(f"Auto-seeded {len(clubs_data)} clubs")
+        else:
+            clubs_data = get_all_clubs()
+            added = 0
+            for club_data in clubs_data:
+                if not db.query(Club).filter(Club.id == club_data["id"]).first():
+                    club = Club(
+                        id=club_data["id"],
+                        university_id=club_data["university_id"],
+                        name=club_data["name"],
+                        short_name=club_data.get("short_name"),
+                        category=club_data.get("category", "other"),
+                        prestige_tier=club_data["prestige_tier"],
+                        prestige_score=club_data["prestige_score"],
+                        is_selective=club_data.get("is_selective", False),
+                        acceptance_rate=club_data.get("acceptance_rate"),
+                        is_technical=club_data.get("is_technical", False),
+                        is_professional=club_data.get("is_professional", False),
+                        has_projects=club_data.get("has_projects", False),
+                        has_competitions=club_data.get("has_competitions", False),
+                        has_corporate_sponsors=club_data.get("has_corporate_sponsors", False),
+                        is_honor_society=club_data.get("is_honor_society", False),
+                        relevant_to=club_data.get("relevant_to"),
+                        description=club_data.get("description"),
+                        confidence=club_data.get("confidence", 1.0),
+                        source="research",
+                    )
+                    db.add(club)
+                    added += 1
+            if added:
+                db.commit()
+                logger.info(f"Auto-seeded {added} new clubs (total: {club_count + added})")
+
+    except Exception as e:
+        db.rollback()
+        logger.warning(f"Auto-seed failed (non-fatal): {e}")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize database and validate config on startup."""
     validate_required_env_vars()
     logger.info("Starting Pathway API...")
     init_db()
+
+    # Auto-seed universities, courses, and clubs
+    try:
+        auto_seed_data()
+    except Exception as e:
+        logger.warning(f"Auto-seed failed (non-fatal): {e}")
 
     # Initialize reminder scheduler
     try:

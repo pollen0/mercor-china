@@ -71,9 +71,22 @@ export interface SharingPreferencesResponse {
   preferences?: SharingPreferences
 }
 
+export interface ClubOption {
+  id: string
+  university_id: string
+  name: string
+  short_name?: string
+  category: string
+  prestige_tier: number
+  prestige_score: number
+  is_selective: boolean
+  description?: string
+}
+
 export interface Activity {
   id: string
   activityName: string
+  clubId?: string
   organization?: string
   role?: string
   description?: string
@@ -1551,6 +1564,7 @@ export const candidateApi = {
       headers,
       body: JSON.stringify({
         activity_name: activity.activityName,
+        club_id: activity.clubId || undefined,
         organization: activity.organization,
         role: activity.role,
         description: activity.description,
@@ -1636,6 +1650,16 @@ export const candidateApi = {
       const error = await response.json()
       throw new ApiError(response.status, error.detail || 'Failed to delete activity')
     }
+  },
+
+  // Clubs API (for club picker)
+  getClubsByUniversity: async (universityId: string): Promise<ClubOption[]> => {
+    const url = `${API_BASE_URL}/api/activities/clubs?university_id=${encodeURIComponent(universityId)}&limit=100`
+    const response = await fetch(url)
+    if (!response.ok) {
+      return []
+    }
+    return response.json()
   },
 
   // Awards API

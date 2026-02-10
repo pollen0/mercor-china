@@ -27,6 +27,7 @@ from ..models.candidate import Candidate, CandidateVerticalProfile
 from ..models.interview import InterviewSession
 from ..models.github_analysis import GitHubAnalysis
 from ..models.course import CandidateTranscript
+from ..models.activity import CandidateActivity
 from ..models.ml_scoring import (
     UnifiedCandidateScore as UnifiedScoreDB,
     ScoringEventType
@@ -114,6 +115,7 @@ class UnifiedCandidateScore:
     github: ComponentScore
     transcript: ComponentScore
     resume: ComponentScore
+    activities: ComponentScore
 
     # Combined insights
     top_strengths: list[str]
@@ -188,10 +190,11 @@ class CandidateScoringService:
     """
 
     BASE_WEIGHTS = {
-        "interview": 0.40,
-        "github": 0.25,
-        "transcript": 0.20,
-        "resume": 0.15
+        "interview": 0.35,
+        "github": 0.22,
+        "transcript": 0.18,
+        "resume": 0.13,
+        "activities": 0.12
     }
 
     # Role-specific weight adjustments
@@ -280,6 +283,7 @@ class CandidateScoringService:
         github_score = self._get_github_score(candidate, db)
         transcript_score = self._get_transcript_score(candidate, db)
         resume_score = self._get_resume_score(candidate, db)
+        activity_score = self._get_activity_score(candidate, db)
 
         # Calculate dynamic weights
         weights = self._calculate_dynamic_weights(
@@ -287,6 +291,7 @@ class CandidateScoringService:
             github=github_score,
             transcript=transcript_score,
             resume=resume_score,
+            activities=activity_score,
             role_type=role_type
         )
 
@@ -300,7 +305,8 @@ class CandidateScoringService:
             ("interview", interview_score),
             ("github", github_score),
             ("transcript", transcript_score),
-            ("resume", resume_score)
+            ("resume", resume_score),
+            ("activities", activity_score)
         ]
 
         available_scores = []
@@ -331,7 +337,7 @@ class CandidateScoringService:
         )
 
         # Calculate data completeness with quality weighting
-        completeness_weights = {"interview": 0.35, "github": 0.25, "transcript": 0.20, "resume": 0.20}
+        completeness_weights = {"interview": 0.30, "github": 0.22, "transcript": 0.18, "resume": 0.18, "activities": 0.12}
         data_completeness = sum(
             completeness_weights[name] * (1 if comp.available else 0) * comp.confidence
             for name, comp in components
@@ -441,6 +447,7 @@ class CandidateScoringService:
             github=github_score,
             transcript=transcript_score,
             resume=resume_score,
+            activities=activity_score,
             top_strengths=top_strengths,
             key_concerns=key_concerns,
             role_fit_scores=role_fit_scores,
@@ -1036,12 +1043,87 @@ class CandidateScoringService:
             concerns=concerns
         )
 
+    def _get_activity_score(self, candidate: Candidate, db: Session) -> ComponentScore:
+        """
+        Get activity component score based on candidate's extracurricular activities.
+        Scores based on club prestige, role tier, and number of activities.
+        """
+        activities = db.query(CandidateActivity).filter(
+            CandidateActivity.candidate_id == candidate.id
+        ).order_by(CandidateActivity.activity_score.desc().nullslast()).all()
+
+        if not activities:
+            return ComponentScore(
+                score=0, weight=self.BASE_WEIGHTS["activities"],
+                confidence=0, available=False,
+                breakdown={}, strengths=[], concerns=["No activities recorded"]
+            )
+
+        # Take weighted average of top 5 activities (first counts most)
+        decay_weights = [1.0, 0.8, 0.6, 0.4, 0.3]
+        top_activities = activities[:5]
+        weighted_sum = 0.0
+        weight_sum = 0.0
+        matched_count = 0
+
+        for i, act in enumerate(top_activities):
+            w = decay_weights[i] if i < len(decay_weights) else 0.2
+            act_score = (act.activity_score or 3.0) * 10  # Scale 0-10 to 0-100
+            weighted_sum += act_score * w
+            weight_sum += w
+            if act.club_id:
+                matched_count += 1
+
+        score = weighted_sum / weight_sum if weight_sum > 0 else 30.0
+
+        # Confidence based on how many matched to known clubs
+        confidence = 0.4 + (0.12 * matched_count)  # 0.4 base + up to 0.6 for 5 matched
+        confidence = min(1.0, confidence)
+
+        # Detect strengths
+        strengths = []
+        concerns = []
+
+        for act in top_activities:
+            if act.role_tier >= 4:
+                strengths.append(f"Leadership role: {act.role} at {act.activity_name}")
+            if act.club_id and act.club and act.club.is_selective:
+                strengths.append(f"Selective organization: {act.activity_name}")
+            if act.club_id and act.club and act.club.prestige_tier >= 4:
+                strengths.append(f"High-prestige club: {act.activity_name}")
+
+        if len(activities) >= 3:
+            strengths.append(f"Active involvement: {len(activities)} activities")
+        elif len(activities) == 1:
+            concerns.append("Limited extracurricular involvement")
+
+        # Deduplicate
+        strengths = list(dict.fromkeys(strengths))[:5]
+
+        breakdown = {
+            "total_activities": len(activities),
+            "matched_to_known_clubs": matched_count,
+            "top_activity_score": round(top_activities[0].activity_score or 3.0, 1) if top_activities else 0,
+            "has_leadership": any(a.role_tier >= 4 for a in activities),
+        }
+
+        return ComponentScore(
+            score=min(100, round(score, 1)),
+            weight=self.BASE_WEIGHTS["activities"],
+            confidence=round(confidence, 2),
+            available=True,
+            breakdown=breakdown,
+            strengths=strengths,
+            concerns=concerns
+        )
+
     def _calculate_dynamic_weights(
         self,
         interview: ComponentScore,
         github: ComponentScore,
         transcript: ComponentScore,
         resume: ComponentScore,
+        activities: ComponentScore = None,
         role_type: Optional[str] = None
     ) -> dict[str, float]:
         """
@@ -1053,14 +1135,16 @@ class CandidateScoringService:
         if role_type and role_type in self.ROLE_WEIGHT_ADJUSTMENTS:
             adjustments = self.ROLE_WEIGHT_ADJUSTMENTS[role_type]
             for component, adj in adjustments.items():
-                weights[component] = max(0, weights[component] + adj)
+                if component in weights:
+                    weights[component] = max(0, weights[component] + adj)
 
         # Redistribute weights from unavailable components
         available = {
             "interview": interview.available,
             "github": github.available,
             "transcript": transcript.available,
-            "resume": resume.available
+            "resume": resume.available,
+            "activities": activities.available if activities else False,
         }
 
         total_available_weight = sum(weights[k] for k, v in available.items() if v)
@@ -1082,12 +1166,15 @@ class CandidateScoringService:
 
         # Slight boost for high-confidence signals
         confidence_boost = 0.05
-        components = {
+        all_components = {
             "interview": interview,
             "github": github,
             "transcript": transcript,
-            "resume": resume
+            "resume": resume,
         }
+        if activities:
+            all_components["activities"] = activities
+        components = all_components
 
         for component, data in components.items():
             if data.available and data.confidence >= 0.8:

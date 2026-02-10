@@ -1838,7 +1838,7 @@ UWISC_CLUBS: List[Dict] = [
     # TIER 4 - HIGHLY SELECTIVE
     {
         "id": "uwisc_uwcm",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Undergraduate Projects Lab (UPL)",
         "short_name": "UPL",
         "category": "engineering",
@@ -1852,7 +1852,7 @@ UWISC_CLUBS: List[Dict] = [
     },
     {
         "id": "uwisc_hack",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "MadHacks",
         "short_name": "MadHacks",
         "category": "competition",
@@ -1868,7 +1868,7 @@ UWISC_CLUBS: List[Dict] = [
     },
     {
         "id": "uwisc_wacm",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Wisconsin ACM",
         "short_name": "WACM",
         "category": "engineering",
@@ -1883,7 +1883,7 @@ UWISC_CLUBS: List[Dict] = [
     # TIER 3 - SELECTIVE
     {
         "id": "uwisc_gdsc",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Google Developer Student Club",
         "short_name": "GDSC",
         "category": "engineering",
@@ -1898,7 +1898,7 @@ UWISC_CLUBS: List[Dict] = [
     },
     {
         "id": "uwisc_wics",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Women in Computing Sciences",
         "short_name": "WiCS",
         "category": "professional",
@@ -1913,7 +1913,7 @@ UWISC_CLUBS: List[Dict] = [
     },
     {
         "id": "uwisc_swe",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Society of Women Engineers",
         "short_name": "SWE",
         "category": "professional",
@@ -1928,7 +1928,7 @@ UWISC_CLUBS: List[Dict] = [
     },
     {
         "id": "uwisc_ds_club",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Wisconsin Data Science Club",
         "short_name": "WDSC",
         "category": "engineering",
@@ -1943,7 +1943,7 @@ UWISC_CLUBS: List[Dict] = [
     },
     {
         "id": "uwisc_badger_blockchain",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Badger Blockchain",
         "short_name": "BB",
         "category": "engineering",
@@ -1959,7 +1959,7 @@ UWISC_CLUBS: List[Dict] = [
     # TIER 2 - COMPETITIVE
     {
         "id": "uwisc_ieee",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "IEEE Student Branch",
         "short_name": "IEEE",
         "category": "engineering",
@@ -1973,7 +1973,7 @@ UWISC_CLUBS: List[Dict] = [
     },
     {
         "id": "uwisc_hkn",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Eta Kappa Nu (HKN)",
         "short_name": "HKN",
         "category": "professional",
@@ -1989,7 +1989,7 @@ UWISC_CLUBS: List[Dict] = [
     },
     {
         "id": "uwisc_tbp",
-        "university_id": "uw_madison",
+        "university_id": "uwisc",
         "name": "Tau Beta Pi",
         "short_name": "TBP",
         "category": "professional",
