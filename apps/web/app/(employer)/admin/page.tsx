@@ -38,6 +38,9 @@ interface CandidateAdmin {
   email_verified: boolean
   interview_count: number
   vertical_profile_count: number
+  has_resume: boolean
+  has_github: boolean
+  has_transcript: boolean
   created_at: string
 }
 
@@ -144,6 +147,11 @@ export default function AdminPage() {
   const [clubTotal, setClubTotal] = useState(0)
   const [selectedClubCategory, setSelectedClubCategory] = useState<string>('')
   const [clubPrestigeFilter, setClubPrestigeFilter] = useState<number | ''>('')
+  const [selectedClubUniversity, setSelectedClubUniversity] = useState<string>('')
+
+  // Nudge dropdown state
+  const [openNudgeDropdown, setOpenNudgeDropdown] = useState<string | null>(null)
+  const [sendingNudge, setSendingNudge] = useState<string | null>(null)
 
   useEffect(() => {
     // Admin only requires password - no employer login needed
@@ -176,7 +184,7 @@ export default function AdminPage() {
     } else if (activeTab === 'clubs') {
       fetchClubs()
     }
-  }, [activeTab, searchQuery, selectedUniversity, selectedDepartment, adminPassword, candidateSort, employerSort, candidateFilter, employerFilter, selectedClubCategory, clubPrestigeFilter])
+  }, [activeTab, searchQuery, selectedUniversity, selectedDepartment, adminPassword, candidateSort, employerSort, candidateFilter, employerFilter, selectedClubCategory, clubPrestigeFilter, selectedClubUniversity])
 
   const getAuthHeaders = () => {
     const password = adminPassword || localStorage.getItem('admin_password')
@@ -323,7 +331,8 @@ export default function AdminPage() {
       const params = new URLSearchParams()
       if (selectedClubCategory) params.set('category', selectedClubCategory)
       if (clubPrestigeFilter) params.set('min_prestige', String(clubPrestigeFilter))
-      params.set('limit', '200')
+      if (selectedClubUniversity) params.set('university_id', selectedClubUniversity)
+      params.set('limit', '500')
 
       const response = await fetch(`${API_BASE_URL}/api/activities/clubs?${params}`, {
         headers: getAuthHeaders(),
@@ -462,6 +471,33 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error('Failed to update verification:', err)
+    }
+  }
+
+  const sendNudge = async (candidateId: string, nudgeType: 'resume' | 'github' | 'transcript') => {
+    setSendingNudge(`${candidateId}-${nudgeType}`)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/candidates/${candidateId}/nudge`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nudge_type: nudgeType }),
+      })
+
+      if (response.ok) {
+        alert(`Nudge email sent successfully!`)
+      } else {
+        const data = await response.json()
+        alert(`Failed to send nudge: ${data.detail || 'Unknown error'}`)
+      }
+    } catch (err) {
+      console.error('Failed to send nudge:', err)
+      alert('Failed to send nudge email')
+    } finally {
+      setSendingNudge(null)
+      setOpenNudgeDropdown(null)
     }
   }
 
@@ -872,6 +908,7 @@ export default function AdminPage() {
                     >
                       Interviews {candidateSort.field === 'interview_count' && (candidateSort.dir === 'asc' ? '↑' : '↓')}
                     </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Profile</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Status</th>
                     <th
                       className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer hover:text-stone-700 transition-colors"
@@ -903,6 +940,19 @@ export default function AdminPage() {
                       <td className="px-4 py-4 text-sm text-stone-500">{c.phone || '—'}</td>
                       <td className="px-4 py-4 text-sm text-stone-600">{c.interview_count}</td>
                       <td className="px-4 py-4">
+                        <div className="flex gap-1">
+                          <span className={`px-1.5 py-0.5 text-xs rounded ${c.has_resume ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="Resume">
+                            📄
+                          </span>
+                          <span className={`px-1.5 py-0.5 text-xs rounded ${c.has_github ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="GitHub">
+                            💻
+                          </span>
+                          <span className={`px-1.5 py-0.5 text-xs rounded ${c.has_transcript ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="Transcript">
+                            📚
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
                         <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                           c.email_verified
                             ? 'bg-emerald-50 text-emerald-700'
@@ -915,14 +965,59 @@ export default function AdminPage() {
                         {new Date(c.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleCandidateVerification(c.id, !c.email_verified)}
-                          className="text-xs border-stone-200 text-stone-600 hover:bg-stone-50 rounded-lg"
-                        >
-                          {c.email_verified ? 'Unverify' : 'Verify'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleCandidateVerification(c.id, !c.email_verified)}
+                            className="text-xs border-stone-200 text-stone-600 hover:bg-stone-50 rounded-lg"
+                          >
+                            {c.email_verified ? 'Unverify' : 'Verify'}
+                          </Button>
+                          {/* Nudge Dropdown */}
+                          <div className="relative">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setOpenNudgeDropdown(openNudgeDropdown === c.id ? null : c.id)}
+                              className="text-xs border-stone-200 text-teal-600 hover:bg-teal-50 rounded-lg"
+                              disabled={c.has_resume && c.has_github && c.has_transcript}
+                            >
+                              Nudge ▾
+                            </Button>
+                            {openNudgeDropdown === c.id && (
+                              <div className="absolute right-0 mt-1 w-40 bg-white border border-stone-200 rounded-lg shadow-lg z-10">
+                                {!c.has_resume && (
+                                  <button
+                                    onClick={() => sendNudge(c.id, 'resume')}
+                                    disabled={sendingNudge === `${c.id}-resume`}
+                                    className="w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50"
+                                  >
+                                    📄 {sendingNudge === `${c.id}-resume` ? 'Sending...' : 'Add Resume'}
+                                  </button>
+                                )}
+                                {!c.has_github && (
+                                  <button
+                                    onClick={() => sendNudge(c.id, 'github')}
+                                    disabled={sendingNudge === `${c.id}-github`}
+                                    className="w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50"
+                                  >
+                                    💻 {sendingNudge === `${c.id}-github` ? 'Sending...' : 'Connect GitHub'}
+                                  </button>
+                                )}
+                                {!c.has_transcript && (
+                                  <button
+                                    onClick={() => sendNudge(c.id, 'transcript')}
+                                    disabled={sendingNudge === `${c.id}-transcript`}
+                                    className="w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50"
+                                  >
+                                    📚 {sendingNudge === `${c.id}-transcript` ? 'Sending...' : 'Add Transcript'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1344,11 +1439,19 @@ export default function AdminPage() {
         {activeTab === 'clubs' && (
           <div className="space-y-6">
             {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <Card className="border-stone-100 shadow-sm">
                 <CardContent className="pt-6 pb-5">
                   <div className="text-2xl font-semibold text-teal-600">{clubTotal}</div>
                   <p className="text-sm text-stone-400 mt-1">Total Clubs</p>
+                </CardContent>
+              </Card>
+              <Card className="border-stone-100 shadow-sm">
+                <CardContent className="pt-6 pb-5">
+                  <div className="text-2xl font-semibold text-teal-600">
+                    {new Set(clubs.map(c => c.university_id)).size}
+                  </div>
+                  <p className="text-sm text-stone-400 mt-1">Universities</p>
                 </CardContent>
               </Card>
               <Card className="border-stone-100 shadow-sm">
@@ -1388,19 +1491,49 @@ export default function AdminPage() {
             {/* Filters */}
             <div className="flex flex-wrap gap-3">
               <CustomSelect
+                value={selectedClubUniversity}
+                onChange={(v) => setSelectedClubUniversity(v)}
+                options={[
+                  { value: '', label: 'All Universities' },
+                  { value: 'berkeley', label: 'UC Berkeley' },
+                  { value: 'uiuc', label: 'UIUC' },
+                  { value: 'stanford', label: 'Stanford' },
+                  { value: 'mit', label: 'MIT' },
+                  { value: 'cmu', label: 'CMU' },
+                  { value: 'purdue', label: 'Purdue' },
+                  { value: 'cornell', label: 'Cornell' },
+                  { value: 'uw', label: 'UW' },
+                  { value: 'georgia_tech', label: 'Georgia Tech' },
+                  { value: 'princeton', label: 'Princeton' },
+                  { value: 'caltech', label: 'Caltech' },
+                  { value: 'umich', label: 'UMich' },
+                  { value: 'columbia', label: 'Columbia' },
+                  { value: 'ucla', label: 'UCLA' },
+                  { value: 'ut_austin', label: 'UT Austin' },
+                  { value: 'uw_madison', label: 'UW-Madison' },
+                  { value: 'ucsd', label: 'UC San Diego' },
+                  { value: 'umd', label: 'UMD' },
+                  { value: 'upenn', label: 'UPenn' },
+                  { value: 'harvard', label: 'Harvard' },
+                  { value: 'ucsb', label: 'UCSB' },
+                ]}
+                placeholder="All Universities"
+              />
+              <CustomSelect
                 value={selectedClubCategory}
                 onChange={(v) => setSelectedClubCategory(v)}
                 options={[
                   { value: '', label: 'All Categories' },
                   { value: 'engineering', label: 'Engineering/Tech' },
                   { value: 'business', label: 'Business/Professional' },
+                  { value: 'professional', label: 'Professional' },
+                  { value: 'competition', label: 'Competition' },
+                  { value: 'social_impact', label: 'Social Impact' },
                   { value: 'cultural', label: 'Cultural' },
                   { value: 'greek', label: 'Greek Life' },
                   { value: 'sports', label: 'Sports/Recreation' },
                   { value: 'arts', label: 'Performing Arts' },
                   { value: 'research', label: 'Research/Academic' },
-                  { value: 'service', label: 'Service/Social Good' },
-                  { value: 'honor', label: 'Honor Society' },
                   { value: 'other', label: 'Other' },
                 ]}
                 placeholder="All Categories"
@@ -1444,6 +1577,7 @@ export default function AdminPage() {
                 <thead>
                   <tr className="border-b border-stone-200">
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Club Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">University</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Category</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Prestige</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Score</th>
@@ -1459,6 +1593,9 @@ export default function AdminPage() {
                         {club.short_name && (
                           <div className="text-xs text-stone-400">{club.short_name}</div>
                         )}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-stone-500">
+                        {club.university_id.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
                       </td>
                       <td className="px-4 py-4 text-sm text-stone-600 capitalize">
                         {club.category.replace('_', ' ')}

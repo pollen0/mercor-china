@@ -63,10 +63,23 @@ class CandidateAdmin(BaseModel):
     email_verified: bool = False
     interview_count: int = 0
     vertical_profile_count: int = 0
+    has_resume: bool = False
+    has_github: bool = False
+    has_transcript: bool = False
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class NudgeType(str):
+    RESUME = "resume"
+    GITHUB = "github"
+    TRANSCRIPT = "transcript"
+
+
+class NudgeRequest(BaseModel):
+    nudge_type: str  # "resume", "github", or "transcript"
 
 
 class EmployerAdmin(BaseModel):
@@ -237,10 +250,72 @@ async def list_candidates(
             email_verified=c.email_verified or False,
             interview_count=interview_count or 0,
             vertical_profile_count=profile_count or 0,
+            has_resume=c.resume_url is not None,
+            has_github=c.github_username is not None,
+            has_transcript=c.transcript_url is not None,
             created_at=c.created_at,
         ))
 
     return AdminCandidateList(users=result, total=total)
+
+
+@router.post("/candidates/{candidate_id}/nudge")
+async def send_nudge_email(
+    candidate_id: str,
+    request: NudgeRequest,
+    admin: Employer = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Send a nudge email to a candidate to complete their profile."""
+    from ..services.email import email_service
+
+    # Get candidate
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    nudge_type = request.nudge_type.lower()
+    if nudge_type not in ["resume", "github", "transcript"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid nudge type. Must be 'resume', 'github', or 'transcript'"
+        )
+
+    # Check if they already have the requested item
+    if nudge_type == "resume" and candidate.resume_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Candidate already has a resume uploaded"
+        )
+    if nudge_type == "github" and candidate.github_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Candidate already has GitHub connected"
+        )
+    if nudge_type == "transcript" and candidate.transcript_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Candidate already has a transcript uploaded"
+        )
+
+    # Send nudge email
+    email_id = email_service.send_profile_nudge(
+        to=candidate.email,
+        candidate_name=candidate.name,
+        nudge_type=nudge_type,
+    )
+
+    if email_id:
+        logger.info(f"Sent {nudge_type} nudge email to {candidate.email}")
+        return {"success": True, "message": f"Nudge email sent to {candidate.email}"}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send email"
+        )
 
 
 @router.get("/employers", response_model=AdminEmployerList)

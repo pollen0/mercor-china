@@ -1019,6 +1019,114 @@ class EmailService:
             html=html,
         )
 
+    def send_profile_nudge(
+        self,
+        to: str,
+        candidate_name: str,
+        nudge_type: str,  # "resume", "github", or "transcript"
+    ) -> Optional[str]:
+        """
+        Send a nudge email to a candidate to complete their profile.
+
+        Args:
+            to: Candidate's email address
+            candidate_name: Candidate's name
+            nudge_type: Type of nudge - "resume", "github", or "transcript"
+
+        Returns:
+            Email ID if successful, None otherwise
+        """
+        dashboard_url = f"{settings.frontend_url}/candidate/dashboard"
+
+        # Content based on nudge type
+        nudge_content = {
+            "resume": {
+                "subject": "Complete your profile - Upload your resume",
+                "header_title": "Upload Your Resume",
+                "header_subtitle": "Stand out to top employers",
+                "icon": "📄",
+                "action_text": "Upload Resume",
+                "benefit": "Candidates with resumes are <strong>3x more likely</strong> to be contacted by recruiters.",
+                "details": [
+                    "Takes less than 2 minutes",
+                    "Auto-extracts your skills and experience",
+                    "Makes you visible to our employer partners",
+                ],
+            },
+            "github": {
+                "subject": "Complete your profile - Connect your GitHub",
+                "header_title": "Connect Your GitHub",
+                "header_subtitle": "Showcase your coding skills",
+                "icon": "💻",
+                "action_text": "Connect GitHub",
+                "benefit": "Candidates with GitHub profiles get <strong>2x higher</strong> interview scores on average.",
+                "details": [
+                    "One-click OAuth connection",
+                    "We analyze your code quality and contributions",
+                    "Shows employers your real-world experience",
+                ],
+            },
+            "transcript": {
+                "subject": "Complete your profile - Upload your transcript",
+                "header_title": "Upload Your Transcript",
+                "header_subtitle": "Verify your academic excellence",
+                "icon": "📚",
+                "action_text": "Upload Transcript",
+                "benefit": "Verified transcripts help you stand out for <strong>competitive roles</strong>.",
+                "details": [
+                    "Unofficial transcripts are accepted",
+                    "We extract GPA and relevant coursework",
+                    "Helps match you with the right opportunities",
+                ],
+            },
+        }
+
+        content = nudge_content.get(nudge_type)
+        if not content:
+            logger.error(f"Invalid nudge type: {nudge_type}")
+            return None
+
+        first_name = candidate_name.split()[0] if candidate_name else "there"
+
+        details_html = "".join([f"<li>{d}</li>" for d in content["details"]])
+
+        body = f"""
+            <p>Hi {first_name},</p>
+
+            <p>We noticed your Pathway profile is missing your {nudge_type}. Adding it takes just a few minutes and can significantly boost your chances of landing great opportunities!</p>
+
+            <div class="callout">
+                <strong>{content["icon"]} Why it matters:</strong><br>
+                {content["benefit"]}
+            </div>
+
+            <p><strong>It's quick and easy:</strong></p>
+            <ul>
+                {details_html}
+            </ul>
+
+            <p style="text-align: center; margin: 32px 0;">
+                <a href="{dashboard_url}" class="button-teal">{content["action_text"]}</a>
+            </p>
+
+            <hr class="divider">
+
+            <p class="muted">Companies are actively searching for candidates like you. Don't miss out on opportunities because of an incomplete profile!</p>
+        """
+
+        html = _email_template(
+            content["header_title"],
+            content["header_subtitle"],
+            body,
+            "Pathway — Your Career, Your Way"
+        )
+
+        return self.send_email(
+            to=to,
+            subject=f"[Pathway] {content['subject']}",
+            html=html,
+        )
+
 
 # Global instance
 email_service = EmailService()
