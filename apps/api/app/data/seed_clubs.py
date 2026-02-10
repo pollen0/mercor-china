@@ -3443,7 +3443,8 @@ def get_all_clubs():
     """Get all clubs for seeding."""
     from .seed_clubs_extended import get_extended_clubs
     from .seed_clubs_extended2 import get_extended_clubs2
-    return BERKELEY_CLUBS + UIUC_CLUBS + STANFORD_CLUBS + MIT_CLUBS + CMU_CLUBS + PURDUE_CLUBS + get_extended_clubs() + get_extended_clubs2()
+    from .seed_clubs_extended3 import get_extended_clubs3
+    return BERKELEY_CLUBS + UIUC_CLUBS + STANFORD_CLUBS + MIT_CLUBS + CMU_CLUBS + PURDUE_CLUBS + get_extended_clubs() + get_extended_clubs2() + get_extended_clubs3()
 
 
 def get_berkeley_clubs():

@@ -518,6 +518,496 @@ UNIVERSITIES = [
         "tier": 1,
         "cs_ranking": 49
     },
+    {
+        "id": "vanderbilt",
+        "name": "Vanderbilt University",
+        "short_name": "Vanderbilt",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 50
+    },
+    {
+        "id": "notre_dame",
+        "name": "University of Notre Dame",
+        "short_name": "Notre Dame",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 51
+    },
+    {
+        "id": "bu",
+        "name": "Boston University",
+        "short_name": "BU",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 52
+    },
+    {
+        "id": "tufts",
+        "name": "Tufts University",
+        "short_name": "Tufts",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 53
+    },
+    {
+        "id": "rpi",
+        "name": "Rensselaer Polytechnic Institute",
+        "short_name": "RPI",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 54
+    },
+    {
+        "id": "case_western",
+        "name": "Case Western Reserve University",
+        "short_name": "Case Western",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 55
+    },
+    {
+        "id": "pitt",
+        "name": "University of Pittsburgh",
+        "short_name": "Pitt",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 56
+    },
+    {
+        "id": "utah",
+        "name": "University of Utah",
+        "short_name": "Utah",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 57
+    },
+    {
+        "id": "iowa_state",
+        "name": "Iowa State University",
+        "short_name": "Iowa State",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 58
+    },
+    {
+        "id": "michigan_state",
+        "name": "Michigan State University",
+        "short_name": "MSU",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": False,
+        "tier": 2,
+        "cs_ranking": 59
+    },
+    {
+        "id": "ucf",
+        "name": "University of Central Florida",
+        "short_name": "UCF",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 60
+    },
+    {
+        "id": "gmu",
+        "name": "George Mason University",
+        "short_name": "GMU",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 61
+    },
+    {
+        "id": "ucr",
+        "name": "University of California, Riverside",
+        "short_name": "UC Riverside",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 62
+    },
+    {
+        "id": "rit",
+        "name": "Rochester Institute of Technology",
+        "short_name": "RIT",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": False,
+        "tier": 2,
+        "cs_ranking": 63
+    },
+    {
+        "id": "wpi",
+        "name": "Worcester Polytechnic Institute",
+        "short_name": "WPI",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 64
+    },
+    {
+        "id": "drexel",
+        "name": "Drexel University",
+        "short_name": "Drexel",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 65
+    },
+    {
+        "id": "stevens",
+        "name": "Stevens Institute of Technology",
+        "short_name": "Stevens",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 66
+    },
+    {
+        "id": "njit",
+        "name": "New Jersey Institute of Technology",
+        "short_name": "NJIT",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 67
+    },
+    {
+        "id": "oregon_state",
+        "name": "Oregon State University",
+        "short_name": "Oregon State",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 68
+    },
+    {
+        "id": "buffalo",
+        "name": "University at Buffalo",
+        "short_name": "UB",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 69
+    },
+    {
+        "id": "utd",
+        "name": "University of Texas at Dallas",
+        "short_name": "UT Dallas",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 70
+    },
+    {
+        "id": "uic",
+        "name": "University of Illinois Chicago",
+        "short_name": "UIC",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 71
+    },
+    {
+        "id": "clemson",
+        "name": "Clemson University",
+        "short_name": "Clemson",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 72
+    },
+    {
+        "id": "syracuse",
+        "name": "Syracuse University",
+        "short_name": "Syracuse",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 73
+    },
+    {
+        "id": "lehigh",
+        "name": "Lehigh University",
+        "short_name": "Lehigh",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 74
+    },
+    {
+        "id": "brandeis",
+        "name": "Brandeis University",
+        "short_name": "Brandeis",
+        "course_pattern": r"([A-Z]+)\s*(\d+[a-z]?)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 75
+    },
+    {
+        "id": "uconn",
+        "name": "University of Connecticut",
+        "short_name": "UConn",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 76
+    },
+    {
+        "id": "iowa",
+        "name": "University of Iowa",
+        "short_name": "Iowa",
+        "course_pattern": r"([A-Z]+):(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 77
+    },
+    {
+        "id": "usf",
+        "name": "University of South Florida",
+        "short_name": "USF",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 78
+    },
+    {
+        "id": "temple",
+        "name": "Temple University",
+        "short_name": "Temple",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 79
+    },
+    {
+        "id": "gwu",
+        "name": "George Washington University",
+        "short_name": "GWU",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 80
+    },
+    {
+        "id": "tulane",
+        "name": "Tulane University",
+        "short_name": "Tulane",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 81
+    },
+    {
+        "id": "georgetown",
+        "name": "Georgetown University",
+        "short_name": "Georgetown",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 1,
+        "cs_ranking": 82
+    },
+    {
+        "id": "santa_clara",
+        "name": "Santa Clara University",
+        "short_name": "Santa Clara",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 83
+    },
+    {
+        "id": "missouri",
+        "name": "University of Missouri",
+        "short_name": "Mizzou",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 84
+    },
+    {
+        "id": "tennessee",
+        "name": "University of Tennessee",
+        "short_name": "Tennessee",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 85
+    },
+    {
+        "id": "nebraska",
+        "name": "University of Nebraska-Lincoln",
+        "short_name": "Nebraska",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 86
+    },
+    {
+        "id": "auburn",
+        "name": "Auburn University",
+        "short_name": "Auburn",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 87
+    },
+    {
+        "id": "smu",
+        "name": "Southern Methodist University",
+        "short_name": "SMU",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 88
+    },
+    {
+        "id": "colorado_state",
+        "name": "Colorado State University",
+        "short_name": "Colorado State",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 89
+    },
+    {
+        "id": "uoregon",
+        "name": "University of Oregon",
+        "short_name": "Oregon",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 90
+    },
+    {
+        "id": "kansas",
+        "name": "University of Kansas",
+        "short_name": "Kansas",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 91
+    },
+    {
+        "id": "binghamton",
+        "name": "Binghamton University",
+        "short_name": "Binghamton",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 92
+    },
+    {
+        "id": "delaware",
+        "name": "University of Delaware",
+        "short_name": "Delaware",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 93
+    },
+    {
+        "id": "miami",
+        "name": "University of Miami",
+        "short_name": "Miami",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 94
+    },
+    {
+        "id": "alabama",
+        "name": "University of Alabama",
+        "short_name": "Alabama",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 95
+    },
+    {
+        "id": "uky",
+        "name": "University of Kentucky",
+        "short_name": "Kentucky",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 96
+    },
+    {
+        "id": "wm",
+        "name": "William & Mary",
+        "short_name": "W&M",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 97
+    },
+    {
+        "id": "lsu",
+        "name": "Louisiana State University",
+        "short_name": "LSU",
+        "course_pattern": r"([A-Z]+)\s*(\d+)",
+        "gpa_scale": 4.0,
+        "uses_plus_minus": True,
+        "tier": 2,
+        "cs_ranking": 98
+    },
 ]
 
 
@@ -3329,7 +3819,8 @@ def get_all_courses() -> List[Dict]:
     """Get all courses from all universities."""
     from .seed_courses_extended import get_extended_courses
     from .seed_courses_extended2 import get_extended_courses2
-    return BERKELEY_COURSES + UIUC_COURSES + STANFORD_COURSES + MIT_COURSES + CMU_COURSES + PURDUE_COURSES + get_extended_courses() + get_extended_courses2()
+    from .seed_courses_extended3 import get_extended_courses3
+    return BERKELEY_COURSES + UIUC_COURSES + STANFORD_COURSES + MIT_COURSES + CMU_COURSES + PURDUE_COURSES + get_extended_courses() + get_extended_courses2() + get_extended_courses3()
 
 
 def get_all_universities() -> List[Dict]:
