@@ -2010,8 +2010,8 @@ UWISC_CLUBS: List[Dict] = [
 UCSD_CLUBS: List[Dict] = [
     # TIER 5 - ELITE
     {
-        "id": "ucsd_acm",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_acm",
+        "university_id": "uc_san_diego",
         "name": "ACM at UCSD",
         "short_name": "ACM",
         "category": "engineering",
@@ -2028,8 +2028,8 @@ UCSD_CLUBS: List[Dict] = [
     },
     # TIER 4 - HIGHLY SELECTIVE
     {
-        "id": "ucsd_tse",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_tse",
+        "university_id": "uc_san_diego",
         "name": "Triton Software Engineering",
         "short_name": "TSE",
         "category": "social_impact",
@@ -2043,8 +2043,8 @@ UCSD_CLUBS: List[Dict] = [
         "description": "Builds software for nonprofits. Highly competitive. Agile sprints with real clients.",
     },
     {
-        "id": "ucsd_ds3",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_ds3",
+        "university_id": "uc_san_diego",
         "name": "Data Science Student Society",
         "short_name": "DS3",
         "category": "engineering",
@@ -2058,8 +2058,8 @@ UCSD_CLUBS: List[Dict] = [
         "description": "Data science projects, workshops, and competitions. Industry partnerships.",
     },
     {
-        "id": "ucsd_cses",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_cses",
+        "university_id": "uc_san_diego",
         "name": "Computer Science and Engineering Society",
         "short_name": "CSES",
         "category": "professional",
@@ -2073,8 +2073,8 @@ UCSD_CLUBS: List[Dict] = [
         "description": "Official CSE department student org. Tech talks, career fairs, and social events.",
     },
     {
-        "id": "ucsd_hack",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_hack",
+        "university_id": "uc_san_diego",
         "name": "HackXX / DiamondHacks",
         "short_name": "DiamondHacks",
         "category": "competition",
@@ -2090,8 +2090,8 @@ UCSD_CLUBS: List[Dict] = [
     },
     # TIER 3 - SELECTIVE
     {
-        "id": "ucsd_swe",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_swe",
+        "university_id": "uc_san_diego",
         "name": "Society of Women Engineers",
         "short_name": "SWE",
         "category": "professional",
@@ -2105,8 +2105,8 @@ UCSD_CLUBS: List[Dict] = [
         "description": "Women in engineering community. Career fairs and mentorship programs.",
     },
     {
-        "id": "ucsd_wic",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_wic",
+        "university_id": "uc_san_diego",
         "name": "Women in Computing",
         "short_name": "WIC",
         "category": "professional",
@@ -2119,8 +2119,8 @@ UCSD_CLUBS: List[Dict] = [
         "description": "Supports women in computing. Mentorship, workshops, and industry connections.",
     },
     {
-        "id": "ucsd_blockchain",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_blockchain",
+        "university_id": "uc_san_diego",
         "name": "Blockchain at UCSD",
         "short_name": "B@UCSD",
         "category": "engineering",
@@ -2134,8 +2134,8 @@ UCSD_CLUBS: List[Dict] = [
         "description": "Blockchain education and development. Smart contract workshops.",
     },
     {
-        "id": "ucsd_ieee",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_ieee",
+        "university_id": "uc_san_diego",
         "name": "IEEE Student Branch",
         "short_name": "IEEE",
         "category": "engineering",
@@ -2149,8 +2149,8 @@ UCSD_CLUBS: List[Dict] = [
     },
     # TIER 2 - COMPETITIVE
     {
-        "id": "ucsd_tbp",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_tbp",
+        "university_id": "uc_san_diego",
         "name": "Tau Beta Pi",
         "short_name": "TBP",
         "category": "professional",
@@ -2164,8 +2164,8 @@ UCSD_CLUBS: List[Dict] = [
         "description": "Engineering honor society. Top engineering students.",
     },
     {
-        "id": "ucsd_hkn",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_hkn",
+        "university_id": "uc_san_diego",
         "name": "Eta Kappa Nu (HKN)",
         "short_name": "HKN",
         "category": "professional",
@@ -2180,8 +2180,8 @@ UCSD_CLUBS: List[Dict] = [
         "description": "ECE Honor Society. Top ECE students. Tutoring and professional events.",
     },
     {
-        "id": "ucsd_nsbe",
-        "university_id": "ucsd",
+        "id": "uc_san_diego_nsbe",
+        "university_id": "uc_san_diego",
         "name": "National Society of Black Engineers",
         "short_name": "NSBE",
         "category": "professional",

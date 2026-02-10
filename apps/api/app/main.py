@@ -75,108 +75,41 @@ def auto_seed_data():
 
     db = SessionLocal()
     try:
-        # Seed universities
-        uni_count = db.query(University).count()
-        if uni_count == 0:
-            universities = get_all_universities()
-            for uni_data in universities:
+        # Seed universities — batch check existing IDs
+        existing_uni_ids = {r[0] for r in db.query(University.id).all()}
+        universities = get_all_universities()
+        added = 0
+        for uni_data in universities:
+            if uni_data["id"] not in existing_uni_ids:
                 db.add(University(**uni_data))
+                added += 1
+        if added:
             db.commit()
-            logger.info(f"Auto-seeded {len(universities)} universities")
-        else:
-            # Still add any new universities that don't exist yet
-            universities = get_all_universities()
-            added = 0
-            for uni_data in universities:
-                if not db.query(University).filter(University.id == uni_data["id"]).first():
-                    db.add(University(**uni_data))
-                    added += 1
-            if added:
-                db.commit()
-                logger.info(f"Auto-seeded {added} new universities (total: {uni_count + added})")
+            logger.info(f"Auto-seeded {added} new universities (total: {len(existing_uni_ids) + added})")
 
-        # Seed courses
-        course_count = db.query(Course).count()
-        if course_count == 0:
-            courses = get_all_courses()
-            for course_data in courses:
+        # Seed courses — batch check existing IDs, filter unknown keys
+        existing_course_ids = {r[0] for r in db.query(Course.id).all()}
+        courses = get_all_courses()
+        added = 0
+        for course_data in courses:
+            if course_data["id"] not in existing_course_ids:
                 db.add(Course(**_filter_model_keys(Course, course_data)))
+                added += 1
+        if added:
             db.commit()
-            logger.info(f"Auto-seeded {len(courses)} courses")
-        else:
-            courses = get_all_courses()
-            added = 0
-            for course_data in courses:
-                if not db.query(Course).filter(Course.id == course_data["id"]).first():
-                    db.add(Course(**_filter_model_keys(Course, course_data)))
-                    added += 1
-            if added:
-                db.commit()
-                logger.info(f"Auto-seeded {added} new courses (total: {course_count + added})")
+            logger.info(f"Auto-seeded {added} new courses (total: {len(existing_course_ids) + added})")
 
-        # Seed clubs
-        club_count = db.query(Club).count()
-        if club_count == 0:
-            clubs_data = get_all_clubs()
-            for club_data in clubs_data:
-                club = Club(
-                    id=club_data["id"],
-                    university_id=club_data["university_id"],
-                    name=club_data["name"],
-                    short_name=club_data.get("short_name"),
-                    category=club_data.get("category", "other"),
-                    aliases=club_data.get("aliases"),
-                    prestige_tier=club_data["prestige_tier"],
-                    prestige_score=club_data["prestige_score"],
-                    is_selective=club_data.get("is_selective", False),
-                    acceptance_rate=club_data.get("acceptance_rate"),
-                    typical_members=club_data.get("typical_members"),
-                    leadership_bonus=club_data.get("leadership_bonus", 1.0),
-                    is_technical=club_data.get("is_technical", False),
-                    is_professional=club_data.get("is_professional", False),
-                    has_projects=club_data.get("has_projects", False),
-                    has_competitions=club_data.get("has_competitions", False),
-                    has_corporate_sponsors=club_data.get("has_corporate_sponsors", False),
-                    is_honor_society=club_data.get("is_honor_society", False),
-                    relevant_to=club_data.get("relevant_to"),
-                    description=club_data.get("description"),
-                    confidence=club_data.get("confidence", 1.0),
-                    source="research",
-                )
-                db.add(club)
+        # Seed clubs — batch check existing IDs, filter unknown keys
+        existing_club_ids = {r[0] for r in db.query(Club.id).all()}
+        clubs_data = get_all_clubs()
+        added = 0
+        for club_data in clubs_data:
+            if club_data["id"] not in existing_club_ids:
+                db.add(Club(**_filter_model_keys(Club, club_data)))
+                added += 1
+        if added:
             db.commit()
-            logger.info(f"Auto-seeded {len(clubs_data)} clubs")
-        else:
-            clubs_data = get_all_clubs()
-            added = 0
-            for club_data in clubs_data:
-                if not db.query(Club).filter(Club.id == club_data["id"]).first():
-                    club = Club(
-                        id=club_data["id"],
-                        university_id=club_data["university_id"],
-                        name=club_data["name"],
-                        short_name=club_data.get("short_name"),
-                        category=club_data.get("category", "other"),
-                        prestige_tier=club_data["prestige_tier"],
-                        prestige_score=club_data["prestige_score"],
-                        is_selective=club_data.get("is_selective", False),
-                        acceptance_rate=club_data.get("acceptance_rate"),
-                        is_technical=club_data.get("is_technical", False),
-                        is_professional=club_data.get("is_professional", False),
-                        has_projects=club_data.get("has_projects", False),
-                        has_competitions=club_data.get("has_competitions", False),
-                        has_corporate_sponsors=club_data.get("has_corporate_sponsors", False),
-                        is_honor_society=club_data.get("is_honor_society", False),
-                        relevant_to=club_data.get("relevant_to"),
-                        description=club_data.get("description"),
-                        confidence=club_data.get("confidence", 1.0),
-                        source="research",
-                    )
-                    db.add(club)
-                    added += 1
-            if added:
-                db.commit()
-                logger.info(f"Auto-seeded {added} new clubs (total: {club_count + added})")
+            logger.info(f"Auto-seeded {added} new clubs (total: {len(existing_club_ids) + added})")
 
     except Exception as e:
         db.rollback()
