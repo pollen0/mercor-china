@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { vibeCodeApi, VibeCodeSession, VibeCodeSessionList } from '@/lib/api'
 
@@ -157,61 +157,13 @@ function SessionCard({
         </div>
       )}
 
-      {/* Completed: show archetype + strengths */}
+      {/* Completed: show confirmation only (feedback is employer-only) */}
       {isCompleted && (
-        <div className="space-y-3">
-          {/* Archetype Badge */}
-          {session.builderArchetype && ARCHETYPE_LABELS[session.builderArchetype] && (
-            <div className="flex items-start gap-3">
-              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${ARCHETYPE_LABELS[session.builderArchetype].color}`}>
-                {ARCHETYPE_LABELS[session.builderArchetype].label}
-              </span>
-              <p className="text-xs text-stone-500 pt-0.5">
-                {ARCHETYPE_LABELS[session.builderArchetype].description}
-              </p>
-            </div>
-          )}
-
-          {/* Strengths */}
-          {session.strengths && session.strengths.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-stone-600 mb-1.5">Strengths</p>
-              <ul className="space-y-1">
-                {session.strengths.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-stone-600">
-                    <svg className="h-3.5 w-3.5 text-teal-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {s}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Notable Patterns */}
-          {session.notablePatterns && session.notablePatterns.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-stone-600 mb-1.5">How you build</p>
-              <div className="flex flex-wrap gap-1.5">
-                {session.notablePatterns.map((p, i) => (
-                  <span key={i} className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded-full">
-                    {p}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Fallback if no analysis details yet */}
-          {!session.builderArchetype && !session.strengths?.length && (
-            <div className="flex items-center gap-2 text-sm text-teal-700">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Analysis complete. Your builder profile is visible to employers.
-            </div>
-          )}
+        <div className="flex items-center gap-2 text-sm text-teal-700">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Analysis complete. Your builder profile is visible to employers.
         </div>
       )}
     </div>
@@ -569,6 +521,24 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showUpload, setShowUpload] = useState(false)
+  const [isLoading, setIsLoading] = useState(!initialData)
+
+  // Fetch sessions on mount if no initialData provided
+  useEffect(() => {
+    if (!initialData) {
+      const loadSessions = async () => {
+        try {
+          const data = await vibeCodeApi.listSessions()
+          setSessions(data.sessions)
+        } catch (err) {
+          console.error('Failed to load vibe code sessions:', err)
+        } finally {
+          setIsLoading(false)
+        }
+      }
+      loadSessions()
+    }
+  }, [initialData])
 
   const handleUpload = useCallback(async (data: Parameters<typeof vibeCodeApi.upload>[0]) => {
     setIsUploading(true)
@@ -660,6 +630,13 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin h-5 w-5 border-2 border-stone-200 border-t-stone-600 rounded-full" />
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="text-sm text-red-600 bg-red-50 rounded-lg p-3">
@@ -676,7 +653,7 @@ export default function VibeCodeSection({ initialData, onDataChange }: VibeCodeS
         )}
 
         {/* Empty State */}
-        {sessions.length === 0 && !showUpload && (
+        {!isLoading && sessions.length === 0 && !showUpload && (
           <div className="text-center py-8">
             <div className="text-stone-300 mb-3">
               <svg className="mx-auto h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
