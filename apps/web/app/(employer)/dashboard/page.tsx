@@ -12,7 +12,7 @@ import { CandidateCard } from '@/components/dashboard/candidate-card'
 import { MatchAlerts } from '@/components/employer/match-alerts'
 import { CandidateNotes } from '@/components/employer/candidate-notes'
 import { EmployerVerificationBanner } from '@/components/verification/employer-verification-banner'
-import { employerApi, inviteApi, talentPoolApi, organizationApi, schedulingLinkApi, teamMemberApi, type Employer, type DashboardStats, type InterviewSession, type Job, type InviteTokenResponse, type TalentPoolCandidate, type TalentProfileDetail, type Vertical, type RoleType, type Organization, type OrganizationMember, type OrganizationInvite, type SchedulingLink, type TeamMember, type MatchStatus } from '@/lib/api'
+import { employerApi, inviteApi, talentPoolApi, organizationApi, schedulingLinkApi, teamMemberApi, vibeCodeApi, type Employer, type DashboardStats, type InterviewSession, type Job, type InviteTokenResponse, type TalentPoolCandidate, type TalentProfileDetail, type Vertical, type RoleType, type Organization, type OrganizationMember, type OrganizationInvite, type SchedulingLink, type TeamMember, type MatchStatus, type VibeCodeProfileSummary } from '@/lib/api'
 import { CustomSelect, StatusSelect, type SelectOption } from '@/components/ui/custom-select'
 import { logout, clearAuthTokens } from '@/lib/auth'
 
@@ -149,6 +149,8 @@ function DashboardContent() {
 
   // Expandable rows state
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [vibeCodeProfiles, setVibeCodeProfiles] = useState<Record<string, VibeCodeProfileSummary>>({})
+  const [loadingVibeProfile, setLoadingVibeProfile] = useState<string | null>(null)
   const [expandedData, setExpandedData] = useState<Record<string, TalentProfileDetail>>({})
   const [loadingDetail, setLoadingDetail] = useState<string | null>(null)
 
@@ -704,6 +706,7 @@ function DashboardContent() {
   // Expandable row handlers
   const toggleExpand = async (candidate: TalentPoolCandidate) => {
     const id = candidate.profileId || candidate.candidateId
+    const candidateId = candidate.candidateId
 
     if (expandedId === id) {
       setExpandedId(null)
@@ -712,6 +715,7 @@ function DashboardContent() {
 
     setExpandedId(id)
 
+    // Fetch profile detail if not already loaded
     if (!expandedData[id]) {
       setLoadingDetail(id)
       try {
@@ -721,6 +725,21 @@ function DashboardContent() {
         console.error('Failed to load candidate details:', error)
       } finally {
         setLoadingDetail(null)
+      }
+    }
+
+    // Fetch vibe code profile if not already loaded
+    if (!vibeCodeProfiles[candidateId]) {
+      setLoadingVibeProfile(candidateId)
+      try {
+        const vibeProfile = await vibeCodeApi.getProfile(candidateId)
+        if (vibeProfile.totalSessions > 0) {
+          setVibeCodeProfiles(prev => ({ ...prev, [candidateId]: vibeProfile }))
+        }
+      } catch {
+        // No vibe code sessions - that's OK
+      } finally {
+        setLoadingVibeProfile(null)
       }
     }
   }
@@ -2230,6 +2249,78 @@ ${employer?.companyName || 'Our Company'}`)
                                       )}
                                     </div>
                                   )}
+
+                                  {/* AI Builder Profile (Vibe Code) */}
+                                  {(() => {
+                                    const vibeProfile = vibeCodeProfiles[detail.candidate.id]
+                                    const isLoading = loadingVibeProfile === detail.candidate.id
+
+                                    if (isLoading) {
+                                      return (
+                                        <div>
+                                          <h4 className="text-sm font-semibold text-stone-700 mb-2">AI Builder Profile</h4>
+                                          <div className="flex items-center gap-2 text-xs text-stone-400">
+                                            <div className="animate-spin h-3 w-3 border border-stone-300 border-t-stone-600 rounded-full" />
+                                            Loading...
+                                          </div>
+                                        </div>
+                                      )
+                                    }
+
+                                    if (vibeProfile && vibeProfile.totalSessions > 0) {
+                                      return (
+                                        <div>
+                                          <h4 className="text-sm font-semibold text-stone-700 mb-2">AI Builder Profile</h4>
+                                          <div className="space-y-2">
+                                            {vibeProfile.bestBuilderScore && (
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-xs text-stone-500">Builder Score</span>
+                                                <span className="text-sm font-bold text-teal-600">{vibeProfile.bestBuilderScore.toFixed(1)}</span>
+                                              </div>
+                                            )}
+                                            {vibeProfile.primaryArchetype && (
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-xs text-stone-500">Archetype</span>
+                                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                                  vibeProfile.primaryArchetype === 'architect'
+                                                    ? 'bg-stone-900 text-white'
+                                                    : vibeProfile.primaryArchetype === 'iterative_builder'
+                                                    ? 'bg-teal-50 text-teal-700'
+                                                    : vibeProfile.primaryArchetype === 'experimenter'
+                                                    ? 'bg-stone-100 text-stone-700'
+                                                    : vibeProfile.primaryArchetype === 'ai_dependent'
+                                                    ? 'bg-amber-50 text-amber-700'
+                                                    : vibeProfile.primaryArchetype === 'copy_paster'
+                                                    ? 'bg-red-50 text-red-700'
+                                                    : 'bg-stone-100 text-stone-700'
+                                                }`}>
+                                                  {vibeProfile.primaryArchetype.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                                </span>
+                                              </div>
+                                            )}
+                                            {vibeProfile.topStrengths && vibeProfile.topStrengths.length > 0 && (
+                                              <div>
+                                                <p className="text-xs text-stone-500 mb-1">Strengths</p>
+                                                <ul className="space-y-0.5">
+                                                  {vibeProfile.topStrengths.slice(0, 2).map((s, i) => (
+                                                    <li key={i} className="text-xs text-stone-600 flex items-start gap-1">
+                                                      <span className="text-teal-500 mt-0.5">+</span>
+                                                      <span className="line-clamp-1">{s}</span>
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              </div>
+                                            )}
+                                            <p className="text-xs text-stone-400">
+                                              {vibeProfile.totalSessions} session{vibeProfile.totalSessions !== 1 ? 's' : ''} analyzed
+                                            </p>
+                                          </div>
+                                        </div>
+                                      )
+                                    }
+
+                                    return null
+                                  })()}
 
                                   {detail.candidate.resumeData?.projects && detail.candidate.resumeData.projects.length > 0 && (
                                     <div>
