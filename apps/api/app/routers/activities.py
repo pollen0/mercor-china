@@ -432,10 +432,35 @@ async def delete_award(
 def _get_university_id(institution: str) -> Optional[str]:
     """Convert institution name to university ID."""
     inst_lower = institution.lower() if institution else ""
-    if "berkeley" in inst_lower or "ucb" in inst_lower or "uc berkeley" in inst_lower:
-        return "berkeley"
-    if "illinois" in inst_lower or "uiuc" in inst_lower:
-        return "uiuc"
+
+    mapping = [
+        (["berkeley", "ucb", "uc berkeley", "cal"], "berkeley"),
+        (["illinois", "uiuc", "urbana"], "uiuc"),
+        (["stanford"], "stanford"),
+        (["mit", "massachusetts institute"], "mit"),
+        (["carnegie mellon", "cmu"], "cmu"),
+        (["purdue"], "purdue"),
+        (["cornell"], "cornell"),
+        (["university of washington", "uw seattle", "uw "], "uw"),
+        (["georgia tech", "gatech", "gt "], "georgia_tech"),
+        (["princeton"], "princeton"),
+        (["caltech", "california institute of tech"], "caltech"),
+        (["michigan", "umich", "u of m"], "umich"),
+        (["columbia"], "columbia"),
+        (["ucla", "uc los angeles"], "ucla"),
+        (["ut austin", "university of texas at austin", "texas austin"], "ut_austin"),
+        (["uw madison", "uw-madison", "wisconsin", "wisc"], "uw_madison"),
+        (["uc san diego", "ucsd"], "ucsd"),
+        (["maryland", "umd", "college park"], "umd"),
+        (["upenn", "u penn", "penn", "university of pennsylvania"], "upenn"),
+        (["harvard"], "harvard"),
+        (["uc santa barbara", "ucsb"], "ucsb"),
+    ]
+
+    for keywords, uni_id in mapping:
+        if any(kw in inst_lower for kw in keywords):
+            return uni_id
+
     return None
 
 

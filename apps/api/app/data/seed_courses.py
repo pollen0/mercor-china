@@ -32,7 +32,7 @@ UNIVERSITIES = [
         "name": "Stanford University",
         "short_name": "Stanford",
         "course_pattern": r"([A-Z]+)\s*(\d+[A-Z]?)",
-        "gpa_scale": 4.0,
+        "gpa_scale": 4.3,
         "uses_plus_minus": True,
         "tier": 1,
         "cs_ranking": 2
@@ -75,7 +75,7 @@ UNIVERSITIES = [
         "gpa_scale": 4.3,
         "uses_plus_minus": True,
         "tier": 1,
-        "cs_ranking": 6
+        "cs_ranking": 7
     },
     {
         "id": "uw",
@@ -93,9 +93,9 @@ UNIVERSITIES = [
         "short_name": "Georgia Tech",
         "course_pattern": r"([A-Z]+)\s*(\d+)",
         "gpa_scale": 4.0,
-        "uses_plus_minus": True,
+        "uses_plus_minus": False,
         "tier": 1,
-        "cs_ranking": 8
+        "cs_ranking": 6
     },
     {
         "id": "princeton",
@@ -103,19 +103,19 @@ UNIVERSITIES = [
         "short_name": "Princeton",
         "course_pattern": r"([A-Z]+)\s*(\d+)",
         "gpa_scale": 4.0,
-        "uses_plus_minus": False,
+        "uses_plus_minus": True,
         "tier": 1,
-        "cs_ranking": 9
+        "cs_ranking": 7
     },
     {
         "id": "caltech",
         "name": "California Institute of Technology",
         "short_name": "Caltech",
-        "course_pattern": r"([A-Z]+)\s*(\d+)",
-        "gpa_scale": 4.0,
+        "course_pattern": r"([A-Z]+)\s*(\d+[a-z]?)",
+        "gpa_scale": 4.3,
         "uses_plus_minus": True,
         "tier": 1,
-        "cs_ranking": 10
+        "cs_ranking": 11
     },
     {
         "id": "umich",
@@ -132,7 +132,7 @@ UNIVERSITIES = [
         "name": "Columbia University",
         "short_name": "Columbia",
         "course_pattern": r"([A-Z]+)\s*(\d+)",
-        "gpa_scale": 4.0,
+        "gpa_scale": 4.33,
         "uses_plus_minus": True,
         "tier": 1,
         "cs_ranking": 12
@@ -163,7 +163,7 @@ UNIVERSITIES = [
         "short_name": "UW-Madison",
         "course_pattern": r"([A-Z]+)\s*(\d+)",
         "gpa_scale": 4.0,
-        "uses_plus_minus": True,
+        "uses_plus_minus": False,
         "tier": 1,
         "cs_ranking": 15
     },
@@ -3026,7 +3026,8 @@ PURDUE_COURSES = [
 
 def get_all_courses() -> List[Dict]:
     """Get all courses from all universities."""
-    return BERKELEY_COURSES + UIUC_COURSES + STANFORD_COURSES + MIT_COURSES + CMU_COURSES + PURDUE_COURSES
+    from .seed_courses_extended import get_extended_courses
+    return BERKELEY_COURSES + UIUC_COURSES + STANFORD_COURSES + MIT_COURSES + CMU_COURSES + PURDUE_COURSES + get_extended_courses()
 
 
 def get_all_universities() -> List[Dict]:

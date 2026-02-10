@@ -3441,7 +3441,8 @@ PURDUE_CLUBS = [
 
 def get_all_clubs():
     """Get all clubs for seeding."""
-    return BERKELEY_CLUBS + UIUC_CLUBS + STANFORD_CLUBS + MIT_CLUBS + CMU_CLUBS + PURDUE_CLUBS
+    from .seed_clubs_extended import get_extended_clubs
+    return BERKELEY_CLUBS + UIUC_CLUBS + STANFORD_CLUBS + MIT_CLUBS + CMU_CLUBS + PURDUE_CLUBS + get_extended_clubs()
 
 
 def get_berkeley_clubs():
