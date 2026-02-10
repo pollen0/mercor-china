@@ -2082,7 +2082,21 @@ ${employer?.companyName || 'Our Company'}`)
                                 <div className="w-8 h-8 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin"></div>
                               </div>
                             ) : detail ? (
-                              <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-3">
+                              <div className="space-y-4">
+                                {/* View Full Profile Link */}
+                                <div className="flex items-center justify-end">
+                                  <Link
+                                    href={`/dashboard/talent-pool/${rowId}`}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-teal-700 hover:text-teal-800 hover:bg-teal-100 rounded-md transition-colors"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    View Full Profile
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </Link>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-3">
                                 {/* Left: Contact & Basic Info */}
                                 <div className="space-y-4">
                                   <div>
@@ -2428,6 +2442,7 @@ ${employer?.companyName || 'Our Company'}`)
                                     />
                                   </div>
                                 </div>
+                              </div>
                               </div>
                             ) : (
                               <p className="text-sm text-stone-500 text-center py-4">Failed to load details</p>
