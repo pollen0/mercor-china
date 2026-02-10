@@ -58,9 +58,9 @@ function EmployerLoginForm() {
         expiresIn: (result as { expires_in?: number }).expires_in || 3600,
       })
 
-      // Redirect to returnTo URL or dashboard
+      // Redirect to returnTo URL or talent pool (default view for employers)
       const returnTo = searchParams.get('returnTo')
-      router.push(returnTo || '/employer/dashboard')
+      router.push(returnTo || '/dashboard?tab=talent')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {

@@ -118,6 +118,111 @@ class CohortService:
             "badge_text": f"Top {top_percent}% of {cohort_label}",
         }
 
+    def calculate_percentile_by_year(
+        self,
+        score: float,
+        graduation_year: Optional[int],
+        vertical: Optional[Vertical],
+        db: Session,
+    ) -> Tuple[Optional[int], Optional[str], int]:
+        """
+        Calculate a candidate's percentile within their graduation year cohort (all universities).
+
+        This is used when university-specific cohort is too small or not available.
+
+        Args:
+            score: Candidate's best score (0-10)
+            graduation_year: Candidate's graduation year
+            vertical: Career vertical (engineering, data, etc.)
+            db: Database session
+
+        Returns:
+            Tuple of (percentile 1-100, cohort_label, cohort_size)
+        """
+        if not score or not graduation_year:
+            return None, None, 0
+
+        # Build query for all candidates in this graduation year with completed profiles
+        query = db.query(CandidateVerticalProfile.best_score).join(
+            Candidate, CandidateVerticalProfile.candidate_id == Candidate.id
+        ).filter(
+            Candidate.graduation_year == graduation_year,
+            CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED,
+            CandidateVerticalProfile.best_score.isnot(None),
+        )
+
+        # Filter by vertical if provided
+        if vertical:
+            query = query.filter(CandidateVerticalProfile.vertical == vertical)
+
+        # Get all scores in cohort
+        scores = [row[0] for row in query.all()]
+        cohort_size = len(scores)
+
+        # Need at least 3 people for meaningful percentile
+        if cohort_size < 3:
+            return None, None, cohort_size
+
+        # Calculate percentile (percentage of scores this candidate beats)
+        scores_below = sum(1 for s in scores if s < score)
+        percentile = int((scores_below / cohort_size) * 100)
+
+        # Clamp to 1-99
+        percentile = max(1, min(99, percentile))
+
+        # Generate cohort label
+        cohort_label = f"Class of {graduation_year}"
+
+        return percentile, cohort_label, cohort_size
+
+    def get_best_cohort_badge(
+        self,
+        score: float,
+        university: Optional[str],
+        graduation_year: Optional[int],
+        vertical: Optional[Vertical],
+        db: Session,
+    ) -> Optional[Dict]:
+        """
+        Get the best cohort badge - tries university+year first, then year only.
+
+        Args:
+            score: Candidate's best score
+            university: Candidate's university (optional)
+            graduation_year: Candidate's graduation year
+            vertical: Career vertical
+            db: Database session
+
+        Returns:
+            Dict with badge info or None if not applicable
+        """
+        # Try university-specific cohort first
+        if university and graduation_year:
+            badge = self.get_cohort_badge(score, university, graduation_year, vertical, db)
+            if badge:
+                return badge
+
+        # Fall back to graduation year only
+        if graduation_year:
+            percentile, cohort_label, cohort_size = self.calculate_percentile_by_year(
+                score, graduation_year, vertical, db
+            )
+
+            if percentile is None or percentile < 50:
+                return None
+
+            top_percent = 100 - percentile
+
+            return {
+                "percentile": percentile,
+                "top_percent": top_percent,
+                "cohort_label": cohort_label,
+                "cohort_size": cohort_size,
+                "badge_text": f"Top {top_percent}% of {cohort_label}",
+            }
+
+        return None
+
     def get_cohort_stats(
         self,
         university: str,

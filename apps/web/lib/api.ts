@@ -2702,6 +2702,14 @@ export interface ScoreBreakdown {
   githubActivity?: number
 }
 
+export interface CohortBadge {
+  percentile: number        // 1-99, what percentile they're in
+  topPercent: number        // 100 - percentile (e.g., "Top 10%")
+  cohortLabel: string       // e.g., "Class of 2027" or "Berkeley 2027"
+  cohortSize: number        // How many in the cohort
+  badgeText: string         // e.g., "Top 10% of Class of 2027"
+}
+
 export interface TalentPoolCandidate {
   profileId?: string  // May be null for candidates without vertical profile
   candidateId: string
@@ -2724,6 +2732,8 @@ export interface TalentPoolCandidate {
   completionStatus?: CompletionStatus
   // Score breakdown
   scoreBreakdown?: ScoreBreakdown
+  // Cohort ranking badge (e.g., "Top 10% of Class of 2027")
+  cohortBadge?: CohortBadge
 }
 
 // Enhanced profile response with video and scoring details
@@ -2982,6 +2992,7 @@ export const candidateVerticalApi = {
 function transformTalentPoolCandidate(c: Record<string, unknown>): TalentPoolCandidate {
   const completionStatus = c.completion_status as Record<string, unknown> | undefined
   const scoreBreakdown = c.score_breakdown as Record<string, unknown> | undefined
+  const cohortBadge = c.cohort_badge as Record<string, unknown> | undefined
 
   return {
     profileId: (c.profile_id || c.profileId) as string | undefined,
@@ -3019,6 +3030,13 @@ function transformTalentPoolCandidate(c: Record<string, unknown>): TalentPoolCan
       education: scoreBreakdown.education as number | undefined,
       githubActivity: (scoreBreakdown.github_activity || scoreBreakdown.githubActivity) as number | undefined,
     } : undefined,
+    cohortBadge: cohortBadge ? {
+      percentile: cohortBadge.percentile as number,
+      topPercent: (cohortBadge.top_percent || cohortBadge.topPercent) as number,
+      cohortLabel: (cohortBadge.cohort_label || cohortBadge.cohortLabel) as string,
+      cohortSize: (cohortBadge.cohort_size || cohortBadge.cohortSize) as number,
+      badgeText: (cohortBadge.badge_text || cohortBadge.badgeText) as string,
+    } : undefined,
   }
 }
 
@@ -3030,6 +3048,7 @@ export const talentPoolApi = {
     vertical?: Vertical
     roleType?: RoleType
     minScore?: number
+    graduationYear?: number  // Filter by graduation year
     search?: string  // Full-text search on name, skills, resume
     includeIncomplete?: boolean  // Include candidates with profile data but no completed interview (default: true)
     limit?: number
@@ -3039,6 +3058,7 @@ export const talentPoolApi = {
     if (params?.vertical) searchParams.set('vertical', params.vertical)
     if (params?.roleType) searchParams.set('role_type', params.roleType)
     if (params?.minScore) searchParams.set('min_score', params.minScore.toString())
+    if (params?.graduationYear) searchParams.set('graduation_year', params.graduationYear.toString())
     if (params?.search) searchParams.set('search', params.search)
     if (params?.includeIncomplete !== undefined) searchParams.set('include_incomplete', params.includeIncomplete.toString())
     if (params?.limit) searchParams.set('limit', params.limit.toString())

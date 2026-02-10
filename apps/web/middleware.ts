@@ -27,6 +27,7 @@ const CANDIDATE_PROTECTED_ROUTES = [
 // Routes that require employer authentication
 const EMPLOYER_PROTECTED_ROUTES = [
   '/employer/dashboard',
+  '/dashboard',  // New unified dashboard
 ]
 
 // Auth routes - redirect to dashboard if already authenticated
@@ -130,8 +131,8 @@ export function middleware(request: NextRequest) {
 
   if (isEmployerAuthRoute(pathname)) {
     if (employerToken) {
-      // Already logged in, redirect to dashboard
-      return NextResponse.redirect(new URL('/employer/dashboard', request.url))
+      // Already logged in, redirect to talent pool (default employer view)
+      return NextResponse.redirect(new URL('/dashboard?tab=talent', request.url))
     }
     return NextResponse.next()
   }

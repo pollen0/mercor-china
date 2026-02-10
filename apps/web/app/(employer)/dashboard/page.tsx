@@ -143,6 +143,7 @@ function DashboardContent() {
   const [talentVertical, setTalentVertical] = useState<Vertical | ''>('')
   const [talentRole, setTalentRole] = useState<RoleType | ''>('')
   const [talentMinScore, setTalentMinScore] = useState<number>(0)
+  const [talentGraduationYear, setTalentGraduationYear] = useState<number | ''>('')
   const [talentSearch, setTalentSearch] = useState('')
   const [talentSearchInput, setTalentSearchInput] = useState('')
 
@@ -297,6 +298,7 @@ function DashboardContent() {
         vertical: talentVertical || undefined,
         roleType: talentRole || undefined,
         minScore: talentMinScore || undefined,
+        graduationYear: talentGraduationYear || undefined,
         search: talentSearch || undefined,
         limit: 12,
       })
@@ -307,7 +309,7 @@ function DashboardContent() {
     } finally {
       setTalentLoading(false)
     }
-  }, [talentVertical, talentRole, talentMinScore, talentSearch])
+  }, [talentVertical, talentRole, talentMinScore, talentGraduationYear, talentSearch])
 
   useEffect(() => {
     if (activeTab === 'talent') {
@@ -1843,6 +1845,22 @@ ${employer?.companyName || 'Our Company'}`)
                       size="sm"
                     />
                   </div>
+                  <div className="w-full sm:w-36">
+                    <Label className="text-xs text-stone-500 mb-1.5 block">Graduation Year</Label>
+                    <CustomSelect
+                      value={String(talentGraduationYear)}
+                      onChange={(val) => setTalentGraduationYear(val ? Number(val) : '')}
+                      options={[
+                        { value: '', label: 'All Years' },
+                        { value: '2025', label: 'Class of 2025' },
+                        { value: '2026', label: 'Class of 2026' },
+                        { value: '2027', label: 'Class of 2027' },
+                        { value: '2028', label: 'Class of 2028' },
+                        { value: '2029', label: 'Class of 2029' },
+                      ]}
+                      size="sm"
+                    />
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
@@ -1850,6 +1868,7 @@ ${employer?.companyName || 'Our Company'}`)
                       setTalentVertical('')
                       setTalentRole('')
                       setTalentMinScore(0)
+                      setTalentGraduationYear('')
                       setTalentSearchInput('')
                       setTalentSearch('')
                     }}
@@ -1886,7 +1905,8 @@ ${employer?.companyName || 'Our Company'}`)
               <Card>
                 <div className="divide-y divide-stone-100">
                   {candidates.map((candidate) => {
-                    const displayScore = candidate.bestScore ?? candidate.profileScore
+                    // Try bestScore first, then interviewScore (for completed interviews), then profileScore (pre-interview)
+                    const displayScore = candidate.bestScore ?? candidate.interviewScore ?? candidate.profileScore
                     const isProfileOnly = candidate.status === 'profile_only' || candidate.status === 'pending' || candidate.status === 'in_progress'
                     const rowId = candidate.profileId || candidate.candidateId
                     const isExpanded = expandedId === rowId
@@ -1921,8 +1941,18 @@ ${employer?.companyName || 'Our Company'}`)
 
                             {/* Main Info */}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="font-medium text-stone-900 truncate">{candidate.candidateName}</h3>
+                                {candidate.graduationYear && (
+                                  <span className="px-1.5 py-0.5 text-xs bg-stone-200 text-stone-700 rounded-full font-medium">
+                                    '{String(candidate.graduationYear).slice(-2)}
+                                  </span>
+                                )}
+                                {candidate.cohortBadge && (
+                                  <span className="px-2 py-0.5 text-xs bg-teal-100 text-teal-700 rounded-full font-medium">
+                                    Top {candidate.cohortBadge.topPercent}%
+                                  </span>
+                                )}
                                 {candidate.completionStatus?.resumeUploaded && (
                                   <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">Resume</span>
                                 )}
@@ -1954,6 +1984,11 @@ ${employer?.companyName || 'Our Company'}`)
                                     {ROLE_NAMES[candidate.roleType] || candidate.roleType}
                                   </span>
                                 )}
+                                {candidate.cohortBadge && (
+                                  <span className="text-xs text-teal-600 font-medium hidden lg:inline" title={`Out of ${candidate.cohortBadge.cohortSize} candidates`}>
+                                    {candidate.cohortBadge.cohortLabel}
+                                  </span>
+                                )}
                               </div>
                             </div>
 
@@ -1970,7 +2005,10 @@ ${employer?.companyName || 'Our Company'}`)
                             </div>
 
                             {/* Score */}
-                            <div className="hidden sm:block text-center w-16 flex-shrink-0">
+                            <div
+                              className="hidden sm:block text-center w-20 flex-shrink-0"
+                              title={candidate.cohortBadge ? `${candidate.cohortBadge.badgeText} (${candidate.cohortBadge.cohortSize} candidates)` : undefined}
+                            >
                               {displayScore ? (
                                 <>
                                   <div className={`text-lg font-bold ${isProfileOnly ? 'text-blue-600' : 'text-teal-600'}`}>

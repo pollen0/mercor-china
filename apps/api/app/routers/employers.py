@@ -1681,6 +1681,7 @@ async def browse_talent_pool(
     vertical: Optional[str] = None,
     role_type: Optional[str] = None,
     min_score: float = 0.0,
+    graduation_year: Optional[int] = None,  # Filter by graduation year
     search: Optional[str] = None,
     include_incomplete: bool = True,  # Include candidates with profile data but no completed interview
     limit: int = 20,
@@ -1694,9 +1695,9 @@ async def browse_talent_pool(
     Now includes candidates who have uploaded profile data even before completing interviews.
     Shows completion status indicators and profile-based scores.
 
-    Filter by vertical, role type, minimum score, and search keywords.
+    Filter by vertical, role type, minimum score, graduation year, and search keywords.
     Search matches against skills, company names, and job titles in resume.
-    Returns candidate profiles with interview scores, profile scores, and completion status.
+    Returns candidate profiles with interview scores, profile scores, completion status, and cohort ranking.
     """
     from sqlalchemy import or_, cast, String, case
     from sqlalchemy.dialects.postgresql import JSONB
@@ -1736,6 +1737,10 @@ async def browse_talent_pool(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid role type: {role_type}"
             )
+
+    # Filter by graduation year
+    if graduation_year:
+        completed_query = completed_query.filter(Candidate.graduation_year == graduation_year)
 
     # Filter by minimum score
     if min_score > 0:
@@ -1885,12 +1890,12 @@ async def browse_talent_pool(
             # Sort by bytes and take top 5
             github_languages = sorted(langs.keys(), key=lambda x: langs.get(x, 0), reverse=True)[:5]
 
-        # Calculate cohort badge (e.g., "Top 10% of Berkeley 2026")
+        # Calculate cohort badge (e.g., "Top 10% of Berkeley 2026" or "Top 15% of Class of 2027")
         cohort_badge = None
-        if profile.best_score and candidate.university and candidate.graduation_year:
-            badge_data = cohort_service.get_cohort_badge(
+        if profile.best_score and candidate.graduation_year:
+            badge_data = cohort_service.get_best_cohort_badge(
                 score=profile.best_score,
-                university=candidate.university,
+                university=candidate.university,  # May be None, will fall back to year-only
                 graduation_year=candidate.graduation_year,
                 vertical=profile.vertical,
                 db=db,
@@ -1942,6 +1947,12 @@ async def browse_talent_pool(
         if added_candidate_ids:
             profile_only_query = profile_only_query.filter(
                 Candidate.id.notin_(added_candidate_ids)
+            )
+
+        # Apply graduation year filter
+        if graduation_year:
+            profile_only_query = profile_only_query.filter(
+                Candidate.graduation_year == graduation_year
             )
 
         # Apply search filter
