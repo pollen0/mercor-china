@@ -58,6 +58,13 @@ def validate_required_env_vars():
         logger.warning("ADMIN_PASSWORD not set - admin endpoints will be inaccessible")
 
 
+def _filter_model_keys(model_class, data: dict) -> dict:
+    """Filter dict to only keys that are columns on the model."""
+    from sqlalchemy import inspect
+    valid_keys = {c.key for c in inspect(model_class).column_attrs}
+    return {k: v for k, v in data.items() if k in valid_keys}
+
+
 def auto_seed_data():
     """Auto-seed universities, courses, and clubs on startup if tables are empty."""
     from .database import SessionLocal
@@ -93,7 +100,7 @@ def auto_seed_data():
         if course_count == 0:
             courses = get_all_courses()
             for course_data in courses:
-                db.add(Course(**course_data))
+                db.add(Course(**_filter_model_keys(Course, course_data)))
             db.commit()
             logger.info(f"Auto-seeded {len(courses)} courses")
         else:
@@ -101,7 +108,7 @@ def auto_seed_data():
             added = 0
             for course_data in courses:
                 if not db.query(Course).filter(Course.id == course_data["id"]).first():
-                    db.add(Course(**course_data))
+                    db.add(Course(**_filter_model_keys(Course, course_data)))
                     added += 1
             if added:
                 db.commit()

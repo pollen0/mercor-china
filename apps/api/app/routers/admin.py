@@ -20,6 +20,7 @@ from ..models import (
     InterviewStatus,
     Match,
     MatchStatus,
+    MarketingReferrer,
 )
 from ..models.candidate import CandidateVerticalProfile
 from ..models.referral import Referral
@@ -674,3 +675,257 @@ async def get_referral_stats(
         "unique_referrers": unique_referrers,
         "conversion_rate": round(interviewed / total * 100, 1) if total > 0 else 0,
     }
+
+
+# ============= Marketing Referrer Endpoints =============
+
+class MarketingReferrerCreate(BaseModel):
+    name: str
+    email: Optional[str] = None
+    role: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class MarketingReferrerUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[str] = None
+    notes: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class MarketingReferrerResponse(BaseModel):
+    id: str
+    name: str
+    email: Optional[str] = None
+    role: Optional[str] = None
+    referral_code: str
+    referral_link: str
+    is_active: bool
+    notes: Optional[str] = None
+    total_signups: int = 0
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+def generate_marketing_referral_code(name: str) -> str:
+    """Generate a unique referral code for a marketing referrer."""
+    import secrets
+    # Create a short name prefix (first 3 letters, uppercase)
+    name_prefix = ''.join(c for c in name.upper() if c.isalpha())[:3]
+    if len(name_prefix) < 3:
+        name_prefix = name_prefix.ljust(3, 'X')
+    # Add random suffix
+    random_suffix = secrets.token_hex(3).upper()
+    return f"MKT-{name_prefix}-{random_suffix}"
+
+
+@router.post("/marketing-referrers", response_model=MarketingReferrerResponse)
+async def create_marketing_referrer(
+    data: MarketingReferrerCreate,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Create a new marketing referrer (non-user with referral tracking)."""
+    from ..config import settings
+
+    # Generate unique referral code
+    referral_code = generate_marketing_referral_code(data.name)
+
+    # Ensure uniqueness (retry if collision)
+    while db.query(MarketingReferrer).filter(MarketingReferrer.referral_code == referral_code).first():
+        referral_code = generate_marketing_referral_code(data.name)
+
+    referrer = MarketingReferrer(
+        id=generate_cuid("mr_"),
+        name=data.name,
+        email=data.email,
+        role=data.role,
+        notes=data.notes,
+        referral_code=referral_code,
+        is_active=True,
+    )
+
+    db.add(referrer)
+    db.commit()
+    db.refresh(referrer)
+
+    logger.info(f"Created marketing referrer: {referrer.name} ({referral_code})")
+
+    frontend_url = getattr(settings, 'frontend_url', 'https://pathway.careers')
+    referral_link = f"{frontend_url}/register?ref={referral_code}"
+
+    return MarketingReferrerResponse(
+        id=referrer.id,
+        name=referrer.name,
+        email=referrer.email,
+        role=referrer.role,
+        referral_code=referrer.referral_code,
+        referral_link=referral_link,
+        is_active=referrer.is_active,
+        notes=referrer.notes,
+        total_signups=0,
+        created_at=referrer.created_at,
+    )
+
+
+@router.get("/marketing-referrers")
+async def list_marketing_referrers(
+    include_inactive: bool = False,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """List all marketing referrers with their signup stats."""
+    from ..config import settings
+
+    query = db.query(MarketingReferrer)
+    if not include_inactive:
+        query = query.filter(MarketingReferrer.is_active == True)
+
+    referrers = query.order_by(MarketingReferrer.created_at.desc()).all()
+
+    frontend_url = getattr(settings, 'frontend_url', 'https://pathway.careers')
+
+    result = []
+    for ref in referrers:
+        # Count signups attributed to this referrer
+        signup_count = db.query(func.count(Candidate.id)).filter(
+            Candidate.marketing_referrer_id == ref.id
+        ).scalar() or 0
+
+        result.append({
+            "id": ref.id,
+            "name": ref.name,
+            "email": ref.email,
+            "role": ref.role,
+            "referral_code": ref.referral_code,
+            "referral_link": f"{frontend_url}/register?ref={ref.referral_code}",
+            "is_active": ref.is_active,
+            "notes": ref.notes,
+            "total_signups": signup_count,
+            "created_at": ref.created_at.isoformat() if ref.created_at else None,
+        })
+
+    return {"marketing_referrers": result, "total": len(result)}
+
+
+@router.get("/marketing-referrers/{referrer_id}")
+async def get_marketing_referrer(
+    referrer_id: str,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Get details of a specific marketing referrer including their referred candidates."""
+    from ..config import settings
+
+    referrer = db.query(MarketingReferrer).filter(MarketingReferrer.id == referrer_id).first()
+    if not referrer:
+        raise HTTPException(status_code=404, detail="Marketing referrer not found")
+
+    # Get all candidates referred by this referrer
+    referred_candidates = db.query(Candidate).filter(
+        Candidate.marketing_referrer_id == referrer_id
+    ).order_by(Candidate.created_at.desc()).all()
+
+    frontend_url = getattr(settings, 'frontend_url', 'https://pathway.careers')
+
+    candidates_data = []
+    for c in referred_candidates:
+        # Check profile completion
+        has_resume = c.resume_url is not None
+        has_github = c.github_username is not None
+        has_transcript = c.transcript_key is not None
+        has_interview = db.query(InterviewSession).filter(
+            InterviewSession.candidate_id == c.id,
+            InterviewSession.status == InterviewStatus.COMPLETED
+        ).first() is not None
+
+        candidates_data.append({
+            "id": c.id,
+            "name": c.name,
+            "email": c.email,
+            "has_resume": has_resume,
+            "has_github": has_github,
+            "has_transcript": has_transcript,
+            "has_completed_interview": has_interview,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        })
+
+    return {
+        "referrer": {
+            "id": referrer.id,
+            "name": referrer.name,
+            "email": referrer.email,
+            "role": referrer.role,
+            "referral_code": referrer.referral_code,
+            "referral_link": f"{frontend_url}/register?ref={referrer.referral_code}",
+            "is_active": referrer.is_active,
+            "notes": referrer.notes,
+            "created_at": referrer.created_at.isoformat() if referrer.created_at else None,
+        },
+        "referred_candidates": candidates_data,
+        "total_signups": len(candidates_data),
+    }
+
+
+@router.patch("/marketing-referrers/{referrer_id}")
+async def update_marketing_referrer(
+    referrer_id: str,
+    data: MarketingReferrerUpdate,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Update a marketing referrer (name, email, role, notes, or deactivate)."""
+    referrer = db.query(MarketingReferrer).filter(MarketingReferrer.id == referrer_id).first()
+    if not referrer:
+        raise HTTPException(status_code=404, detail="Marketing referrer not found")
+
+    if data.name is not None:
+        referrer.name = data.name
+    if data.email is not None:
+        referrer.email = data.email
+    if data.role is not None:
+        referrer.role = data.role
+    if data.notes is not None:
+        referrer.notes = data.notes
+    if data.is_active is not None:
+        referrer.is_active = data.is_active
+
+    db.commit()
+    db.refresh(referrer)
+
+    logger.info(f"Updated marketing referrer: {referrer.id}")
+
+    return {"success": True, "referrer_id": referrer.id}
+
+
+@router.delete("/marketing-referrers/{referrer_id}")
+async def delete_marketing_referrer(
+    referrer_id: str,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a marketing referrer (only if they have no referrals)."""
+    referrer = db.query(MarketingReferrer).filter(MarketingReferrer.id == referrer_id).first()
+    if not referrer:
+        raise HTTPException(status_code=404, detail="Marketing referrer not found")
+
+    # Check if there are any referrals
+    referral_count = db.query(func.count(Candidate.id)).filter(
+        Candidate.marketing_referrer_id == referrer_id
+    ).scalar() or 0
+
+    if referral_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot delete referrer with {referral_count} referrals. Deactivate instead."
+        )
+
+    db.delete(referrer)
+    db.commit()
+
+    logger.info(f"Deleted marketing referrer: {referrer_id}")
+
+    return {"success": True, "deleted_id": referrer_id}

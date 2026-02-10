@@ -22,6 +22,7 @@ from .activity import (
 )
 from .vibe_code_session import VibeCodeSession, SessionSource, AnalysisStatus
 from .referral import Referral, ReferralStatus
+from .marketing_referrer import MarketingReferrer
 # Growth tracking models
 from .resume_version import ResumeVersion
 from .github_analysis_history import GitHubAnalysisHistory
@@ -121,6 +122,7 @@ __all__ = [
     # Referral system
     "Referral",
     "ReferralStatus",
+    "MarketingReferrer",
     # Growth tracking
     "ResumeVersion",
     "GitHubAnalysisHistory",

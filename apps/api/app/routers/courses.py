@@ -316,13 +316,16 @@ async def seed_courses(
             db.add(university)
             added_universities += 1
 
-    # Seed courses
+    # Seed courses (filter to valid model columns only)
+    from sqlalchemy import inspect as sa_inspect
+    valid_keys = {c.key for c in sa_inspect(Course).column_attrs}
     courses = get_all_courses()
     added_courses = 0
     for course_data in courses:
         existing = db.query(Course).filter(Course.id == course_data["id"]).first()
         if not existing:
-            course = Course(**course_data)
+            filtered = {k: v for k, v in course_data.items() if k in valid_keys}
+            course = Course(**filtered)
             db.add(course)
             added_courses += 1
 

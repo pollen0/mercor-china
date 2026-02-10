@@ -95,12 +95,26 @@ async def create_candidate(
 
     # Process referral code if provided
     if candidate_data.referral_code:
+        ref_code = candidate_data.referral_code.strip().upper()
         try:
-            from ..services.referral import find_referrer_by_code, create_referral_on_signup
-            referrer = find_referrer_by_code(candidate_data.referral_code, db)
-            if referrer and referrer.id != candidate.id:
-                create_referral_on_signup(referrer, candidate, db)
-                logger.info(f"Referral recorded: {referrer.id} -> {candidate.id}")
+            # Check if it's a marketing referrer code (starts with MKT-)
+            if ref_code.startswith("MKT-"):
+                from ..models import MarketingReferrer
+                marketing_referrer = db.query(MarketingReferrer).filter(
+                    MarketingReferrer.referral_code == ref_code,
+                    MarketingReferrer.is_active == True
+                ).first()
+                if marketing_referrer:
+                    candidate.marketing_referrer_id = marketing_referrer.id
+                    db.commit()
+                    logger.info(f"Marketing referral recorded: {marketing_referrer.name} -> {candidate.id}")
+            else:
+                # Standard candidate-to-candidate referral
+                from ..services.referral import find_referrer_by_code, create_referral_on_signup
+                referrer = find_referrer_by_code(candidate_data.referral_code, db)
+                if referrer and referrer.id != candidate.id:
+                    create_referral_on_signup(referrer, candidate, db)
+                    logger.info(f"Referral recorded: {referrer.id} -> {candidate.id}")
         except Exception as e:
             logger.warning(f"Failed to process referral code for {candidate.email}: {e}")
 

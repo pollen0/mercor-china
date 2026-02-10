@@ -131,6 +131,7 @@ class Candidate(Base):
     # Referral system
     referral_code = Column(String, unique=True, nullable=True)  # Unique code like "PATHWAY-ABC123"
     referred_by_id = Column(String, ForeignKey("candidates.id", ondelete="SET NULL"), nullable=True)
+    marketing_referrer_id = Column(String, ForeignKey("marketing_referrers.id", ondelete="SET NULL"), nullable=True)  # External referrer (non-user)
 
     # Profile Sharing & Preferences (for GTM)
     opted_in_to_sharing = Column(Boolean, default=False, nullable=False)  # Consent to share profile with employers
