@@ -2329,11 +2329,15 @@ async def get_talent_candidate_detail(
                 contributions = candidate.github_data.get("total_contributions", candidate.github_data.get("totalContributions", 0))
                 breakdown["github_activity"] = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
 
-            # Calculate weighted average
-            weights = {"technical_skills": 0.3, "experience_quality": 0.25, "education": 0.25, "github_activity": 0.2}
-            total_weight = sum(weights[k] for k in breakdown if k in weights)
-            if total_weight > 0:
-                profile_score = sum(breakdown.get(k, 5.0) * weights.get(k, 0) for k in weights) / total_weight
+            # Calculate weighted average (use defaults for missing components)
+            tech_skills = breakdown.get("technical_skills", 5.0)
+            exp_quality = breakdown.get("experience_quality", 5.0)
+            edu_score = breakdown.get("education", 5.0)
+            github_score = breakdown.get("github_activity", 5.0)
+
+            # Weights sum to 1.0 for proper averaging
+            profile_score = tech_skills * 0.3 + exp_quality * 0.25 + edu_score * 0.25 + github_score * 0.2
+            if True:
 
                 # Generate strengths and concerns based on scores
                 strengths = []
@@ -2561,10 +2565,15 @@ async def get_talent_profile_detail(
             contributions = candidate.github_data.get("total_contributions", candidate.github_data.get("totalContributions", 0))
             breakdown["github_activity"] = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
         if breakdown:
-            weights = {"technical_skills": 0.3, "experience_quality": 0.25, "education": 0.25, "github_activity": 0.2}
-            total_weight = sum(weights.get(k, 0) for k in breakdown)
-            if total_weight > 0:
-                score = sum(breakdown.get(k, 5.0) * weights.get(k, 0) for k in weights) / total_weight
+            # Calculate weighted average (use defaults for missing components)
+            tech_skills = breakdown.get("technical_skills", 5.0)
+            exp_quality = breakdown.get("experience_quality", 5.0)
+            edu_score_val = breakdown.get("education", 5.0)
+            github_score_val = breakdown.get("github_activity", 5.0)
+
+            # Weights sum to 1.0 for proper averaging
+            score = tech_skills * 0.3 + exp_quality * 0.25 + edu_score_val * 0.25 + github_score_val * 0.2
+            if True:
 
                 # Generate strengths and concerns
                 strengths = []
