@@ -106,7 +106,19 @@ interface ClubAdmin {
   description?: string
 }
 
-type Tab = 'overview' | 'candidates' | 'employers' | 'courses' | 'clubs'
+interface UniversityDetail {
+  id: string
+  name: string
+  short_name: string
+  gpa_scale: number
+  uses_plus_minus: boolean
+  tier: number
+  cs_ranking?: number
+  course_count: number
+  club_count: number
+}
+
+type Tab = 'overview' | 'candidates' | 'employers' | 'universities' | 'courses' | 'clubs'
 
 export default function AdminPage() {
   const router = useRouter()
@@ -141,6 +153,9 @@ export default function AdminPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>('')
   const [editingCourse, setEditingCourse] = useState<Course | null>(null)
   const [showAddCourse, setShowAddCourse] = useState(false)
+
+  // University details state
+  const [universityDetails, setUniversityDetails] = useState<UniversityDetail[]>([])
 
   // Club management state
   const [clubs, setClubs] = useState<ClubAdmin[]>([])
@@ -177,6 +192,8 @@ export default function AdminPage() {
       fetchCandidates()
     } else if (activeTab === 'employers') {
       fetchEmployers()
+    } else if (activeTab === 'universities') {
+      fetchUniversityDetails()
     } else if (activeTab === 'courses') {
       fetchUniversities()
       fetchCourses()
@@ -323,6 +340,20 @@ export default function AdminPage() {
       }
     } catch (err) {
       console.error('Failed to fetch course stats:', err)
+    }
+  }
+
+  const fetchUniversityDetails = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/courses/universities/detailed`, {
+        headers: getAuthHeaders(),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setUniversityDetails(data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch university details:', err)
     }
   }
 
@@ -609,7 +640,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex gap-1 mb-8 border-b border-stone-200">
-          {(['overview', 'candidates', 'employers', 'courses', 'clubs'] as Tab[]).map((tab) => (
+          {(['overview', 'candidates', 'employers', 'universities', 'courses', 'clubs'] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -940,15 +971,21 @@ export default function AdminPage() {
                       <td className="px-4 py-4 text-sm text-stone-500">{c.phone || '—'}</td>
                       <td className="px-4 py-4 text-sm text-stone-600">{c.interview_count}</td>
                       <td className="px-4 py-4">
-                        <div className="flex gap-1">
-                          <span className={`px-1.5 py-0.5 text-xs rounded ${c.has_resume ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="Resume">
-                            📄
+                        <div className="flex gap-1.5">
+                          <span className={`p-1 rounded ${c.has_resume ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="Resume">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                           </span>
-                          <span className={`px-1.5 py-0.5 text-xs rounded ${c.has_github ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="GitHub">
-                            💻
+                          <span className={`p-1 rounded ${c.has_github ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="GitHub">
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                            </svg>
                           </span>
-                          <span className={`px-1.5 py-0.5 text-xs rounded ${c.has_transcript ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="Transcript">
-                            📚
+                          <span className={`p-1 rounded ${c.has_transcript ? 'bg-teal-100 text-teal-700' : 'bg-stone-100 text-stone-400'}`} title="Transcript">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
                           </span>
                         </div>
                       </td>
@@ -986,14 +1023,17 @@ export default function AdminPage() {
                               Nudge ▾
                             </Button>
                             {openNudgeDropdown === c.id && (
-                              <div className="absolute right-0 mt-1 w-40 bg-white border border-stone-200 rounded-lg shadow-lg z-10">
+                              <div className="absolute right-0 mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-lg z-10">
                                 {!c.has_resume && (
                                   <button
                                     onClick={() => sendNudge(c.id, 'resume')}
                                     disabled={sendingNudge === `${c.id}-resume`}
-                                    className="w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50"
+                                    className="w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50 first:rounded-t-lg"
                                   >
-                                    📄 {sendingNudge === `${c.id}-resume` ? 'Sending...' : 'Add Resume'}
+                                    <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    {sendingNudge === `${c.id}-resume` ? 'Sending...' : 'Add Resume'}
                                   </button>
                                 )}
                                 {!c.has_github && (
@@ -1002,16 +1042,22 @@ export default function AdminPage() {
                                     disabled={sendingNudge === `${c.id}-github`}
                                     className="w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50"
                                   >
-                                    💻 {sendingNudge === `${c.id}-github` ? 'Sending...' : 'Connect GitHub'}
+                                    <svg className="w-4 h-4 text-stone-500" fill="currentColor" viewBox="0 0 24 24">
+                                      <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                                    </svg>
+                                    {sendingNudge === `${c.id}-github` ? 'Sending...' : 'Connect GitHub'}
                                   </button>
                                 )}
                                 {!c.has_transcript && (
                                   <button
                                     onClick={() => sendNudge(c.id, 'transcript')}
                                     disabled={sendingNudge === `${c.id}-transcript`}
-                                    className="w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50"
+                                    className="w-full px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50 last:rounded-b-lg"
                                   >
-                                    📚 {sendingNudge === `${c.id}-transcript` ? 'Sending...' : 'Add Transcript'}
+                                    <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                    </svg>
+                                    {sendingNudge === `${c.id}-transcript` ? 'Sending...' : 'Add Transcript'}
                                   </button>
                                 )}
                               </div>
@@ -1130,6 +1176,111 @@ export default function AdminPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Universities Tab */}
+        {activeTab === 'universities' && (
+          <div className="space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="border-stone-100 shadow-sm">
+                <CardContent className="pt-6 pb-5">
+                  <div className="text-2xl font-semibold text-teal-600">{universityDetails.length}</div>
+                  <p className="text-sm text-stone-400 mt-1">Total Universities</p>
+                </CardContent>
+              </Card>
+              <Card className="border-stone-100 shadow-sm">
+                <CardContent className="pt-6 pb-5">
+                  <div className="text-2xl font-semibold text-stone-700">
+                    {universityDetails.reduce((sum, u) => sum + u.course_count, 0)}
+                  </div>
+                  <p className="text-sm text-stone-400 mt-1">Total Courses</p>
+                </CardContent>
+              </Card>
+              <Card className="border-stone-100 shadow-sm">
+                <CardContent className="pt-6 pb-5">
+                  <div className="text-2xl font-semibold text-stone-700">
+                    {universityDetails.reduce((sum, u) => sum + u.club_count, 0)}
+                  </div>
+                  <p className="text-sm text-stone-400 mt-1">Total Clubs</p>
+                </CardContent>
+              </Card>
+              <Card className="border-stone-100 shadow-sm">
+                <CardContent className="pt-6 pb-5">
+                  <div className="text-2xl font-semibold text-stone-700">
+                    {universityDetails.filter(u => u.tier === 1).length}
+                  </div>
+                  <p className="text-sm text-stone-400 mt-1">Tier 1 Schools</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Universities Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-stone-200">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">CS Rank</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">University</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Tier</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">GPA Scale</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">+/- Grading</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Courses</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Clubs</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {universityDetails.map((uni) => (
+                    <tr key={uni.id} className="hover:bg-stone-50/50 transition-colors">
+                      <td className="px-4 py-4">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-stone-100 text-sm font-semibold text-stone-700">
+                          {uni.cs_ranking || '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="text-sm font-medium text-stone-800">{uni.name}</div>
+                        <div className="text-xs text-stone-400">{uni.short_name} · {uni.id}</div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                          uni.tier === 1 ? 'bg-amber-50 text-amber-700' :
+                          uni.tier === 2 ? 'bg-teal-50 text-teal-700' :
+                          'bg-stone-100 text-stone-600'
+                        }`}>
+                          Tier {uni.tier}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-stone-600">{uni.gpa_scale.toFixed(1)}</td>
+                      <td className="px-4 py-4">
+                        <span className={`px-2 py-0.5 text-xs rounded ${
+                          uni.uses_plus_minus ? 'bg-teal-50 text-teal-700' : 'bg-stone-100 text-stone-500'
+                        }`}>
+                          {uni.uses_plus_minus ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`text-sm font-medium ${uni.course_count > 0 ? 'text-stone-700' : 'text-stone-300'}`}>
+                          {uni.course_count}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`text-sm font-medium ${uni.club_count > 0 ? 'text-stone-700' : 'text-stone-300'}`}>
+                          {uni.club_count}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {universityDetails.length === 0 && (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-stone-700 mb-2">No universities found</h3>
+                <p className="text-stone-400 mb-4">University data will be auto-seeded on next API restart</p>
+              </div>
+            )}
           </div>
         )}
 

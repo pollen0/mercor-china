@@ -1044,7 +1044,6 @@ class EmailService:
                 "subject": "Complete your profile - Upload your resume",
                 "header_title": "Upload Your Resume",
                 "header_subtitle": "Stand out to top employers",
-                "icon": "📄",
                 "action_text": "Upload Resume",
                 "benefit": "Candidates with resumes are <strong>3x more likely</strong> to be contacted by recruiters.",
                 "details": [
@@ -1057,7 +1056,6 @@ class EmailService:
                 "subject": "Complete your profile - Connect your GitHub",
                 "header_title": "Connect Your GitHub",
                 "header_subtitle": "Showcase your coding skills",
-                "icon": "💻",
                 "action_text": "Connect GitHub",
                 "benefit": "Candidates with GitHub profiles get <strong>2x higher</strong> interview scores on average.",
                 "details": [
@@ -1070,7 +1068,6 @@ class EmailService:
                 "subject": "Complete your profile - Upload your transcript",
                 "header_title": "Upload Your Transcript",
                 "header_subtitle": "Verify your academic excellence",
-                "icon": "📚",
                 "action_text": "Upload Transcript",
                 "benefit": "Verified transcripts help you stand out for <strong>competitive roles</strong>.",
                 "details": [
@@ -1096,7 +1093,7 @@ class EmailService:
             <p>We noticed your Pathway profile is missing your {nudge_type}. Adding it takes just a few minutes and can significantly boost your chances of landing great opportunities!</p>
 
             <div class="callout">
-                <strong>{content["icon"]} Why it matters:</strong><br>
+                <strong>Why it matters:</strong><br>
                 {content["benefit"]}
             </div>
 

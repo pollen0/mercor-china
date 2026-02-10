@@ -252,7 +252,7 @@ async def list_candidates(
             vertical_profile_count=profile_count or 0,
             has_resume=c.resume_url is not None,
             has_github=c.github_username is not None,
-            has_transcript=c.transcript_url is not None,
+            has_transcript=c.transcript_key is not None,
             created_at=c.created_at,
         ))
 
@@ -295,7 +295,7 @@ async def send_nudge_email(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Candidate already has GitHub connected"
         )
-    if nudge_type == "transcript" and candidate.transcript_url:
+    if nudge_type == "transcript" and candidate.transcript_key:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Candidate already has a transcript uploaded"
