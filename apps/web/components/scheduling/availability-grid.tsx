@@ -231,11 +231,11 @@ export function AvailabilityGrid({
       <div className="overflow-x-auto">
         <div className="grid gap-0 min-w-[600px]" style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, 1fr)` }}>
           {/* Header row */}
-          <div className="p-2 text-sm font-medium text-gray-500 text-center border-b">
+          <div className="p-2 text-sm font-medium text-stone-500 text-center border-b">
             {timezone.split('/')[1]?.replace('_', ' ') || timezone}
           </div>
           {SHORT_DAYS.map((day, i) => (
-            <div key={i} className="p-2 text-sm font-medium text-gray-700 text-center border-b">
+            <div key={i} className="p-2 text-sm font-medium text-stone-700 text-center border-b">
               {day}
             </div>
           ))}
@@ -243,7 +243,7 @@ export function AvailabilityGrid({
           {/* Time rows */}
           {hours.map((hour) => (
             <>
-              <div key={`time-${hour}`} className="p-2 text-xs text-gray-500 text-right pr-3 border-r">
+              <div key={`time-${hour}`} className="p-2 text-xs text-stone-500 text-right pr-3 border-r">
                 {formatTime(hour)}
               </div>
               {DAYS.map((_, dayIndex) => {

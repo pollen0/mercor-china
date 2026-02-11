@@ -37,7 +37,7 @@ export function CandidateCard({
 
   return (
     <div
-      className={`bg-white rounded-xl border border-gray-200 p-4 transition-all duration-200 ${
+      className={`bg-white rounded-xl border border-stone-200 p-4 transition-all duration-200 ${
         onClick ? 'cursor-pointer hover:border-teal-300 hover:shadow-soft-md' : ''
       }`}
       onClick={onClick}
@@ -63,24 +63,24 @@ export function CandidateCard({
         {/* Info */}
         <div className="flex-grow min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-semibold text-gray-900 truncate">{name}</h3>
+            <h3 className="font-semibold text-stone-900 truncate">{name}</h3>
             {status && getStatusBadge()}
           </div>
 
-          <p className="text-sm text-gray-500 truncate">{email}</p>
+          <p className="text-sm text-stone-500 truncate">{email}</p>
 
           {targetRoles && targetRoles.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {targetRoles.slice(0, 3).map((role, index) => (
                 <span
                   key={index}
-                  className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-md"
+                  className="px-2 py-0.5 text-xs bg-stone-100 text-stone-600 rounded-md"
                 >
                   {role}
                 </span>
               ))}
               {targetRoles.length > 3 && (
-                <span className="px-2 py-0.5 text-xs text-gray-500">
+                <span className="px-2 py-0.5 text-xs text-stone-500">
                   +{targetRoles.length - 3} more
                 </span>
               )}

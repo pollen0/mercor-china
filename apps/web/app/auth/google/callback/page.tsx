@@ -136,11 +136,11 @@ function GoogleCallbackContent() {
 
   if (status === 'loading') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center p-4">
+      <main className="min-h-screen bg-gradient-to-b from-stone-50 to-white flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-blue-600 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+            <div className="mx-auto w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-stone-700 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>
               </svg>
             </div>
@@ -150,7 +150,7 @@ function GoogleCallbackContent() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-900"></div>
           </CardContent>
         </Card>
       </main>
@@ -159,7 +159,7 @@ function GoogleCallbackContent() {
 
   if (status === 'error') {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center p-4">
+      <main className="min-h-screen bg-gradient-to-b from-stone-50 to-white flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -174,7 +174,7 @@ function GoogleCallbackContent() {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <Link href="/candidate/settings">
-              <Button className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700">
+              <Button className="w-full bg-stone-900 hover:bg-stone-800">
                 Return to Settings
               </Button>
             </Link>
@@ -191,15 +191,15 @@ function GoogleCallbackContent() {
 
   // Success state
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-b from-stone-50 to-white flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <CardTitle className="text-green-600">Google Calendar Connected!</CardTitle>
+          <CardTitle className="text-teal-600">Google Calendar Connected!</CardTitle>
           <CardDescription>
             You can now schedule interviews directly from Pathway
           </CardDescription>
@@ -209,7 +209,7 @@ function GoogleCallbackContent() {
             Redirecting to your settings...
           </p>
           <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-stone-900"></div>
           </div>
         </CardContent>
       </Card>
@@ -219,18 +219,18 @@ function GoogleCallbackContent() {
 
 function LoadingFallback() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-b from-stone-50 to-white flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-blue-600 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
+          <div className="mx-auto w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-stone-700 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>
             </svg>
           </div>
           <CardTitle>Loading...</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-stone-900"></div>
         </CardContent>
       </Card>
     </main>

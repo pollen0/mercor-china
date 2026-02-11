@@ -167,16 +167,16 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
   if (result && result.success) {
     return (
       <div className="space-y-6">
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-6">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-green-800">Resume Uploaded Successfully</h3>
-              <p className="text-sm text-green-600 mt-1">{result.message}</p>
+              <h3 className="font-semibold text-teal-700">Resume Uploaded Successfully</h3>
+              <p className="text-sm text-teal-600 mt-1">{result.message}</p>
             </div>
           </div>
         </div>
@@ -184,12 +184,12 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
         {/* Parsed Data Preview */}
         {result.parsedData && (
           <div className="bg-white border rounded-xl p-6 space-y-4">
-            <h4 className="font-medium text-gray-900">Extracted Information</h4>
+            <h4 className="font-medium text-stone-900">Extracted Information</h4>
 
             {/* Skills */}
             {result.parsedData.skills.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 mb-2">Skills</p>
+                <p className="text-sm text-stone-500 mb-2">Skills</p>
                 <div className="flex flex-wrap gap-2">
                   {result.parsedData.skills.slice(0, 10).map((skill, i) => (
                     <span
@@ -200,7 +200,7 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
                     </span>
                   ))}
                   {result.parsedData.skills.length > 10 && (
-                    <span className="px-3 py-1 text-gray-500 text-sm">
+                    <span className="px-3 py-1 text-stone-500 text-sm">
                       +{result.parsedData.skills.length - 10} more
                     </span>
                   )}
@@ -211,14 +211,14 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
             {/* Experience */}
             {result.parsedData.experience.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 mb-2">Recent Experience</p>
+                <p className="text-sm text-stone-500 mb-2">Recent Experience</p>
                 <div className="space-y-2">
                   {result.parsedData.experience.slice(0, 2).map((exp, i) => (
-                    <div key={i} className="bg-gray-50 rounded-lg p-3">
-                      <p className="font-medium text-gray-900">{exp.title}</p>
-                      <p className="text-sm text-gray-600">{exp.company}</p>
+                    <div key={i} className="bg-stone-50 rounded-lg p-3">
+                      <p className="font-medium text-stone-900">{exp.title}</p>
+                      <p className="text-sm text-stone-600">{exp.company}</p>
                       {exp.startDate && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-stone-500 mt-1">
                           {exp.startDate} - {exp.endDate || 'Present'}
                         </p>
                       )}
@@ -231,13 +231,13 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
             {/* Education */}
             {result.parsedData.education.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 mb-2">Education</p>
+                <p className="text-sm text-stone-500 mb-2">Education</p>
                 <div className="space-y-2">
                   {result.parsedData.education.slice(0, 2).map((edu, i) => (
-                    <div key={i} className="bg-gray-50 rounded-lg p-3">
-                      <p className="font-medium text-gray-900">{edu.institution}</p>
+                    <div key={i} className="bg-stone-50 rounded-lg p-3">
+                      <p className="font-medium text-stone-900">{edu.institution}</p>
                       {edu.degree && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-stone-600">
                           {edu.degree}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ''}
                         </p>
                       )}
@@ -281,7 +281,7 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
           border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
           ${isDragging
             ? 'border-teal-500 bg-teal-50'
-            : 'border-gray-300 hover:border-teal-400 hover:bg-gray-50'
+            : 'border-stone-300 hover:border-teal-400 hover:bg-stone-50'
           }
           ${isUploading ? 'pointer-events-none opacity-60' : ''}
         `}
@@ -297,23 +297,23 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
 
         {isUploading ? (
           <div className="space-y-3">
-            <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto" />
-            <p className="text-gray-600">{uploadProgress}</p>
+            <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-600 rounded-full animate-spin mx-auto" />
+            <p className="text-stone-600">{uploadProgress}</p>
           </div>
         ) : (
           <>
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
-            <p className="text-gray-700 font-medium mb-1">
+            <p className="text-stone-700 font-medium mb-1">
               Drag & drop your resume here
             </p>
-            <p className="text-gray-500 text-sm mb-3">
+            <p className="text-stone-500 text-sm mb-3">
               or click to browse
             </p>
-            <p className="text-gray-400 text-xs">
+            <p className="text-stone-400 text-xs">
               Supports PDF and Word documents (max 10MB)
             </p>
           </>
@@ -345,7 +345,7 @@ export function ResumeUploader({ candidateId, onUploadComplete, onSkip }: Resume
         <Button
           variant="ghost"
           onClick={onSkip}
-          className="w-full text-gray-500 hover:text-gray-700"
+          className="w-full text-stone-500 hover:text-stone-700"
         >
           Skip for now
         </Button>

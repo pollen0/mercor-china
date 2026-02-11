@@ -12,7 +12,7 @@ const Editor = dynamic(() => import('@monaco-editor/react'), {
   loading: () => (
     <div className="flex-1 flex items-center justify-center bg-slate-900">
       <div className="text-center">
-        <Spinner size="lg" className="mx-auto mb-3 border-gray-300 border-t-teal-500" />
+        <Spinner size="lg" className="mx-auto mb-3 border-stone-300 border-t-teal-500" />
         <p className="text-sm text-slate-400">Loading editor...</p>
       </div>
     </div>
@@ -84,9 +84,9 @@ export function CodeEditor({ challenge, onSubmit, isSubmitting, isPractice = fal
                   </h2>
                   <span className={`px-2 py-0.5 text-xs rounded-full ${
                     challenge.difficulty === 'easy'
-                      ? 'bg-green-500/20 text-green-400'
+                      ? 'bg-teal-500/20 text-teal-400'
                       : challenge.difficulty === 'medium'
-                      ? 'bg-yellow-500/20 text-yellow-400'
+                      ? 'bg-amber-500/20 text-amber-400'
                       : 'bg-red-500/20 text-red-400'
                   }`}>
                     {challenge.difficulty === 'easy' ? 'Easy' : challenge.difficulty === 'medium' ? 'Medium' : 'Hard'}
@@ -134,7 +134,7 @@ export function CodeEditor({ challenge, onSubmit, isSubmitting, isPractice = fal
         {/* Editor Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-slate-700">
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+            <svg className="w-5 h-5 text-stone-400" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm-.5 4.5h1v7h-1v-7zm.5 9.5a.75.75 0 110 1.5.75.75 0 010-1.5z"/>
             </svg>
             <span className="text-sm text-slate-400">Python 3.10</span>
@@ -222,13 +222,13 @@ function TestCaseCard({ test, index }: { test: TestCase; index: number }) {
       <div className="space-y-2 text-sm">
         <div>
           <span className="text-slate-400">Input: </span>
-          <code className="bg-slate-900 px-2 py-0.5 rounded text-green-400 font-mono">
+          <code className="bg-slate-900 px-2 py-0.5 rounded text-teal-400 font-mono">
             {test.input}
           </code>
         </div>
         <div>
           <span className="text-slate-400">Expected: </span>
-          <code className="bg-slate-900 px-2 py-0.5 rounded text-blue-400 font-mono">
+          <code className="bg-slate-900 px-2 py-0.5 rounded text-stone-400 font-mono">
             {test.expected}
           </code>
         </div>

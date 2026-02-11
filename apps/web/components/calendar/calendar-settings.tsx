@@ -105,7 +105,7 @@ export function CalendarSettings({ candidateId }: CalendarSettingsProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+          <svg className="w-5 h-5 text-stone-700" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm-8 4H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/>
           </svg>
           Google Calendar
@@ -123,16 +123,16 @@ export function CalendarSettings({ candidateId }: CalendarSettingsProps) {
 
         {status?.connected ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center gap-3 p-4 bg-teal-50 rounded-lg">
+              <div className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <div>
-                <p className="font-medium text-green-800">Calendar Connected</p>
+                <p className="font-medium text-teal-700">Calendar Connected</p>
                 {status.connectedAt && (
-                  <p className="text-sm text-green-600">
+                  <p className="text-sm text-teal-600">
                     Connected on {new Date(status.connectedAt).toLocaleDateString()}
                   </p>
                 )}
@@ -143,19 +143,19 @@ export function CalendarSettings({ candidateId }: CalendarSettingsProps) {
               <h4 className="font-medium text-stone-900 mb-2">How it works:</h4>
               <ul className="text-sm text-stone-600 space-y-1">
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   Employers can see your availability
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   They book a time that works for you
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   You get a calendar invite with Google Meet link
@@ -185,19 +185,19 @@ export function CalendarSettings({ candidateId }: CalendarSettingsProps) {
               <h4 className="font-medium text-stone-900 mb-2">Why connect?</h4>
               <ul className="text-sm text-stone-600 space-y-1">
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   Employers see when you're free
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   No back-and-forth scheduling emails
                 </li>
                 <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                   Get Google Meet links automatically
@@ -208,7 +208,7 @@ export function CalendarSettings({ candidateId }: CalendarSettingsProps) {
             <Button
               onClick={handleConnect}
               disabled={connecting}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              className="w-full bg-stone-900 hover:bg-stone-800"
             >
               {connecting ? (
                 <>

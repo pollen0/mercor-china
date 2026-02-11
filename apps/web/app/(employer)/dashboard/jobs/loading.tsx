@@ -7,13 +7,13 @@ export default function JobsLoading() {
   return (
     <PageWrapper>
       {/* Navbar skeleton */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 z-50">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-stone-100 z-50">
         <Container className="h-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gray-200 rounded-lg animate-pulse" />
-            <div className="w-24 h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="w-9 h-9 bg-stone-200 rounded-lg animate-pulse" />
+            <div className="w-24 h-4 bg-stone-200 rounded animate-pulse" />
           </div>
-          <div className="w-32 h-8 bg-gray-200 rounded-lg animate-pulse" />
+          <div className="w-32 h-8 bg-stone-200 rounded-lg animate-pulse" />
         </Container>
       </div>
 

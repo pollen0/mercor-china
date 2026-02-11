@@ -67,13 +67,13 @@ function getConflictTypeLabel(type: string): string {
 function getConflictTypeColor(type: string): string {
   switch (type) {
     case 'calendar':
-      return 'bg-blue-100 text-blue-700'
+      return 'bg-stone-100 text-stone-700'
     case 'existing_interview':
-      return 'bg-orange-100 text-orange-700'
+      return 'bg-amber-50 text-amber-700'
     case 'unavailable':
-      return 'bg-gray-100 text-gray-700'
+      return 'bg-stone-100 text-stone-700'
     case 'exception':
-      return 'bg-purple-100 text-purple-700'
+      return 'bg-stone-100 text-stone-700'
     default:
       return 'bg-red-100 text-red-700'
   }
@@ -121,15 +121,15 @@ export function ConflictAlert({
           >
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-medium text-gray-900">{conflict.interviewerName}</span>
+                <span className="font-medium text-stone-900">{conflict.interviewerName}</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${getConflictTypeColor(conflict.conflictType)}`}>
                   {getConflictTypeLabel(conflict.conflictType)}
                 </span>
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-stone-600">
                 {formatTime(conflict.conflictStart)} - {formatTime(conflict.conflictEnd)}
                 {conflict.description && (
-                  <span className="text-gray-400 ml-2">- {conflict.description}</span>
+                  <span className="text-stone-400 ml-2">- {conflict.description}</span>
                 )}
               </div>
             </div>
@@ -150,7 +150,7 @@ export function ConflictAlert({
                 variant="outline"
                 size="sm"
                 onClick={() => onSelectAlternative(slot)}
-                className="bg-white border-gray-200 hover:border-indigo-300 hover:bg-indigo-50"
+                className="bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50"
               >
                 {formatDateTime(slot.start)}
               </Button>

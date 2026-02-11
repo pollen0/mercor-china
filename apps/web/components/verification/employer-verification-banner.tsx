@@ -69,7 +69,7 @@ export function EmployerVerificationBanner({ email, onDismiss }: EmployerVerific
           )}
 
           {resendSuccess && (
-            <p className="text-sm text-green-600 mt-2">
+            <p className="text-sm text-teal-600 mt-2">
               Verification email sent! Please check your inbox.
             </p>
           )}

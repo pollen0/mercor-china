@@ -337,8 +337,8 @@ function EmployerDashboardContent() {
     return (
       <PageWrapper className="flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">Loading dashboard...</p>
+          <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500 text-sm">Loading dashboard...</p>
         </div>
       </PageWrapper>
     )
@@ -350,23 +350,22 @@ function EmployerDashboardContent() {
 
       <Container className="py-8 pt-24">
         {/* Tab Navigation */}
-        <div className="flex gap-1 p-1 bg-gray-100 rounded-xl mb-8 w-fit">
+        <div className="flex gap-1 p-1 bg-stone-100 rounded-xl mb-8 w-fit">
           {[
-            { id: 'overview', label: 'Overview', icon: '📊' },
-            { id: 'jobs', label: 'Jobs', icon: '💼' },
-            { id: 'interviews', label: 'Interviews', icon: '🎬' },
-            { id: 'talent', label: 'Talent Pool', icon: '👥' },
+            { id: 'overview', label: 'Overview' },
+            { id: 'jobs', label: 'Jobs' },
+            { id: 'interviews', label: 'Interviews' },
+            { id: 'talent', label: 'Talent Pool' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id as TabType)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 activeTab === tab.id
-                  ? 'bg-white shadow-sm text-gray-900'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white shadow-sm text-stone-900'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
-              <span className="mr-1.5">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
@@ -376,41 +375,41 @@ function EmployerDashboardContent() {
         {activeTab === 'overview' && (
           <div>
             <div className="mb-10">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-stone-900 mb-2">
                 Welcome back, {employer?.companyName}
               </h1>
-              <p className="text-gray-500">Here&apos;s an overview of your hiring activity</p>
+              <p className="text-stone-500">Here&apos;s an overview of your hiring activity</p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
               <div className="bg-white rounded-2xl shadow-soft p-5">
-                <p className="text-sm text-gray-500 mb-1">Total Interviews</p>
-                <div className="text-3xl font-semibold text-gray-900">{stats?.totalInterviews || 0}</div>
+                <p className="text-sm text-stone-500 mb-1">Total Interviews</p>
+                <div className="text-3xl font-semibold text-stone-900">{stats?.totalInterviews || 0}</div>
               </div>
               <div className="bg-white rounded-2xl shadow-soft p-5">
-                <p className="text-sm text-gray-500 mb-1">Pending Review</p>
-                <div className="text-3xl font-semibold text-gray-900">{stats?.pendingReview || 0}</div>
+                <p className="text-sm text-stone-500 mb-1">Pending Review</p>
+                <div className="text-3xl font-semibold text-stone-900">{stats?.pendingReview || 0}</div>
               </div>
               <div className="bg-white rounded-2xl shadow-soft p-5">
-                <p className="text-sm text-gray-500 mb-1">Shortlisted</p>
-                <div className="text-3xl font-semibold text-gray-900">{stats?.shortlisted || 0}</div>
+                <p className="text-sm text-stone-500 mb-1">Shortlisted</p>
+                <div className="text-3xl font-semibold text-stone-900">{stats?.shortlisted || 0}</div>
               </div>
               <div className="bg-white rounded-2xl shadow-soft p-5">
-                <p className="text-sm text-gray-500 mb-1">Avg. Score</p>
-                <div className="text-3xl font-semibold text-gray-900">
+                <p className="text-sm text-stone-500 mb-1">Avg. Score</p>
+                <div className="text-3xl font-semibold text-stone-900">
                   {stats?.averageScore ? stats.averageScore.toFixed(1) : '-'}
-                  {stats?.averageScore && <span className="text-lg font-normal text-gray-400">/10</span>}
+                  {stats?.averageScore && <span className="text-lg font-normal text-stone-400">/10</span>}
                 </div>
               </div>
             </div>
 
             {/* Recent Interviews */}
             <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
-              <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold text-gray-900">Recent Interviews</h2>
-                  <p className="text-sm text-gray-500">Latest candidate submissions</p>
+                  <h2 className="font-semibold text-stone-900">Recent Interviews</h2>
+                  <p className="text-sm text-stone-500">Latest candidate submissions</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => handleTabChange('interviews')}>
                   View all
@@ -422,7 +421,7 @@ function EmployerDashboardContent() {
               <div className="p-6">
                 {recentInterviews.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-gray-500 mb-4">No interviews yet</p>
+                    <p className="text-stone-500 mb-4">No interviews yet</p>
                     <Button variant="default" size="sm" onClick={() => handleTabChange('jobs')}>
                       Create Job Posting
                     </Button>
@@ -450,12 +449,12 @@ function EmployerDashboardContent() {
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-semibold text-stone-900">
                   {jobViewMode === 'list' && 'Jobs'}
                   {jobViewMode === 'create' && 'Create New Job'}
                   {jobViewMode === 'detail' && selectedJob?.title}
                 </h1>
-                <p className="text-gray-500">
+                <p className="text-stone-500">
                   {jobViewMode === 'list' && `${jobs.length} job${jobs.length !== 1 ? 's' : ''} posted`}
                 </p>
               </div>
@@ -475,8 +474,8 @@ function EmployerDashboardContent() {
             {jobViewMode === 'list' && (
               <div className="space-y-4">
                 {jobs.length === 0 ? (
-                  <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed">
-                    <p className="text-gray-500 mb-4">No jobs yet</p>
+                  <div className="text-center py-16 bg-stone-50 rounded-2xl border-2 border-dashed">
+                    <p className="text-stone-500 mb-4">No jobs yet</p>
                     <Button onClick={() => setJobViewMode('create')}>Create Job</Button>
                   </div>
                 ) : (
@@ -488,7 +487,7 @@ function EmployerDashboardContent() {
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold">{job.title}</h3>
-                        <span className={`px-2 py-0.5 text-xs rounded-full ${job.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${job.isActive ? 'bg-teal-50 text-teal-700' : 'bg-stone-100 text-stone-600'}`}>
                           {job.isActive ? 'Active' : 'Inactive'}
                         </span>
                         {job.vertical && (
@@ -497,7 +496,7 @@ function EmployerDashboardContent() {
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-600 text-sm line-clamp-2">{job.description}</p>
+                      <p className="text-stone-600 text-sm line-clamp-2">{job.description}</p>
                     </div>
                   ))
                 )}
@@ -515,10 +514,10 @@ function EmployerDashboardContent() {
                         key={v.value}
                         type="button"
                         onClick={() => setJobFormData({ ...jobFormData, vertical: v.value, roleType: '' })}
-                        className={`p-4 rounded-xl border-2 text-left ${jobFormData.vertical === v.value ? 'border-teal-500 bg-teal-50' : 'border-gray-200'}`}
+                        className={`p-4 rounded-xl border-2 text-left ${jobFormData.vertical === v.value ? 'border-teal-500 bg-teal-50' : 'border-stone-200'}`}
                       >
                         <div className="font-medium">{v.label}</div>
-                        <div className="text-sm text-gray-500">{v.description}</div>
+                        <div className="text-sm text-stone-500">{v.description}</div>
                       </button>
                     ))}
                   </div>
@@ -533,7 +532,7 @@ function EmployerDashboardContent() {
                           key={r.value}
                           type="button"
                           onClick={() => setJobFormData({ ...jobFormData, roleType: r.value })}
-                          className={`p-3 rounded-lg border-2 text-sm ${jobFormData.roleType === r.value ? 'border-teal-500 bg-teal-50' : 'border-gray-200'}`}
+                          className={`p-3 rounded-lg border-2 text-sm ${jobFormData.roleType === r.value ? 'border-teal-500 bg-teal-50' : 'border-stone-200'}`}
                         >
                           {r.label}
                         </button>
@@ -613,37 +612,37 @@ function EmployerDashboardContent() {
                           </span>
                         )}
                         {selectedJob.roleType && (
-                          <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                          <span className="px-2 py-0.5 text-xs bg-stone-100 text-stone-700 rounded-full">
                             {getRoleLabel(selectedJob.vertical || '', selectedJob.roleType)}
                           </span>
                         )}
                       </div>
                     </div>
-                    <span className={`px-3 py-1 text-sm rounded-full ${selectedJob.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`px-3 py-1 text-sm rounded-full ${selectedJob.isActive ? 'bg-teal-50 text-teal-700' : 'bg-stone-100 text-stone-600'}`}>
                       {selectedJob.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  <p className="text-gray-600">{selectedJob.description}</p>
+                  <p className="text-stone-600">{selectedJob.description}</p>
                 </div>
 
                 <div className="bg-white border rounded-xl p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="font-semibold">Interview Invite Links</h3>
-                      <p className="text-sm text-gray-500">Share these links with candidates</p>
+                      <p className="text-sm text-stone-500">Share these links with candidates</p>
                     </div>
                     <Button onClick={handleCreateInvite}>New Link</Button>
                   </div>
 
                   {invites.length === 0 ? (
-                    <p className="text-center py-8 text-gray-500">No invite links yet</p>
+                    <p className="text-center py-8 text-stone-500">No invite links yet</p>
                   ) : (
                     <div className="space-y-3">
                       {invites.map((invite) => (
-                        <div key={invite.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div key={invite.id} className="flex items-center gap-3 p-3 bg-stone-50 rounded-lg">
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-mono truncate">{invite.inviteUrl}</div>
-                            <div className="text-xs text-gray-500">Used: {invite.usedCount}/{invite.maxUses || '∞'}</div>
+                            <div className="text-xs text-stone-500">Used: {invite.usedCount}/{invite.maxUses || '∞'}</div>
                           </div>
                           <Button variant="outline" size="sm" onClick={() => handleCopyLink(invite.inviteUrl, invite.id)}>
                             {copiedId === invite.id ? 'Copied!' : 'Copy'}
@@ -665,8 +664,8 @@ function EmployerDashboardContent() {
         {activeTab === 'interviews' && (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Interviews</h1>
-              <p className="text-gray-500">{interviewsTotal} interview{interviewsTotal !== 1 ? 's' : ''}</p>
+              <h1 className="text-2xl font-semibold text-stone-900">Interviews</h1>
+              <p className="text-stone-500">{interviewsTotal} interview{interviewsTotal !== 1 ? 's' : ''}</p>
             </div>
 
             {/* Filters */}
@@ -722,7 +721,7 @@ function EmployerDashboardContent() {
             {interviews.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <p className="text-gray-500">No interviews found</p>
+                  <p className="text-stone-500">No interviews found</p>
                 </CardContent>
               </Card>
             ) : (
@@ -736,13 +735,13 @@ function EmployerDashboardContent() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-medium">{interview.candidateName || 'Unknown'}</h3>
-                        <p className="text-sm text-gray-500">{interview.candidateId}</p>
+                        <p className="text-sm text-stone-500">{interview.candidateId}</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-teal-600">
+                        <div className="text-2xl font-semibold text-teal-600">
                           {interview.totalScore?.toFixed(1) || '-'}
                         </div>
-                        <div className="text-xs text-gray-500">/ 10</div>
+                        <div className="text-xs text-stone-500">/ 10</div>
                       </div>
                     </div>
                   </div>
@@ -756,8 +755,8 @@ function EmployerDashboardContent() {
         {activeTab === 'talent' && (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Talent Pool</h1>
-              <p className="text-gray-500">Browse pre-interviewed candidates</p>
+              <h1 className="text-2xl font-semibold text-stone-900">Talent Pool</h1>
+              <p className="text-stone-500">Browse pre-interviewed candidates</p>
             </div>
 
             {/* Filters */}
@@ -826,13 +825,13 @@ function EmployerDashboardContent() {
               </CardContent>
             </Card>
 
-            <p className="text-sm text-gray-600 mb-4">{talentTotal} candidate{talentTotal !== 1 ? 's' : ''} found</p>
+            <p className="text-sm text-stone-600 mb-4">{talentTotal} candidate{talentTotal !== 1 ? 's' : ''} found</p>
 
             {/* Candidates Grid */}
             {candidates.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <p className="text-gray-500">No candidates found</p>
+                  <p className="text-stone-500">No candidates found</p>
                 </CardContent>
               </Card>
             ) : (
@@ -847,29 +846,29 @@ function EmployerDashboardContent() {
                             <CardDescription>{candidate.candidateEmail}</CardDescription>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-teal-600">{candidate.bestScore?.toFixed(1)}</div>
-                            <div className="text-xs text-gray-500">/ 10</div>
+                            <div className="text-2xl font-semibold text-teal-600">{candidate.bestScore?.toFixed(1)}</div>
+                            <div className="text-xs text-stone-500">/ 10</div>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent>
                         <div className="flex items-center gap-2 mb-3">
                           {candidate.vertical && (
-                            <span className="px-2 py-1 text-xs bg-gray-100 rounded-md">
+                            <span className="px-2 py-1 text-xs bg-stone-100 rounded-md">
                               {VERTICALS.find(v => v.value === candidate.vertical)?.label || candidate.vertical}
                             </span>
                           )}
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-stone-500">
                             {candidate.roleType ? (ROLE_NAMES[candidate.roleType] || candidate.roleType) : 'No role'}
                           </span>
                         </div>
                         {candidate.skills.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-3">
                             {candidate.skills.slice(0, 4).map((skill, i) => (
-                              <span key={i} className="px-2 py-0.5 text-xs bg-gray-100 rounded">{skill}</span>
+                              <span key={i} className="px-2 py-0.5 text-xs bg-stone-100 rounded">{skill}</span>
                             ))}
                             {candidate.skills.length > 4 && (
-                              <span className="text-xs text-gray-400">+{candidate.skills.length - 4}</span>
+                              <span className="text-xs text-stone-400">+{candidate.skills.length - 4}</span>
                             )}
                           </div>
                         )}
@@ -887,7 +886,7 @@ function EmployerDashboardContent() {
                     <Button variant="outline" size="sm" disabled={talentPage === 1} onClick={() => setTalentPage(p => p - 1)}>
                       Previous
                     </Button>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-stone-600">
                       Page {talentPage} of {Math.ceil(talentTotal / talentPageSize)}
                     </span>
                     <Button variant="outline" size="sm" disabled={talentPage >= Math.ceil(talentTotal / talentPageSize)} onClick={() => setTalentPage(p => p + 1)}>
@@ -908,7 +907,7 @@ export default function EmployerDashboardPage() {
   return (
     <Suspense fallback={
       <PageWrapper className="flex items-center justify-center">
-        <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin" />
+        <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin" />
       </PageWrapper>
     }>
       <EmployerDashboardContent />

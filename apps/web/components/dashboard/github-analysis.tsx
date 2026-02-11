@@ -119,7 +119,7 @@ export function GitHubAnalysis({ hasGitHub }: GitHubAnalysisProps) {
       >
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-stone-700">Code Analysis</p>
-          <span className={`text-lg font-bold ${getScoreColor(analysis.overallScore)}`}>
+          <span className={`text-lg font-semibold ${getScoreColor(analysis.overallScore)}`}>
             {analysis.overallScore.toFixed(1)}
           </span>
         </div>

@@ -472,7 +472,7 @@ export default function AdminPage() {
       case 1: return 'bg-emerald-50 text-emerald-700'
       case 2: return 'bg-teal-50 text-teal-700'
       case 3: return 'bg-amber-50 text-amber-700'
-      case 4: return 'bg-orange-50 text-orange-700'
+      case 4: return 'bg-amber-50 text-amber-700'
       case 5: return 'bg-rose-50 text-rose-600'
       default: return 'bg-stone-100 text-stone-600'
     }
@@ -969,7 +969,11 @@ export default function AdminPage() {
                       className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer hover:text-stone-700 transition-colors"
                       onClick={() => setCandidateSort(s => ({ field: 'name', dir: s.field === 'name' && s.dir === 'asc' ? 'desc' : 'asc' }))}
                     >
-                      Name {candidateSort.field === 'name' && (candidateSort.dir === 'asc' ? '↑' : '↓')}
+                      Name {candidateSort.field === 'name' && (
+                        <svg className="inline w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={candidateSort.dir === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                        </svg>
+                      )}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Phone</th>
@@ -977,7 +981,11 @@ export default function AdminPage() {
                       className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer hover:text-stone-700 transition-colors"
                       onClick={() => setCandidateSort(s => ({ field: 'interview_count', dir: s.field === 'interview_count' && s.dir === 'asc' ? 'desc' : 'asc' }))}
                     >
-                      Interviews {candidateSort.field === 'interview_count' && (candidateSort.dir === 'asc' ? '↑' : '↓')}
+                      Interviews {candidateSort.field === 'interview_count' && (
+                        <svg className="inline w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={candidateSort.dir === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                        </svg>
+                      )}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Profile</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Status</th>
@@ -985,7 +993,11 @@ export default function AdminPage() {
                       className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer hover:text-stone-700 transition-colors"
                       onClick={() => setCandidateSort(s => ({ field: 'created_at', dir: s.field === 'created_at' && s.dir === 'asc' ? 'desc' : 'asc' }))}
                     >
-                      Joined {candidateSort.field === 'created_at' && (candidateSort.dir === 'asc' ? '↑' : '↓')}
+                      Joined {candidateSort.field === 'created_at' && (
+                        <svg className="inline w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={candidateSort.dir === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                        </svg>
+                      )}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -1060,7 +1072,7 @@ export default function AdminPage() {
                               className="text-xs border-stone-200 text-teal-600 hover:bg-teal-50 rounded-lg"
                               disabled={c.has_resume && c.has_github && c.has_transcript}
                             >
-                              Nudge ▾
+                              Nudge <svg className="inline w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </Button>
                             {openNudgeDropdown === c.id && (
                               <div className="absolute right-0 mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-lg z-10">
@@ -1151,21 +1163,33 @@ export default function AdminPage() {
                       className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer hover:text-stone-700 transition-colors"
                       onClick={() => setEmployerSort(s => ({ field: 'company_name', dir: s.field === 'company_name' && s.dir === 'asc' ? 'desc' : 'asc' }))}
                     >
-                      Company {employerSort.field === 'company_name' && (employerSort.dir === 'asc' ? '↑' : '↓')}
+                      Company {employerSort.field === 'company_name' && (
+                        <svg className="inline w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={employerSort.dir === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                        </svg>
+                      )}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Email</th>
                     <th
                       className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer hover:text-stone-700 transition-colors"
                       onClick={() => setEmployerSort(s => ({ field: 'job_count', dir: s.field === 'job_count' && s.dir === 'asc' ? 'desc' : 'asc' }))}
                     >
-                      Jobs {employerSort.field === 'job_count' && (employerSort.dir === 'asc' ? '↑' : '↓')}
+                      Jobs {employerSort.field === 'job_count' && (
+                        <svg className="inline w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={employerSort.dir === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                        </svg>
+                      )}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Status</th>
                     <th
                       className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider cursor-pointer hover:text-stone-700 transition-colors"
                       onClick={() => setEmployerSort(s => ({ field: 'created_at', dir: s.field === 'created_at' && s.dir === 'asc' ? 'desc' : 'asc' }))}
                     >
-                      Joined {employerSort.field === 'created_at' && (employerSort.dir === 'asc' ? '↑' : '↓')}
+                      Joined {employerSort.field === 'created_at' && (
+                        <svg className="inline w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={employerSort.dir === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+                        </svg>
+                      )}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -1807,7 +1831,7 @@ export default function AdminPage() {
                             <span className="px-1.5 py-0.5 text-xs bg-sky-50 text-sky-600 rounded">Tech</span>
                           )}
                           {club.is_professional && (
-                            <span className="px-1.5 py-0.5 text-xs bg-indigo-50 text-indigo-600 rounded">Pro</span>
+                            <span className="px-1.5 py-0.5 text-xs bg-stone-50 text-stone-600 rounded">Pro</span>
                           )}
                           {club.has_projects && (
                             <span className="px-1.5 py-0.5 text-xs bg-emerald-50 text-emerald-600 rounded">Projects</span>
@@ -1906,7 +1930,7 @@ export default function AdminPage() {
                             <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
                               idx === 0 ? 'bg-amber-100 text-amber-700' :
                               idx === 1 ? 'bg-stone-200 text-stone-700' :
-                              idx === 2 ? 'bg-orange-100 text-orange-700' :
+                              idx === 2 ? 'bg-amber-50 text-amber-700' :
                               'bg-stone-100 text-stone-500'
                             }`}>
                               {idx + 1}

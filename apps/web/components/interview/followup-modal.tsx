@@ -46,7 +46,7 @@ export function FollowupModal({
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-stone-600 mb-4">
             You can choose to answer a follow-up question to expand on your answer, or skip to continue to the next question.
           </p>
 
@@ -60,30 +60,30 @@ export function FollowupModal({
                 className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                   selectedIndex === index
                     ? 'border-teal-500 bg-teal-50'
-                    : 'border-gray-200 hover:border-teal-300 hover:bg-gray-50'
+                    : 'border-stone-200 hover:border-teal-300 hover:bg-stone-50'
                 } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                     selectedIndex === index
                       ? 'bg-teal-500 text-white'
-                      : 'bg-gray-200 text-gray-600'
+                      : 'bg-stone-200 text-stone-600'
                   }`}>
                     {index + 1}
                   </div>
-                  <p className="text-gray-800">{question}</p>
+                  <p className="text-stone-800">{question}</p>
                 </div>
               </button>
             ))}
           </div>
 
           {/* Info note */}
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+          <div className="mt-4 p-3 bg-stone-50 rounded-lg">
             <div className="flex items-start gap-2">
-              <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-stone-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-sm text-blue-700">
+              <p className="text-sm text-stone-700">
                 Follow-ups are optional. If you feel you&apos;ve fully answered the question, you can skip.
               </p>
             </div>
@@ -91,11 +91,11 @@ export function FollowupModal({
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 bg-gray-50 flex justify-end gap-3">
+        <div className="px-6 py-4 bg-stone-50 flex justify-end gap-3">
           <button
             onClick={onSkip}
             disabled={isLoading}
-            className="px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-stone-700 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
           >
             Skip Follow-up
           </button>

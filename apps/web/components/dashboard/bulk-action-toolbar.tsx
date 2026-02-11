@@ -44,12 +44,12 @@ export function BulkActionToolbar({
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-stone-600">
             <span className="font-semibold text-teal-600">{selectedCount}</span> interview{selectedCount > 1 ? 's' : ''} selected
           </span>
           <button
             onClick={onClearSelection}
-            className="text-sm text-gray-500 hover:text-gray-700 underline"
+            className="text-sm text-stone-500 hover:text-stone-700 underline"
           >
             Clear selection
           </button>

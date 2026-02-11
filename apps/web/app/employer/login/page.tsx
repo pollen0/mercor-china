@@ -71,7 +71,7 @@ function EmployerLoginForm() {
   return (
     <div className="bg-white rounded-3xl shadow-soft-lg border border-stone-100 p-8">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-stone-900">
+        <h2 className="text-2xl font-semibold text-stone-900">
           {mode === 'login' ? 'Welcome back' : 'Create your account'}
         </h2>
         <p className="text-stone-500 mt-2">
@@ -223,7 +223,7 @@ export default function EmployerLoginPage() {
             </div>
             <span className="text-white font-semibold text-2xl">Pathway</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
+          <h1 className="text-4xl font-semibold text-white mb-6 leading-tight">
             Hire top college talent based on growth trajectory
           </h1>
           <p className="text-teal-100 text-lg leading-relaxed mb-8">

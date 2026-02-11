@@ -96,10 +96,10 @@ export default function InterviewDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500">Loading interview...</p>
+          <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500">Loading interview...</p>
         </div>
       </main>
     )
@@ -107,16 +107,16 @@ export default function InterviewDetailPage() {
 
   if (error || !interview) {
     return (
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+      <main className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-stone-100 p-8">
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6">
               <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">Error</h1>
-            <p className="text-gray-500 mb-6">{error || 'Interview not found'}</p>
+            <h1 className="text-xl font-semibold text-stone-900 mb-2">Error</h1>
+            <p className="text-stone-500 mb-6">{error || 'Interview not found'}</p>
             <Link href="/dashboard/interviews">
               <Button variant="outline" className="w-full">Back to Interviews</Button>
             </Link>
@@ -129,9 +129,9 @@ export default function InterviewDetailPage() {
   const summaryData = parseSummary(interview.aiSummary)
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-stone-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-2">
@@ -140,14 +140,14 @@ export default function InterviewDetailPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
-              <span className="font-semibold text-gray-900">Pathway</span>
+              <span className="font-semibold text-stone-900">Pathway</span>
             </Link>
-            <span className="text-gray-300">/</span>
-            <Link href="/dashboard/interviews" className="text-gray-500 hover:text-gray-900">
+            <span className="text-stone-300">/</span>
+            <Link href="/dashboard/interviews" className="text-stone-500 hover:text-stone-900">
               Interviews
             </Link>
-            <span className="text-gray-300">/</span>
-            <span className="text-gray-600 font-medium">{interview.candidateName || 'Detail'}</span>
+            <span className="text-stone-300">/</span>
+            <span className="text-stone-600 font-medium">{interview.candidateName || 'Detail'}</span>
           </div>
           <Link href="/dashboard/interviews">
             <Button variant="outline" size="sm">Back to List</Button>
@@ -157,22 +157,22 @@ export default function InterviewDetailPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Candidate Info & Actions */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
             <div className="flex items-center gap-5">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-100 to-teal-100 flex items-center justify-center">
-                <span className="text-teal-700 font-bold text-3xl">
+                <span className="text-teal-700 font-semibold text-3xl">
                   {(interview.candidateName || 'U').charAt(0).toUpperCase()}
                 </span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-semibold text-stone-900">
                   {interview.candidateName || 'Unknown Candidate'}
                 </h1>
-                <p className="text-gray-500">
+                <p className="text-stone-500">
                   {interview.jobTitle} at {interview.companyName}
                 </p>
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-stone-400 mt-1">
                   Submitted {new Date(interview.createdAt).toLocaleDateString()}
                 </p>
               </div>
@@ -222,8 +222,8 @@ export default function InterviewDetailPage() {
 
         {/* AI Summary */}
         {summaryData && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
@@ -232,12 +232,12 @@ export default function InterviewDetailPage() {
 
             <div className="space-y-4">
               {summaryData.summary && (
-                <p className="text-gray-700 leading-relaxed">{summaryData.summary}</p>
+                <p className="text-stone-700 leading-relaxed">{summaryData.summary}</p>
               )}
 
               {summaryData.recommendation && (
                 <div className="flex items-center gap-3">
-                  <span className="font-medium text-gray-700">Recommendation:</span>
+                  <span className="font-medium text-stone-700">Recommendation:</span>
                   <span
                     className={`px-4 py-1.5 rounded-full text-sm font-semibold ${
                       summaryData.recommendation === 'strong_yes'
@@ -299,13 +299,13 @@ export default function InterviewDetailPage() {
 
         {/* Responses */}
         <div className="space-y-6">
-          <h2 className="text-xl font-bold text-gray-900">Interview Responses</h2>
+          <h2 className="text-xl font-semibold text-stone-900">Interview Responses</h2>
 
           {interview.responses.map((response, index) => {
             const scoreDetails = parseScoreDetails(response.aiAnalysis)
 
             return (
-              <div key={response.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div key={response.id} className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-teal-600 to-teal-500 px-6 py-4">
                   <h3 className="text-white font-semibold">
                     Question {index + 1}: {response.questionText}
@@ -318,8 +318,8 @@ export default function InterviewDetailPage() {
                       {response.videoUrl ? (
                         <VideoPlayer src={response.videoUrl} />
                       ) : (
-                        <div className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center">
-                          <span className="text-gray-400">No video available</span>
+                        <div className="aspect-video bg-stone-100 rounded-xl flex items-center justify-center">
+                          <span className="text-stone-400">No video available</span>
                         </div>
                       )}
                     </div>
@@ -332,25 +332,25 @@ export default function InterviewDetailPage() {
 
                           {scoreDetails && (
                             <div className="flex-1 grid grid-cols-2 gap-3 text-sm">
-                              <div className="bg-gray-50 rounded-lg p-2">
-                                <span className="text-gray-500">Communication</span>
-                                <div className="font-semibold text-gray-900">{scoreDetails.communication}/10</div>
+                              <div className="bg-stone-50 rounded-lg p-2">
+                                <span className="text-stone-500">Communication</span>
+                                <div className="font-semibold text-stone-900">{scoreDetails.communication}/10</div>
                               </div>
-                              <div className="bg-gray-50 rounded-lg p-2">
-                                <span className="text-gray-500">Problem Solving</span>
-                                <div className="font-semibold text-gray-900">{scoreDetails.problemSolving}/10</div>
+                              <div className="bg-stone-50 rounded-lg p-2">
+                                <span className="text-stone-500">Problem Solving</span>
+                                <div className="font-semibold text-stone-900">{scoreDetails.problemSolving}/10</div>
                               </div>
-                              <div className="bg-gray-50 rounded-lg p-2">
-                                <span className="text-gray-500">Domain Knowledge</span>
-                                <div className="font-semibold text-gray-900">{scoreDetails.domainKnowledge}/10</div>
+                              <div className="bg-stone-50 rounded-lg p-2">
+                                <span className="text-stone-500">Domain Knowledge</span>
+                                <div className="font-semibold text-stone-900">{scoreDetails.domainKnowledge}/10</div>
                               </div>
-                              <div className="bg-gray-50 rounded-lg p-2">
-                                <span className="text-gray-500">Growth Mindset</span>
-                                <div className="font-semibold text-gray-900">{scoreDetails.growthMindset}/10</div>
+                              <div className="bg-stone-50 rounded-lg p-2">
+                                <span className="text-stone-500">Growth Mindset</span>
+                                <div className="font-semibold text-stone-900">{scoreDetails.growthMindset}/10</div>
                               </div>
-                              <div className="bg-gray-50 rounded-lg p-2 col-span-2">
-                                <span className="text-gray-500">Culture Fit</span>
-                                <div className="font-semibold text-gray-900">{scoreDetails.cultureFit}/10</div>
+                              <div className="bg-stone-50 rounded-lg p-2 col-span-2">
+                                <span className="text-stone-500">Culture Fit</span>
+                                <div className="font-semibold text-stone-900">{scoreDetails.cultureFit}/10</div>
                               </div>
                             </div>
                           )}
@@ -364,11 +364,11 @@ export default function InterviewDetailPage() {
                       )}
 
                       {scoreDetails?.highlightQuotes && scoreDetails.highlightQuotes.length > 0 && (
-                        <div className="bg-gray-50 rounded-xl p-4">
-                          <h5 className="text-sm font-medium text-gray-700 mb-2">Key Quotes</h5>
+                        <div className="bg-stone-50 rounded-xl p-4">
+                          <h5 className="text-sm font-medium text-stone-700 mb-2">Key Quotes</h5>
                           <ul className="space-y-2">
                             {scoreDetails.highlightQuotes.map((quote, i) => (
-                              <li key={i} className="text-sm text-gray-600 italic">
+                              <li key={i} className="text-sm text-stone-600 italic">
                                 &ldquo;{quote}&rdquo;
                               </li>
                             ))}

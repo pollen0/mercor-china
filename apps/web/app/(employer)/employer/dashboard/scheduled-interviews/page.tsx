@@ -254,7 +254,7 @@ export default function ScheduledInterviewsPage() {
                       <div className="flex gap-4">
                         {/* Date/Time Block */}
                         <div className="text-center p-3 bg-stone-50 rounded-lg min-w-[100px]">
-                          <div className="text-2xl font-bold text-stone-900">
+                          <div className="text-2xl font-semibold text-stone-900">
                             {new Date(interview.scheduledAt).getDate()}
                           </div>
                           <div className="text-sm text-stone-500">

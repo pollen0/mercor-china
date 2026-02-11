@@ -285,7 +285,7 @@ export default function EmployerSettingsPage() {
                 <Label className="text-sm font-medium text-stone-700">Account Status</Label>
                 <p className="mt-1">
                   {employer?.isVerified ? (
-                    <span className="inline-flex items-center gap-1 text-green-600">
+                    <span className="inline-flex items-center gap-1 text-teal-600">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
@@ -322,8 +322,8 @@ export default function EmployerSettingsPage() {
           )}
 
           {success && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-              <p className="text-sm text-green-600">{success}</p>
+            <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl">
+              <p className="text-sm text-teal-600">{success}</p>
             </div>
           )}
 

@@ -110,7 +110,7 @@ describe('Navbar', () => {
 
     // Overview link should have active styling when on /dashboard
     const overviewLink = screen.getByText('Overview').closest('a')
-    expect(overviewLink).toHaveClass('text-gray-900')
+    expect(overviewLink).toHaveClass('text-stone-900')
     expect(overviewLink).toHaveClass('font-medium')
   })
 })

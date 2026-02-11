@@ -140,11 +140,11 @@ export function MatchAlerts({ limit = 5, showViewAll = true, onAlertClick }: Mat
       <CardContent>
         {alerts.length === 0 ? (
           <div className="text-center py-6">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-12 h-12 text-stone-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <p className="text-gray-500 text-sm">No matches yet</p>
-            <p className="text-gray-400 text-xs mt-1">
+            <p className="text-stone-500 text-sm">No matches yet</p>
+            <p className="text-stone-400 text-xs mt-1">
               Create a job to start matching with candidates
             </p>
           </div>
@@ -158,13 +158,13 @@ export function MatchAlerts({ limit = 5, showViewAll = true, onAlertClick }: Mat
                 className={`block p-3 rounded-lg border transition-colors ${
                   alert.isNew
                     ? 'bg-teal-50 border-teal-200 hover:bg-teal-100'
-                    : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    : 'bg-stone-50 border-stone-200 hover:bg-stone-100'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      alert.isNew ? 'bg-teal-200 text-teal-700' : 'bg-gray-200 text-gray-600'
+                      alert.isNew ? 'bg-teal-200 text-teal-700' : 'bg-stone-200 text-stone-600'
                     }`}>
                       <span className="text-sm font-semibold">
                         {alert.candidate.name.charAt(0).toUpperCase()}
@@ -172,33 +172,33 @@ export function MatchAlerts({ limit = 5, showViewAll = true, onAlertClick }: Mat
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900 truncate">
+                        <p className="font-medium text-stone-900 truncate">
                           {alert.candidate.name}
                         </p>
                         {alert.isNew && (
                           <span className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-sm text-gray-500 truncate">
+                      <p className="text-sm text-stone-500 truncate">
                         {alert.candidate.university || 'Unknown university'}
                         {alert.candidate.graduationYear && ` '${String(alert.candidate.graduationYear).slice(-2)}`}
                       </p>
                       {alert.jobTitle && (
-                        <p className="text-xs text-gray-400 truncate mt-0.5">
+                        <p className="text-xs text-stone-400 truncate mt-0.5">
                           For: {alert.jobTitle}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className={`text-lg font-bold ${
+                    <div className={`text-lg font-semibold ${
                       alert.matchScore >= 80 ? 'text-teal-600' :
-                      alert.matchScore >= 60 ? 'text-blue-600' :
-                      'text-gray-600'
+                      alert.matchScore >= 60 ? 'text-stone-700' :
+                      'text-stone-600'
                     }`}>
                       {Math.round(alert.matchScore)}%
                     </div>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-stone-400">
                       {formatTimeAgo(alert.createdAt)}
                     </p>
                   </div>

@@ -43,7 +43,7 @@ type TalentProfile = TalentProfileDetail & {
 
 const STATUS_OPTIONS: { value: MatchStatus; label: string; color: string; bgColor: string }[] = [
   { value: 'PENDING', label: 'Pending', color: 'text-stone-700', bgColor: 'bg-stone-100' },
-  { value: 'CONTACTED', label: 'Contacted', color: 'text-blue-700', bgColor: 'bg-blue-100' },
+  { value: 'CONTACTED', label: 'Contacted', color: 'text-stone-700', bgColor: 'bg-stone-100' },
   { value: 'IN_REVIEW', label: 'In Review', color: 'text-amber-700', bgColor: 'bg-amber-100' },
   { value: 'SHORTLISTED', label: 'Shortlisted', color: 'text-teal-700', bgColor: 'bg-teal-100' },
   { value: 'REJECTED', label: 'Rejected', color: 'text-red-700', bgColor: 'bg-red-100' },
@@ -239,8 +239,8 @@ ${companyName}`)
     return (
       <PageWrapper className="flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-gray-200 border-t-teal-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">Loading profile...</p>
+          <div className="w-12 h-12 border-2 border-stone-200 border-t-teal-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500 text-sm">Loading profile...</p>
         </div>
       </PageWrapper>
     )
@@ -273,7 +273,7 @@ ${companyName}`)
 
       <Container className="py-8 pt-24 max-w-4xl">
         {/* Back Button */}
-        <Link href="/dashboard?tab=talent" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <Link href="/dashboard?tab=talent" className="inline-flex items-center text-sm text-stone-600 hover:text-stone-900 mb-6">
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -286,35 +286,35 @@ ${companyName}`)
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-gradient-to-br from-teal-600 to-teal-500 rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-white">
+                  <span className="text-2xl font-semibold text-white">
                     {candidate.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{candidate.name}</h1>
-                  <p className="text-gray-600">{candidate.email}</p>
+                  <h1 className="text-2xl font-semibold text-stone-900">{candidate.name}</h1>
+                  <p className="text-stone-600">{candidate.email}</p>
                   {candidate.phone && (
-                    <p className="text-gray-600">{candidate.phone}</p>
+                    <p className="text-stone-600">{candidate.phone}</p>
                   )}
                 </div>
               </div>
               <div className="text-right">
                 {profile.profile.bestScore ? (
                   <>
-                    <div className="text-4xl font-bold text-teal-600">
+                    <div className="text-4xl font-semibold text-teal-600">
                       {profile.profile.bestScore.toFixed(1)}
                     </div>
-                    <div className="text-sm text-gray-500">Interview Score</div>
+                    <div className="text-sm text-stone-500">Interview Score</div>
                   </>
                 ) : profile.profileScore ? (
                   <>
-                    <div className="text-4xl font-bold text-blue-600">
+                    <div className="text-4xl font-semibold text-stone-700">
                       {profile.profileScore.score.toFixed(1)}
                     </div>
-                    <div className="text-sm text-gray-500">Profile Score</div>
+                    <div className="text-sm text-stone-500">Profile Score</div>
                   </>
                 ) : (
-                  <div className="text-sm text-gray-400">No score yet</div>
+                  <div className="text-sm text-stone-400">No score yet</div>
                 )}
               </div>
             </div>
@@ -323,7 +323,7 @@ ${companyName}`)
             {profile.completionStatus && (
               <div className="flex flex-wrap gap-2 mt-4">
                 {profile.completionStatus.interviewCompleted && (
-                  <span className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+                  <span className="px-3 py-1 text-sm bg-teal-50 text-teal-700 rounded-full flex items-center gap-1">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
@@ -331,17 +331,17 @@ ${companyName}`)
                   </span>
                 )}
                 {!profile.completionStatus.interviewCompleted && (
-                  <span className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-full">
+                  <span className="px-3 py-1 text-sm bg-amber-50 text-amber-700 rounded-full">
                     No Interview Yet
                   </span>
                 )}
                 {profile.completionStatus.resumeUploaded && (
-                  <span className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full">
+                  <span className="px-3 py-1 text-sm bg-stone-100 text-stone-700 rounded-full">
                     Resume Uploaded
                   </span>
                 )}
                 {profile.completionStatus.githubConnected && (
-                  <span className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-full">
+                  <span className="px-3 py-1 text-sm bg-stone-100 text-stone-700 rounded-full">
                     GitHub Connected
                   </span>
                 )}
@@ -354,7 +354,7 @@ ${companyName}`)
             )}
 
             {/* Tags */}
-            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-stone-100">
               {profile.profile.vertical && (
                 <span className={`px-3 py-1 text-sm font-medium rounded-full ${
                   profile.profile.vertical === 'software_engineering' || profile.profile.vertical === 'engineering'
@@ -362,31 +362,31 @@ ${companyName}`)
                     : profile.profile.vertical === 'data'
                     ? 'bg-teal-100 text-teal-600'
                     : profile.profile.vertical === 'product' || profile.profile.vertical === 'business'
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-teal-50 text-teal-700'
                     : profile.profile.vertical === 'finance'
                     ? 'bg-amber-100 text-amber-700'
-                    : 'bg-blue-100 text-blue-700'
+                    : 'bg-stone-100 text-stone-700'
                 }`}>
                   {VERTICAL_NAMES[profile.profile.vertical] || profile.profile.vertical}
                 </span>
               )}
               {profile.profile.roleType && (
-                <span className="px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-700">
+                <span className="px-3 py-1 text-sm font-medium rounded-full bg-stone-100 text-stone-700">
                   {ROLE_NAMES[profile.profile.roleType] || profile.profile.roleType}
                 </span>
               )}
               {resumeData?.location && (
-                <span className="px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-600">
-                  📍 {resumeData.location}
+                <span className="px-3 py-1 text-sm rounded-full bg-stone-100 text-stone-600">
+                  {resumeData.location}
                 </span>
               )}
             </div>
 
             {/* Status & Actions */}
-            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-3 items-center">
+            <div className="mt-4 pt-4 border-t border-stone-100 flex flex-wrap gap-3 items-center">
               {/* Status Dropdown */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Status:</span>
+                <span className="text-sm text-stone-600">Status:</span>
                 <StatusSelect
                   value={currentStatus}
                   onChange={(v) => handleStatusChange(v as MatchStatus)}
@@ -394,7 +394,7 @@ ${companyName}`)
                   disabled={isUpdatingStatus}
                 />
                 {isUpdatingStatus && (
-                  <span className="w-4 h-4 border-2 border-gray-300 border-t-teal-500 rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-stone-300 border-t-teal-500 rounded-full animate-spin" />
                 )}
               </div>
 
@@ -440,7 +440,7 @@ ${companyName}`)
                   <CardTitle className="text-lg">Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-gray-600 whitespace-pre-line">{resumeData.summary}</p>
+                  <p className="text-stone-600 whitespace-pre-line">{resumeData.summary}</p>
                 </CardContent>
               </Card>
             )}
@@ -454,21 +454,21 @@ ${companyName}`)
                 <CardContent>
                   <div className="space-y-4">
                     {resumeData.experience.map((exp, i) => (
-                      <div key={i} className={i > 0 ? 'pt-4 border-t border-gray-100' : ''}>
+                      <div key={i} className={i > 0 ? 'pt-4 border-t border-stone-100' : ''}>
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-medium text-gray-900">{exp.title}</h4>
-                            <p className="text-gray-600">{exp.company}</p>
+                            <h4 className="font-medium text-stone-900">{exp.title}</h4>
+                            <p className="text-stone-600">{exp.company}</p>
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-stone-500">
                             {exp.startDate} - {exp.endDate || 'Present'}
                           </p>
                         </div>
                         {exp.description && (
-                          <p className="text-sm text-gray-600 mt-2">{exp.description}</p>
+                          <p className="text-sm text-stone-600 mt-2">{exp.description}</p>
                         )}
                         {exp.highlights && exp.highlights.length > 0 && (
-                          <ul className="mt-2 text-sm text-gray-600 list-disc list-inside">
+                          <ul className="mt-2 text-sm text-stone-600 list-disc list-inside">
                             {exp.highlights.map((h, j) => (
                               <li key={j}>{h}</li>
                             ))}
@@ -490,16 +490,16 @@ ${companyName}`)
                 <CardContent>
                   <div className="space-y-4">
                     {resumeData.education.map((edu, i) => (
-                      <div key={i} className={i > 0 ? 'pt-4 border-t border-gray-100' : ''}>
+                      <div key={i} className={i > 0 ? 'pt-4 border-t border-stone-100' : ''}>
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-medium text-gray-900">{edu.institution}</h4>
-                            <p className="text-gray-600">
+                            <h4 className="font-medium text-stone-900">{edu.institution}</h4>
+                            <p className="text-stone-600">
                               {edu.degree} {edu.fieldOfStudy && `in ${edu.fieldOfStudy}`}
                             </p>
                           </div>
                           {edu.startDate && (
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-stone-500">
                               {edu.startDate} - {edu.endDate || 'Present'}
                             </p>
                           )}
@@ -525,7 +525,7 @@ ${companyName}`)
                     {resumeData.skills.map((skill, i) => (
                       <span
                         key={i}
-                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-full"
+                        className="px-3 py-1 text-sm bg-stone-100 text-stone-700 rounded-full"
                       >
                         {skill}
                       </span>
@@ -559,21 +559,21 @@ ${companyName}`)
                     {candidate.githubData && (
                       <>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Public Repos</span>
+                          <span className="text-stone-600">Public Repos</span>
                           <span className="font-medium">{candidate.githubData.publicRepos || candidate.githubData.repos?.length || 0}</span>
                         </div>
                         {candidate.githubData.totalContributions && (
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Contributions</span>
+                            <span className="text-stone-600">Contributions</span>
                             <span className="font-medium">{candidate.githubData.totalContributions}</span>
                           </div>
                         )}
                         {candidate.githubData.languages && Object.keys(candidate.githubData.languages).length > 0 && (
                           <div className="mt-2">
-                            <span className="text-sm text-gray-600">Top Languages</span>
+                            <span className="text-sm text-stone-600">Top Languages</span>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {Object.keys(candidate.githubData.languages).slice(0, 5).map(lang => (
-                                <span key={lang} className="px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">
+                                <span key={lang} className="px-2 py-0.5 text-xs bg-stone-100 text-stone-700 rounded">
                                   {lang}
                                 </span>
                               ))}
@@ -606,8 +606,8 @@ ${companyName}`)
                     {/* Builder Score */}
                     {vibeCodeProfile.bestBuilderScore && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Builder Score</span>
-                        <span className="text-xl font-bold text-teal-600">
+                        <span className="text-stone-600">Builder Score</span>
+                        <span className="text-xl font-semibold text-teal-600">
                           {vibeCodeProfile.bestBuilderScore.toFixed(1)}/10
                         </span>
                       </div>
@@ -616,7 +616,7 @@ ${companyName}`)
                     {/* Archetype Badge */}
                     {vibeCodeProfile.primaryArchetype && (
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-600">Archetype</span>
+                        <span className="text-stone-600">Archetype</span>
                         <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
                           vibeCodeProfile.primaryArchetype === 'architect'
                             ? 'bg-stone-900 text-white'
@@ -638,10 +638,10 @@ ${companyName}`)
                     {/* Top Strengths */}
                     {vibeCodeProfile.topStrengths && vibeCodeProfile.topStrengths.length > 0 && (
                       <div>
-                        <span className="text-sm font-medium text-gray-600 block mb-2">Strengths</span>
+                        <span className="text-sm font-medium text-stone-600 block mb-2">Strengths</span>
                         <ul className="space-y-1.5">
                           {vibeCodeProfile.topStrengths.slice(0, 3).map((strength, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                            <li key={i} className="flex items-start gap-2 text-sm text-stone-600">
                               <svg className="h-4 w-4 text-teal-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
@@ -654,8 +654,8 @@ ${companyName}`)
 
                     {/* Sources Used */}
                     {vibeCodeProfile.sourcesUsed && vibeCodeProfile.sourcesUsed.length > 0 && (
-                      <div className="pt-3 border-t border-gray-100">
-                        <span className="text-xs text-gray-500">
+                      <div className="pt-3 border-t border-stone-100">
+                        <span className="text-xs text-stone-500">
                           Tools used: {vibeCodeProfile.sourcesUsed.map(s =>
                             s === 'claude_code' ? 'Claude Code' :
                             s === 'cursor' ? 'Cursor' :
@@ -690,34 +690,34 @@ ${companyName}`)
                   <div className="space-y-3">
                     {profile.profileScore.breakdown.technicalSkills && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Technical Skills</span>
+                        <span className="text-stone-600">Technical Skills</span>
                         <span className="font-medium">{profile.profileScore.breakdown.technicalSkills.toFixed(1)}/10</span>
                       </div>
                     )}
                     {profile.profileScore.breakdown.experienceQuality && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Experience</span>
+                        <span className="text-stone-600">Experience</span>
                         <span className="font-medium">{profile.profileScore.breakdown.experienceQuality.toFixed(1)}/10</span>
                       </div>
                     )}
                     {profile.profileScore.breakdown.education && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Education</span>
+                        <span className="text-stone-600">Education</span>
                         <span className="font-medium">{profile.profileScore.breakdown.education.toFixed(1)}/10</span>
                       </div>
                     )}
                     {profile.profileScore.breakdown.githubActivity && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">GitHub Activity</span>
+                        <span className="text-stone-600">GitHub Activity</span>
                         <span className="font-medium">{profile.profileScore.breakdown.githubActivity.toFixed(1)}/10</span>
                       </div>
                     )}
-                    <div className="pt-2 border-t border-gray-100 flex justify-between">
-                      <span className="text-gray-900 font-medium">Overall</span>
-                      <span className="font-bold text-blue-600">{profile.profileScore.score.toFixed(1)}/10</span>
+                    <div className="pt-2 border-t border-stone-100 flex justify-between">
+                      <span className="text-stone-900 font-medium">Overall</span>
+                      <span className="font-semibold text-stone-700">{profile.profileScore.score.toFixed(1)}/10</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-3">
+                  <p className="text-xs text-stone-500 mt-3">
                     This score is based on resume, GitHub, and education data. Interview score will be available after the candidate completes an interview.
                   </p>
                 </CardContent>
@@ -734,25 +734,25 @@ ${companyName}`)
                 <div className="space-y-3">
                   {profile.profile.interviewScore && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Latest Score</span>
+                      <span className="text-stone-600">Latest Score</span>
                       <span className="font-medium">{profile.profile.interviewScore.toFixed(1)}/10</span>
                     </div>
                   )}
                   {profile.profile.bestScore && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Best Score</span>
+                      <span className="text-stone-600">Best Score</span>
                       <span className="font-medium text-teal-600">{profile.profile.bestScore.toFixed(1)}/10</span>
                     </div>
                   )}
                   {profile.profile.totalInterviews !== undefined && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Attempts</span>
+                      <span className="text-stone-600">Attempts</span>
                       <span className="font-medium">{profile.profile.totalInterviews}</span>
                     </div>
                   )}
                   {profile.profile.completedAt && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Completed</span>
+                      <span className="text-stone-600">Completed</span>
                       <span className="font-medium">
                         {new Date(profile.profile.completedAt).toLocaleDateString()}
                       </span>
@@ -761,9 +761,9 @@ ${companyName}`)
                 </div>
 
                 {interview?.aiSummary && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <h4 className="font-medium text-gray-900 mb-2">AI Summary</h4>
-                    <p className="text-sm text-gray-600">{interview.aiSummary}</p>
+                  <div className="mt-4 pt-4 border-t border-stone-100">
+                    <h4 className="font-medium text-stone-900 mb-2">AI Summary</h4>
+                    <p className="text-sm text-stone-600">{interview.aiSummary}</p>
                   </div>
                 )}
               </CardContent>
@@ -784,7 +784,7 @@ ${companyName}`)
             <CardContent>
               <div className="space-y-6">
                 {interview.responses.map((response, index) => (
-                  <div key={response.id} className={index > 0 ? 'pt-6 border-t border-gray-100' : ''}>
+                  <div key={response.id} className={index > 0 ? 'pt-6 border-t border-stone-100' : ''}>
                     <div className="flex items-start gap-4">
                       {/* Question Number */}
                       <div className="flex-shrink-0 w-8 h-8 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center font-medium text-sm">
@@ -793,7 +793,7 @@ ${companyName}`)
 
                       <div className="flex-1">
                         {/* Question Text */}
-                        <h4 className="font-medium text-gray-900 mb-2">{response.questionText}</h4>
+                        <h4 className="font-medium text-stone-900 mb-2">{response.questionText}</h4>
 
                         {/* Video Player */}
                         {response.videoUrl && (
@@ -819,7 +819,7 @@ ${companyName}`)
                             ) : (
                               <button
                                 onClick={() => setActiveVideoIndex(index)}
-                                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 text-sm transition-colors"
+                                className="flex items-center gap-2 px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-700 text-sm transition-colors"
                               >
                                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M8 5v14l11-7z" />
@@ -832,8 +832,8 @@ ${companyName}`)
 
                         {/* Transcription */}
                         {response.transcription && (
-                          <div className="mb-3 p-3 bg-gray-50 rounded-lg">
-                            <p className="text-sm text-gray-700 italic">"{response.transcription}"</p>
+                          <div className="mb-3 p-3 bg-stone-50 rounded-lg">
+                            <p className="text-sm text-stone-700 italic">"{response.transcription}"</p>
                           </div>
                         )}
 
@@ -841,10 +841,10 @@ ${companyName}`)
                         <div className="flex items-start gap-4">
                           {/* Overall Score */}
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-teal-600">
+                            <div className="text-2xl font-semibold text-teal-600">
                               {response.aiScore?.toFixed(1) || '-'}
                             </div>
-                            <div className="text-xs text-gray-500">Score</div>
+                            <div className="text-xs text-stone-500">Score</div>
                           </div>
 
                           {/* Scoring Dimensions */}
@@ -854,10 +854,10 @@ ${companyName}`)
                                 const score = response.scoringDimensions?.[dim.key as keyof typeof response.scoringDimensions]
                                 return (
                                   <div key={dim.key} className="text-center">
-                                    <div className="text-sm font-medium text-gray-900">
+                                    <div className="text-sm font-medium text-stone-900">
                                       {score?.toFixed(1) || '-'}
                                     </div>
-                                    <div className="text-xs text-gray-500">{dim.label}</div>
+                                    <div className="text-xs text-stone-500">{dim.label}</div>
                                   </div>
                                 )
                               })}
@@ -867,7 +867,7 @@ ${companyName}`)
 
                         {/* AI Analysis */}
                         {response.aiAnalysis && (
-                          <p className="mt-2 text-sm text-gray-600">{response.aiAnalysis}</p>
+                          <p className="mt-2 text-sm text-stone-600">{response.aiAnalysis}</p>
                         )}
                       </div>
                     </div>
@@ -888,7 +888,7 @@ ${companyName}`)
                 <span>Contact {profile.candidate.name}</span>
                 <button
                   onClick={() => setShowContactModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-stone-400 hover:text-stone-600"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -901,26 +901,26 @@ ${companyName}`)
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Subject
                 </label>
                 <input
                   type="text"
                   value={contactSubject}
                   onChange={(e) => setContactSubject(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   placeholder="Email subject..."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Message
                 </label>
                 <textarea
                   value={contactMessage}
                   onChange={(e) => setContactMessage(e.target.value)}
                   rows={8}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
                   placeholder="Write your message..."
                 />
               </div>
@@ -949,7 +949,7 @@ ${companyName}`)
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 text-center">
+              <p className="text-xs text-stone-500 text-center">
                 The candidate will receive this email and their status will be updated to "Contacted"
               </p>
             </CardContent>

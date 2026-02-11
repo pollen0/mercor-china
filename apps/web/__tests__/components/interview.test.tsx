@@ -104,7 +104,7 @@ describe('QuestionCard', () => {
   it('renders question card with correct styling', () => {
     render(<QuestionCard {...defaultProps} />)
 
-    const card = document.querySelector('.border-blue-600')
+    const card = document.querySelector('.border-stone-900')
     expect(card).toBeInTheDocument()
   })
 })

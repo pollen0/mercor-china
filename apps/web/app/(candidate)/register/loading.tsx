@@ -18,9 +18,9 @@ export default function RegisterLoading() {
 
         {/* Divider */}
         <div className="flex items-center gap-4 my-5">
-          <div className="flex-1 h-px bg-gray-200" />
+          <div className="flex-1 h-px bg-stone-200" />
           <Skeleton className="h-4 w-24" />
-          <div className="flex-1 h-px bg-gray-200" />
+          <div className="flex-1 h-px bg-stone-200" />
         </div>
 
         {/* Form fields */}

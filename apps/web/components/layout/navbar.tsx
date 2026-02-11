@@ -126,8 +126,8 @@ export function Navbar({
                     className={cn(
                       'px-3 py-2 text-sm rounded-lg transition-colors',
                       isActive
-                        ? 'text-gray-900 font-medium'
-                        : 'text-gray-500 hover:text-gray-900'
+                        ? 'text-stone-900 font-medium'
+                        : 'text-stone-500 hover:text-stone-900'
                     )}
                   >
                     {item.label}
@@ -151,7 +151,7 @@ export function Navbar({
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100 animate-fade-in">
+          <div className="md:hidden py-4 border-t border-stone-100 animate-fade-in">
             {items.length > 0 && (
               <div className="space-y-1 mb-4">
                 {items.map((item) => {
@@ -163,8 +163,8 @@ export function Navbar({
                       className={cn(
                         'block px-4 py-2 text-sm rounded-lg transition-colors',
                         isActive
-                          ? 'text-gray-900 font-medium'
-                          : 'text-gray-500 hover:text-gray-900'
+                          ? 'text-stone-900 font-medium'
+                          : 'text-stone-500 hover:text-stone-900'
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >

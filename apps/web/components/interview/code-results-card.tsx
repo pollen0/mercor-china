@@ -35,9 +35,9 @@ export function CodeResultsCard({
         {/* Header */}
         <div className={`px-6 py-4 ${
           allPassed
-            ? 'bg-gradient-to-r from-green-500 to-cyan-500'
+            ? 'bg-gradient-to-r from-teal-500 to-cyan-500'
             : passRate >= 50
-            ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+            ? 'bg-gradient-to-r from-amber-500 to-amber-400'
             : 'bg-gradient-to-r from-red-500 to-pink-500'
         }`}>
           <div className="flex items-center justify-between">
@@ -65,7 +65,7 @@ export function CodeResultsCard({
               </div>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-white">{passRate}%</div>
+              <div className="text-3xl font-semibold text-white">{passRate}%</div>
               <div className="text-white/80 text-sm">
                 {feedback.passedCount}/{feedback.totalCount} tests
               </div>
@@ -77,7 +77,7 @@ export function CodeResultsCard({
         <div className="p-6 space-y-6">
           {/* Test Results */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-stone-700 mb-3 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
@@ -88,7 +88,7 @@ export function CodeResultsCard({
                 <TestResultRow key={i} result={result} />
               ))}
               {hiddenResults.length > 0 && (
-                <div className="flex items-center gap-2 py-2 px-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                <div className="flex items-center gap-2 py-2 px-3 bg-stone-50 rounded-lg text-sm text-stone-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                   </svg>
@@ -102,7 +102,7 @@ export function CodeResultsCard({
 
           {/* Execution Time */}
           {feedback.executionTimeMs > 0 && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-stone-500">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -135,10 +135,10 @@ export function CodeResultsCard({
 function TestResultRow({ result }: { result: TestCaseResult }) {
   return (
     <div className={`flex items-center gap-3 py-2 px-3 rounded-lg ${
-      result.passed ? 'bg-green-50' : 'bg-red-50'
+      result.passed ? 'bg-teal-50' : 'bg-red-50'
     }`}>
       {result.passed ? (
-        <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <svg className="w-5 h-5 text-teal-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
       ) : (
@@ -147,13 +147,13 @@ function TestResultRow({ result }: { result: TestCaseResult }) {
         </svg>
       )}
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-sm text-gray-800 truncate">{result.name}</div>
+        <div className="font-medium text-sm text-stone-800 truncate">{result.name}</div>
         {!result.passed && result.error && (
           <div className="text-xs text-red-600 mt-0.5">{result.error}</div>
         )}
         {!result.passed && !result.error && (
-          <div className="text-xs text-gray-500 mt-0.5">
-            Expected: <code className="text-blue-600">{result.expected}</code>{' '}
+          <div className="text-xs text-stone-500 mt-0.5">
+            Expected: <code className="text-stone-700">{result.expected}</code>{' '}
             Got: <code className="text-red-600">{result.actual}</code>
           </div>
         )}

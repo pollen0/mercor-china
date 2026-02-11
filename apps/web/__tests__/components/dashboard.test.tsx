@@ -20,11 +20,11 @@ describe('ScoreCard', () => {
     expect(screen.getByText('8.6')).toBeInTheDocument()
   })
 
-  it('applies green color for high scores (>= 70%)', () => {
+  it('applies teal color for high scores (>= 70%)', () => {
     render(<ScoreCard score={7} label="Score" />) // 70% of maxScore 10
 
     const scoreElement = screen.getByText('7.0')
-    expect(scoreElement).toHaveClass('text-green-700')
+    expect(scoreElement).toHaveClass('text-teal-700')
   })
 
   it('applies amber color for medium scores (50-69%)', () => {
@@ -44,9 +44,9 @@ describe('ScoreCard', () => {
   it('uses custom maxScore for percentage calculation', () => {
     render(<ScoreCard score={85} label="Score" maxScore={100} />)
 
-    // 85/100 = 85% which is >= 70, so should be green
+    // 85/100 = 85% which is >= 70, so should be teal
     const scoreElement = screen.getByText('85.0')
-    expect(scoreElement).toHaveClass('text-green-700')
+    expect(scoreElement).toHaveClass('text-teal-700')
   })
 
   it('renders without label', () => {

@@ -35,19 +35,19 @@ export function UploadProgress({ progress, isUploading, fileName }: UploadProgre
   return (
     <div className="mt-4 space-y-2">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600 truncate max-w-[200px]">
+        <span className="text-stone-600 truncate max-w-[200px]">
           {fileName ? `Uploading ${fileName}...` : 'Uploading...'}
         </span>
-        <span className="text-gray-500 font-medium">{Math.round(displayProgress)}%</span>
+        <span className="text-stone-500 font-medium">{Math.round(displayProgress)}%</span>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-teal-500 to-teal-400 rounded-full transition-all duration-150 ease-out"
           style={{ width: `${displayProgress}%` }}
         />
       </div>
       {progress < 100 && (
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-stone-400">
           {progress < 30 ? 'Uploading file...' : progress < 70 ? 'Processing document...' : 'Almost done...'}
         </p>
       )}

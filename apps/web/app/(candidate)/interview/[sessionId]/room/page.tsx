@@ -545,7 +545,7 @@ export default function InterviewRoomPage() {
                   Practice Mode
                 </span>
               )}
-              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
+              <span className="px-2 py-1 bg-stone-500/20 text-stone-300 text-xs rounded-full border border-stone-500/30">
                 Coding Challenge
               </span>
               <div className="flex items-center gap-2 text-sm">
@@ -693,7 +693,7 @@ export default function InterviewRoomPage() {
         {/* Question Card */}
         {isFollowupMode ? (
           /* Follow-up Question Card */
-          <div className="rounded-xl p-5 sm:p-6 text-white shadow-lg bg-gradient-to-br from-amber-500 to-orange-600">
+          <div className="rounded-xl p-5 sm:p-6 text-white shadow-lg bg-gradient-to-br from-amber-500 to-amber-700">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

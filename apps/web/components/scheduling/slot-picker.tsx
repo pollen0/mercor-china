@@ -92,7 +92,7 @@ export function SlotPicker({
 
   if (slots.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
+      <div className="text-center py-12 text-stone-500">
         <p className="text-lg font-medium mb-2">No available slots</p>
         <p className="text-sm">Please check back later or contact us for assistance.</p>
       </div>

@@ -139,8 +139,8 @@ export function ScheduleInterviewModal({
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mx-auto w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -151,14 +151,14 @@ export function ScheduleInterviewModal({
           </CardHeader>
           <CardContent className="space-y-4">
             {success.googleMeetLink && (
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-sm font-medium text-blue-900 mb-2">Google Meet Link</p>
+              <div className="bg-stone-50 rounded-lg p-4">
+                <p className="text-sm font-medium text-stone-900 mb-2">Google Meet Link</p>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={success.googleMeetLink}
                     readOnly
-                    className="flex-1 text-sm bg-white border border-blue-200 rounded px-3 py-2"
+                    className="flex-1 text-sm bg-white border border-stone-200 rounded px-3 py-2"
                   />
                   <Button
                     variant="outline"
@@ -174,7 +174,7 @@ export function ScheduleInterviewModal({
                   href={success.googleMeetLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline mt-2"
+                  className="inline-flex items-center gap-1 text-sm text-teal-600 hover:underline mt-2"
                 >
                   Open in new tab
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

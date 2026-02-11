@@ -29,12 +29,30 @@ interface Candidate {
 type Activity = ApiActivity
 type Award = ApiAward
 
-const VERTICAL_CONFIG: Record<string, { name: string; icon: string }> = {
-  software_engineering: { name: 'Software Engineering', icon: '💻' },
-  data: { name: 'Data', icon: '📊' },
-  product: { name: 'Product', icon: '📱' },
-  design: { name: 'Design', icon: '🎨' },
-  finance: { name: 'Finance', icon: '💰' },
+const VERTICAL_ICONS: Record<string, React.ReactNode> = {
+  software_engineering: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>
+  ),
+  data: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+  ),
+  product: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+  ),
+  design: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" /></svg>
+  ),
+  finance: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+  ),
+}
+
+const VERTICAL_CONFIG: Record<string, { name: string }> = {
+  software_engineering: { name: 'Software Engineering' },
+  data: { name: 'Data' },
+  product: { name: 'Product' },
+  design: { name: 'Design' },
+  finance: { name: 'Finance' },
 }
 
 const ROLE_NAMES: Record<string, string> = {
@@ -1000,7 +1018,7 @@ function DashboardContent() {
                     <CardDescription>Upload your resume (PDF, DOCX - Max 10MB)</CardDescription>
                   </div>
                   {hasResume && resumeData?.uploadedAt && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-stone-400">
                       Updated {new Date(resumeData.uploadedAt).toLocaleDateString()} at {new Date(resumeData.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
@@ -1012,15 +1030,15 @@ function DashboardContent() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   className={`border-2 border-dashed rounded-lg p-6 text-center transition-all ${
-                    isDragging ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                    isDragging ? 'border-stone-400 bg-stone-50' : 'border-stone-200 hover:border-stone-300'
                   }`}
                 >
-                  <div className="w-10 h-10 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 mx-auto mb-3 bg-stone-100 rounded-full flex items-center justify-center">
+                    <svg className="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                   </div>
-                  <p className="text-sm text-gray-500 mb-3">
+                  <p className="text-sm text-stone-500 mb-3">
                     {hasResume ? 'Drop a new file to replace' : 'Drag and drop your resume, or'}
                   </p>
                   <input
@@ -1052,7 +1070,7 @@ function DashboardContent() {
 
                 {/* Uploaded File Info */}
                 {hasResume && resumeData?.resumeUrl && (
-                  <div className="mt-3 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <div className="mt-3 flex items-center justify-between p-3 bg-stone-50 rounded-lg border border-stone-100">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-teal-100 rounded flex items-center justify-center">
                         <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1060,11 +1078,11 @@ function DashboardContent() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-stone-900">
                           {resumeData.parsedData?.name ? `${resumeData.parsedData.name}'s Resume` : 'Resume'}
                         </p>
                         {resumeData.uploadedAt && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-stone-500">
                             Uploaded {new Date(resumeData.uploadedAt).toLocaleDateString()} at {new Date(resumeData.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         )}
@@ -1105,28 +1123,28 @@ function DashboardContent() {
                 {resumeData?.parsedData && (
                   <div className="mt-4 space-y-4">
                     {/* Header */}
-                    <div className="p-4 bg-gray-50 rounded-lg">
+                    <div className="p-4 bg-stone-50 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <p className="font-medium text-gray-900">{resumeData.parsedData.name || 'Resume'}</p>
+                          <p className="font-medium text-stone-900">{resumeData.parsedData.name || 'Resume'}</p>
                           {resumeData.parsedData.email && (
-                            <p className="text-xs text-gray-500">{resumeData.parsedData.email}</p>
+                            <p className="text-xs text-stone-500">{resumeData.parsedData.email}</p>
                           )}
                           {resumeData.parsedData.location && (
-                            <p className="text-xs text-gray-400">{resumeData.parsedData.location}</p>
+                            <p className="text-xs text-stone-400">{resumeData.parsedData.location}</p>
                           )}
                         </div>
-                        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">Parsed</Badge>
+                        <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">Parsed</Badge>
                       </div>
                       {resumeData.parsedData.summary && (
-                        <p className="text-sm text-gray-600 mt-2">{resumeData.parsedData.summary}</p>
+                        <p className="text-sm text-stone-600 mt-2">{resumeData.parsedData.summary}</p>
                       )}
                     </div>
 
                     {/* Education Section */}
                     {resumeData.parsedData.education && resumeData.parsedData.education.length > 0 && (
-                      <div className="p-4 bg-white border border-gray-100 rounded-lg">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <div className="p-4 bg-white border border-stone-100 rounded-lg">
+                        <h4 className="text-sm font-semibold text-stone-900 mb-3 flex items-center gap-2">
                           <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0v6m-9-5l9 5 9-5" />
@@ -1136,13 +1154,13 @@ function DashboardContent() {
                         <div className="space-y-3">
                           {resumeData.parsedData.education.map((edu, i) => (
                             <div key={i} className="border-l-2 border-teal-100 pl-3">
-                              <p className="font-medium text-gray-900 text-sm">{edu.institution}</p>
+                              <p className="font-medium text-stone-900 text-sm">{edu.institution}</p>
                               {edu.degree && (
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-stone-600">
                                   {edu.degree}{edu.fieldOfStudy ? ` in ${edu.fieldOfStudy}` : ''}
                                 </p>
                               )}
-                              <div className="flex items-center gap-3 text-xs text-gray-400 mt-0.5">
+                              <div className="flex items-center gap-3 text-xs text-stone-400 mt-0.5">
                                 {edu.startDate && edu.endDate && (
                                   <span>{edu.startDate} - {edu.endDate}</span>
                                 )}
@@ -1160,16 +1178,16 @@ function DashboardContent() {
 
                     {/* Skills Section */}
                     {resumeData.parsedData.skills && resumeData.parsedData.skills.length > 0 && (
-                      <div className="p-4 bg-white border border-gray-100 rounded-lg">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="p-4 bg-white border border-stone-100 rounded-lg">
+                        <h4 className="text-sm font-semibold text-stone-900 mb-3 flex items-center gap-2">
+                          <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                           </svg>
                           Skills
                         </h4>
                         <div className="flex flex-wrap gap-1.5">
                           {resumeData.parsedData.skills.map((skill, i) => (
-                            <span key={i} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                            <span key={i} className="text-xs bg-stone-50 text-stone-700 px-2 py-1 rounded-full">
                               {skill}
                             </span>
                           ))}
@@ -1179,29 +1197,29 @@ function DashboardContent() {
 
                     {/* Experience Section */}
                     {resumeData.parsedData.experience && resumeData.parsedData.experience.length > 0 && (
-                      <div className="p-4 bg-white border border-gray-100 rounded-lg">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="p-4 bg-white border border-stone-100 rounded-lg">
+                        <h4 className="text-sm font-semibold text-stone-900 mb-3 flex items-center gap-2">
+                          <svg className="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                           Experience
                         </h4>
                         <div className="space-y-4">
                           {resumeData.parsedData.experience.map((exp, i) => (
-                            <div key={i} className="border-l-2 border-green-100 pl-3">
-                              <p className="font-medium text-gray-900 text-sm">{exp.title}</p>
-                              <p className="text-sm text-gray-600">{exp.company}</p>
+                            <div key={i} className="border-l-2 border-teal-100 pl-3">
+                              <p className="font-medium text-stone-900 text-sm">{exp.title}</p>
+                              <p className="text-sm text-stone-600">{exp.company}</p>
                               {exp.startDate && (
-                                <p className="text-xs text-gray-400">{exp.startDate} - {exp.endDate || 'Present'}</p>
+                                <p className="text-xs text-stone-400">{exp.startDate} - {exp.endDate || 'Present'}</p>
                               )}
                               {exp.description && (
-                                <p className="text-xs text-gray-500 mt-1">{exp.description}</p>
+                                <p className="text-xs text-stone-500 mt-1">{exp.description}</p>
                               )}
                               {exp.highlights && exp.highlights.length > 0 && (
                                 <ul className="mt-1 space-y-0.5">
                                   {exp.highlights.slice(0, 3).map((h, j) => (
-                                    <li key={j} className="text-xs text-gray-500 flex items-start gap-1">
-                                      <span className="text-green-400 mt-0.5">•</span>
+                                    <li key={j} className="text-xs text-stone-500 flex items-start gap-1">
+                                      <span className="text-teal-500 mt-0.5">•</span>
                                       <span>{h}</span>
                                     </li>
                                   ))}
@@ -1215,8 +1233,8 @@ function DashboardContent() {
 
                     {/* Projects Section */}
                     {resumeData.parsedData.projects && resumeData.parsedData.projects.length > 0 && (
-                      <div className="p-4 bg-white border border-gray-100 rounded-lg">
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <div className="p-4 bg-white border border-stone-100 rounded-lg">
+                        <h4 className="text-sm font-semibold text-stone-900 mb-3 flex items-center gap-2">
                           <svg className="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                           </svg>
@@ -1225,9 +1243,9 @@ function DashboardContent() {
                         <div className="space-y-3">
                           {resumeData.parsedData.projects.map((proj, i) => (
                             <div key={i} className="border-l-2 border-teal-100 pl-3">
-                              <p className="font-medium text-gray-900 text-sm">{proj.name}</p>
+                              <p className="font-medium text-stone-900 text-sm">{proj.name}</p>
                               {proj.description && (
-                                <p className="text-xs text-gray-500 mt-0.5">{proj.description}</p>
+                                <p className="text-xs text-stone-500 mt-0.5">{proj.description}</p>
                               )}
                               {proj.technologies && proj.technologies.length > 0 && (
                                 <div className="flex flex-wrap gap-1 mt-1">
@@ -1247,14 +1265,14 @@ function DashboardContent() {
                     {/* Languages & Certifications */}
                     {((resumeData.parsedData.languages && resumeData.parsedData.languages.length > 0) ||
                       (resumeData.parsedData.certifications && resumeData.parsedData.certifications.length > 0)) && (
-                      <div className="p-4 bg-white border border-gray-100 rounded-lg">
+                      <div className="p-4 bg-white border border-stone-100 rounded-lg">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {resumeData.parsedData.languages && resumeData.parsedData.languages.length > 0 && (
                             <div>
-                              <h4 className="text-sm font-semibold text-gray-900 mb-2">Languages</h4>
+                              <h4 className="text-sm font-semibold text-stone-900 mb-2">Languages</h4>
                               <div className="flex flex-wrap gap-1">
                                 {resumeData.parsedData.languages.map((lang, i) => (
-                                  <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                                  <span key={i} className="text-xs bg-stone-100 text-stone-600 px-2 py-0.5 rounded">
                                     {lang}
                                   </span>
                                 ))}
@@ -1263,10 +1281,10 @@ function DashboardContent() {
                           )}
                           {resumeData.parsedData.certifications && resumeData.parsedData.certifications.length > 0 && (
                             <div>
-                              <h4 className="text-sm font-semibold text-gray-900 mb-2">Certifications</h4>
+                              <h4 className="text-sm font-semibold text-stone-900 mb-2">Certifications</h4>
                               <ul className="space-y-1">
                                 {resumeData.parsedData.certifications.map((cert, i) => (
-                                  <li key={i} className="text-xs text-gray-600 flex items-center gap-1">
+                                  <li key={i} className="text-xs text-stone-600 flex items-center gap-1">
                                     <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                                       <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
@@ -1297,9 +1315,9 @@ function DashboardContent() {
                   </div>
                   {hasGitHub && (
                     <div className="flex flex-col items-end gap-1">
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Connected</Badge>
+                      <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">Connected</Badge>
                       {githubData?.repos?.[0]?.updatedAt && (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-stone-400">
                           Last activity {new Date(githubData.repos[0].updatedAt).toLocaleDateString()} at {new Date(githubData.repos[0].updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       )}
@@ -1310,13 +1328,13 @@ function DashboardContent() {
               <CardContent>
                 {hasGitHub && githubData ? (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
+                    <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-lg">
+                      <div className="w-10 h-10 bg-stone-900 rounded-full flex items-center justify-center">
                         <GitHubIcon className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">@{githubData.username}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="font-medium text-stone-900">@{githubData.username}</p>
+                        <p className="text-xs text-stone-500">
                           {githubData.repos?.length || githubData.publicRepos || 0} repos · {githubData.followers || 0} followers
                         </p>
                       </div>
@@ -1326,14 +1344,14 @@ function DashboardContent() {
                           size="sm"
                           onClick={handleRefreshGitHub}
                           disabled={isRefreshingGitHub}
-                          className="text-gray-500 hover:text-teal-600"
+                          className="text-stone-500 hover:text-teal-600"
                           title="Pull latest GitHub data"
                         >
                           <svg className={`w-4 h-4 ${isRefreshingGitHub ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                           </svg>
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={handleDisconnectGitHub} className="text-gray-400">
+                        <Button variant="ghost" size="sm" onClick={handleDisconnectGitHub} className="text-stone-400">
                           Disconnect
                         </Button>
                       </div>
@@ -1343,7 +1361,7 @@ function DashboardContent() {
                     {githubData.languages && Object.keys(githubData.languages).length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {Object.entries(githubData.languages).slice(0, 5).map(([lang]) => (
-                          <span key={lang} className="text-xs bg-gray-100 px-2 py-0.5 rounded">{lang}</span>
+                          <span key={lang} className="text-xs bg-stone-100 px-2 py-0.5 rounded">{lang}</span>
                         ))}
                       </div>
                     )}
@@ -1353,7 +1371,7 @@ function DashboardContent() {
                       <div className="border-t pt-3">
                         <button
                           onClick={() => setShowReposDropdown(!showReposDropdown)}
-                          className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 hover:text-gray-900"
+                          className="flex items-center justify-between w-full text-left text-sm font-medium text-stone-700 hover:text-stone-900"
                         >
                           <span>Repositories ({githubData.repos.length})</span>
                           <svg
@@ -1374,26 +1392,26 @@ function DashboardContent() {
                                 href={repo.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block p-2 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors"
+                                className="block p-2 rounded-lg border border-stone-100 hover:border-stone-200 hover:bg-stone-50 transition-colors"
                               >
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <span className="font-medium text-sm text-gray-900 truncate">{repo.name}</span>
+                                      <span className="font-medium text-sm text-stone-900 truncate">{repo.name}</span>
                                       {repo.isFork && (
-                                        <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">fork</span>
+                                        <span className="text-xs px-1.5 py-0.5 bg-stone-100 text-stone-500 rounded">fork</span>
                                       )}
                                       {repo.isOwner === false && (
                                         <span className="text-xs px-1.5 py-0.5 bg-teal-50 text-teal-600 rounded">collaborator</span>
                                       )}
                                     </div>
                                     {repo.description && (
-                                      <p className="text-xs text-gray-500 truncate mt-0.5">{repo.description}</p>
+                                      <p className="text-xs text-stone-500 truncate mt-0.5">{repo.description}</p>
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2 text-xs text-gray-400 flex-shrink-0">
+                                  <div className="flex items-center gap-2 text-xs text-stone-400 flex-shrink-0">
                                     {repo.language && (
-                                      <span className="px-1.5 py-0.5 bg-gray-100 rounded">{repo.language}</span>
+                                      <span className="px-1.5 py-0.5 bg-stone-100 rounded">{repo.language}</span>
                                     )}
                                     {repo.stars > 0 && (
                                       <span className="flex items-center gap-0.5">
@@ -1431,7 +1449,7 @@ function DashboardContent() {
                       variant="outline"
                       onClick={handleConnectGitHub}
                       disabled={isConnectingGitHub}
-                      className="border-gray-300"
+                      className="border-stone-300"
                     >
                       <GitHubIcon className="w-4 h-4 mr-2" />
                       {isConnectingGitHub ? 'Connecting...' : 'Connect GitHub'}
@@ -1454,7 +1472,7 @@ function DashboardContent() {
                     <CardDescription>Upload your transcript to highlight coursework (PDF only)</CardDescription>
                   </div>
                   {transcriptData?.uploadedAt && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-stone-400">
                       Updated {new Date(transcriptData.uploadedAt).toLocaleDateString()} at {new Date(transcriptData.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
@@ -1466,7 +1484,7 @@ function DashboardContent() {
                   onDragLeave={handleTranscriptDragLeave}
                   onDrop={handleTranscriptDrop}
                   className={`border-2 border-dashed rounded-lg p-4 text-center transition-all ${
-                    isDraggingTranscript ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                    isDraggingTranscript ? 'border-stone-400 bg-stone-50' : 'border-stone-200 hover:border-stone-300'
                   }`}
                 >
                   <input
@@ -1498,7 +1516,7 @@ function DashboardContent() {
 
                 {/* Uploaded Transcript Info */}
                 {transcriptData && (
-                  <div className="mt-3 flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <div className="mt-3 flex items-center justify-between p-3 bg-stone-50 rounded-lg border border-stone-100">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-emerald-100 rounded flex items-center justify-center">
                         <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1508,7 +1526,7 @@ function DashboardContent() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-stone-900">
                             {transcriptData.fileName}
                           </p>
                           {/* Verification Badge */}
@@ -1544,7 +1562,7 @@ function DashboardContent() {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-stone-500">
                           Uploaded {new Date(transcriptData.uploadedAt).toLocaleDateString()} at {new Date(transcriptData.uploadedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -1586,8 +1604,8 @@ function DashboardContent() {
 
                 {/* Courses from Transcript */}
                 {transcriptData?.courses && transcriptData.courses.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <div className="mt-4 pt-4 border-t border-stone-100">
+                    <h4 className="text-sm font-medium text-stone-700 mb-2 flex items-center gap-2">
                       <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
@@ -1603,7 +1621,7 @@ function DashboardContent() {
                         </span>
                       ))}
                       {transcriptData.courses.length > 12 && (
-                        <span className="text-xs px-2 py-1 text-gray-500">
+                        <span className="text-xs px-2 py-1 text-stone-500">
                           +{transcriptData.courses.length - 12} more
                         </span>
                       )}
@@ -1632,18 +1650,18 @@ function DashboardContent() {
               </CardHeader>
               <CardContent>
                 {activities.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No activities added yet</p>
+                  <p className="text-sm text-stone-400 text-center py-4">No activities added yet</p>
                 ) : (
                   <div className="space-y-3">
                     {activities.map((activity) => (
-                      <div key={activity.id} className="p-3 bg-gray-50 rounded-lg">
+                      <div key={activity.id} className="p-3 bg-stone-50 rounded-lg">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium text-gray-900">{activity.activityName}</p>
-                            {activity.organization && <p className="text-sm text-gray-600">{activity.organization}</p>}
-                            {activity.role && <p className="text-xs text-gray-500">{activity.role}</p>}
+                            <p className="font-medium text-stone-900">{activity.activityName}</p>
+                            {activity.organization && <p className="text-sm text-stone-600">{activity.organization}</p>}
+                            {activity.role && <p className="text-xs text-stone-500">{activity.role}</p>}
                             {activity.description && (
-                              <p className="text-sm text-gray-500 mt-1">{activity.description}</p>
+                              <p className="text-sm text-stone-500 mt-1">{activity.description}</p>
                             )}
                           </div>
                           <div className="flex gap-1">
@@ -1651,7 +1669,7 @@ function DashboardContent() {
                               variant="ghost"
                               size="sm"
                               onClick={() => { setEditingActivity(activity); setShowActivityForm(true); }}
-                              className="text-gray-400 h-8 w-8 p-0"
+                              className="text-stone-400 h-8 w-8 p-0"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -1695,18 +1713,18 @@ function DashboardContent() {
               </CardHeader>
               <CardContent>
                 {awards.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No awards added yet</p>
+                  <p className="text-sm text-stone-400 text-center py-4">No awards added yet</p>
                 ) : (
                   <div className="space-y-3">
                     {awards.map((award) => (
-                      <div key={award.id} className="p-3 bg-gray-50 rounded-lg">
+                      <div key={award.id} className="p-3 bg-stone-50 rounded-lg">
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium text-gray-900">{award.name}</p>
-                            {award.issuer && <p className="text-sm text-gray-600">{award.issuer}</p>}
-                            {award.date && <p className="text-xs text-gray-500">{award.date}</p>}
+                            <p className="font-medium text-stone-900">{award.name}</p>
+                            {award.issuer && <p className="text-sm text-stone-600">{award.issuer}</p>}
+                            {award.date && <p className="text-xs text-stone-500">{award.date}</p>}
                             {award.description && (
-                              <p className="text-sm text-gray-500 mt-1">{award.description}</p>
+                              <p className="text-sm text-stone-500 mt-1">{award.description}</p>
                             )}
                           </div>
                           <div className="flex gap-1">
@@ -1714,7 +1732,7 @@ function DashboardContent() {
                               variant="ghost"
                               size="sm"
                               onClick={() => { setEditingAward(award); setShowAwardForm(true); }}
-                              className="text-gray-400 h-8 w-8 p-0"
+                              className="text-stone-400 h-8 w-8 p-0"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -1860,11 +1878,11 @@ function DashboardContent() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Your Interviews</h2>
-                  <p className="text-sm text-gray-500">Complete interviews to join the talent pool</p>
+                  <h2 className="text-lg font-semibold text-stone-900">Your Interviews</h2>
+                  <p className="text-sm text-stone-500">Complete interviews to join the talent pool</p>
                 </div>
                 <Link href="/interview/select">
-                  <Button className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-4">
+                  <Button className="bg-stone-900 hover:bg-stone-800 text-white rounded-full px-4">
                     Start Interview
                   </Button>
                 </Link>
@@ -1946,15 +1964,15 @@ function DashboardContent() {
             {/* Matching Jobs */}
             {hasCompletedProfiles && (
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <h2 className="text-lg font-semibold text-stone-900 mb-4">
                   Matching Opportunities ({jobs.length})
                 </h2>
 
                 {jobs.length === 0 ? (
                   <Card>
                     <CardContent className="py-8 text-center">
-                      <p className="text-gray-400">No matches yet</p>
-                      <p className="text-gray-300 text-sm">Employers will contact you when they find a match</p>
+                      <p className="text-stone-400">No matches yet</p>
+                      <p className="text-stone-300 text-sm">Employers will contact you when they find a match</p>
                     </CardContent>
                   </Card>
                 ) : (
@@ -1962,10 +1980,10 @@ function DashboardContent() {
                     {jobs.map((job) => (
                       <Card key={job.jobId} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-5">
-                          <h3 className="font-medium text-gray-900 mb-1">{job.jobTitle}</h3>
-                          <p className="text-sm text-gray-400 mb-3">{job.companyName}</p>
+                          <h3 className="font-medium text-stone-900 mb-1">{job.jobTitle}</h3>
+                          <p className="text-sm text-stone-400 mb-3">{job.companyName}</p>
                           <div className="flex items-center gap-2 text-xs">
-                            <span className="text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                            <span className="text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
                               {VERTICAL_CONFIG[job.vertical as keyof typeof VERTICAL_CONFIG]?.name || job.vertical}
                             </span>
                             {/* Match scores are employer-only */}
@@ -1979,20 +1997,20 @@ function DashboardContent() {
             )}
 
             {/* How it works */}
-            <Card className="bg-gray-50 border-gray-100">
+            <Card className="bg-stone-50 border-stone-100">
               <CardContent className="py-6">
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">How it works</p>
-                <ul className="text-sm text-gray-600 space-y-2">
+                <p className="text-xs text-stone-400 uppercase tracking-wide mb-3">How it works</p>
+                <ul className="text-sm text-stone-600 space-y-2">
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-stone-400 rounded-full"></span>
                     Complete one interview per vertical
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-stone-400 rounded-full"></span>
                     Your profile is shown to all employers
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                    <span className="w-1.5 h-1.5 bg-stone-400 rounded-full"></span>
                     Interview monthly to show your growth
                   </li>
                 </ul>
@@ -2317,7 +2335,7 @@ const AwardFormModal = memo(function AwardFormModal({
               value={form.description || ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Brief description..."
-              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm resize-none h-20"
+              className="w-full border border-stone-200 rounded-md px-3 py-2 text-sm resize-none h-20"
             />
           </div>
           <div className="flex gap-3 justify-end pt-2">
@@ -2325,7 +2343,7 @@ const AwardFormModal = memo(function AwardFormModal({
             <Button
               onClick={() => form.name && onSave(form)}
               disabled={!form.name}
-              className="bg-gray-900 hover:bg-gray-800 text-white"
+              className="bg-stone-900 hover:bg-stone-800 text-white"
             >
               {award ? 'Save Changes' : 'Add Award'}
             </Button>
@@ -2340,7 +2358,7 @@ export default function CandidateDashboard() {
   return (
     <Suspense fallback={
       <main className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
       </main>
     }>
       <DashboardContent />

@@ -169,9 +169,9 @@ export default function SettingsPage() {
             onClick={() => router.back()}
             className="text-stone-500 hover:text-stone-900 mb-4 flex items-center gap-2 transition-colors"
           >
-            ← Back
+            <svg className="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg> Back
           </button>
-          <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">Settings</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-stone-900">Settings</h1>
           <p className="text-stone-500 mt-2">
             Manage your integrations and profile visibility
           </p>
@@ -507,19 +507,19 @@ export default function SettingsPage() {
             </h3>
             <ul className="text-sm text-stone-600 space-y-2.5">
               <li className="flex items-start gap-2.5">
-                <span className="text-teal-600 mt-0.5">✓</span>
+                <svg className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 <span>Get matched with relevant job opportunities automatically</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <span className="text-teal-600 mt-0.5">✓</span>
+                <svg className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 <span>Companies can reach out to you directly based on your skills and growth</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <span className="text-teal-600 mt-0.5">✓</span>
+                <svg className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 <span>Your profile is shown to ALL employers - preferences just help you rank higher</span>
               </li>
               <li className="flex items-start gap-2.5">
-                <span className="text-teal-600 mt-0.5">✓</span>
+                <svg className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 <span>Your contact information stays private until you approve</span>
               </li>
             </ul>

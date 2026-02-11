@@ -11,7 +11,7 @@ export function ScoreCard({ score, maxScore = 10, label, size = 'md' }: ScoreCar
   const percentage = (score / maxScore) * 100
 
   const getColor = () => {
-    if (percentage >= 70) return { bg: 'bg-green-100', text: 'text-green-700', ring: 'stroke-green-500' }
+    if (percentage >= 70) return { bg: 'bg-teal-50', text: 'text-teal-700', ring: 'stroke-teal-500' }
     if (percentage >= 50) return { bg: 'bg-amber-100', text: 'text-amber-700', ring: 'stroke-amber-500' }
     return { bg: 'bg-red-100', text: 'text-red-700', ring: 'stroke-red-500' }
   }
@@ -40,7 +40,7 @@ export function ScoreCard({ score, maxScore = 10, label, size = 'md' }: ScoreCar
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-gray-200"
+            className="text-stone-200"
           />
           {/* Progress circle */}
           <circle
@@ -59,14 +59,14 @@ export function ScoreCard({ score, maxScore = 10, label, size = 'md' }: ScoreCar
 
         {/* Score text */}
         <div className={`absolute inset-0 flex items-center justify-center ${colors.bg} rounded-full m-2`}>
-          <span className={`font-bold ${colors.text} ${sizeConfig.text}`}>
+          <span className={`font-semibold ${colors.text} ${sizeConfig.text}`}>
             {score.toFixed(1)}
           </span>
         </div>
       </div>
 
       {label && (
-        <span className={`mt-2 text-gray-600 ${sizeConfig.label}`}>{label}</span>
+        <span className={`mt-2 text-stone-600 ${sizeConfig.label}`}>{label}</span>
       )}
     </div>
   )

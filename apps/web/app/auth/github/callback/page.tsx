@@ -194,12 +194,12 @@ function GitHubCallbackContent() {
     <main className="min-h-screen bg-gradient-to-b from-teal-50 to-white flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto w-16 h-16 bg-teal-50 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <CardTitle className="text-green-600">GitHub Connected!</CardTitle>
+          <CardTitle className="text-teal-600">GitHub Connected!</CardTitle>
           <CardDescription>
             Successfully connected as <span className="font-medium text-stone-900">@{githubUsername}</span>
           </CardDescription>

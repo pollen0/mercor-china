@@ -138,15 +138,15 @@ export function ContactCandidateModal({
         <div className="border-b p-4 flex items-center justify-between">
           <div>
             <h2 className="font-semibold text-lg">Contact Candidate</h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-stone-500">
               Send a message to {candidateName} ({candidateEmail})
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -164,7 +164,7 @@ export function ContactCandidateModal({
                   className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
                     selectedTemplate === template.type
                       ? 'border-teal-500 bg-teal-50 text-teal-700'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-stone-200 hover:border-stone-300'
                   }`}
                 >
                   {template.label}

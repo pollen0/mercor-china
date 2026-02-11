@@ -88,7 +88,7 @@ export function VideoPlayer({ src, poster }: VideoPlayerProps) {
           max={duration || 100}
           value={currentTime}
           onChange={handleSeek}
-          className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer mb-2"
+          className="w-full h-1 bg-stone-600 rounded-lg appearance-none cursor-pointer mb-2"
         />
 
         <div className="flex items-center justify-between">

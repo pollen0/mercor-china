@@ -13,8 +13,8 @@ interface PracticeFeedbackCardProps {
 function ScoreBar({ label, score, maxScore = 10 }: { label: string; score: number; maxScore?: number }) {
   const percentage = (score / maxScore) * 100
   const getColor = () => {
-    if (percentage >= 80) return 'bg-green-500'
-    if (percentage >= 60) return 'bg-yellow-500'
+    if (percentage >= 80) return 'bg-teal-500'
+    if (percentage >= 60) return 'bg-amber-500'
     return 'bg-red-500'
   }
 
