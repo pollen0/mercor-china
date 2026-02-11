@@ -62,7 +62,9 @@ from ..services.storage import storage_service
 from ..services.cache import cache_service
 from ..services.matching import matching_service
 from ..services.growth_tracking import growth_tracking_service
+from ..services.profile_scoring import ProfileScoringService
 from ..schemas.growth import GrowthTimelineResponse
+from ..models.profile_score import CandidateProfileScore, SCORING_VERSION
 from ..utils.rate_limit import limiter, RateLimits
 import logging
 
@@ -77,6 +79,124 @@ def generate_cuid(prefix: str = "e") -> str:
 
 # Staleness threshold for GitHub analysis (7 days)
 GITHUB_ANALYSIS_STALE_DAYS = 7
+
+
+def get_or_compute_profile_score(
+    db: Session,
+    candidate_id: str,
+    force_compute: bool = False
+) -> Optional[dict]:
+    """
+    Get stored profile score or compute a new one.
+
+    Returns a dict with score, breakdown, strengths, and concerns.
+    Uses the new comprehensive ProfileScoringService.
+    """
+    from datetime import datetime
+
+    # Check for existing score
+    score_record = db.query(CandidateProfileScore).filter(
+        CandidateProfileScore.candidate_id == candidate_id
+    ).first()
+
+    # If exists and not forcing recompute, use stored score
+    if score_record and not force_compute:
+        # Check if score is fresh (computed in last 24 hours)
+        if score_record.computed_at:
+            age = datetime.utcnow() - score_record.computed_at.replace(tzinfo=None)
+            if age.total_seconds() < 86400:  # 24 hours
+                return _format_profile_score(score_record)
+
+    # Compute new score
+    try:
+        import asyncio
+        service = ProfileScoringService(db)
+
+        # Run async function synchronously
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            score_record = loop.run_until_complete(service.compute_score(candidate_id))
+        finally:
+            loop.close()
+
+        return _format_profile_score(score_record)
+    except Exception as e:
+        logger.warning(f"Failed to compute profile score for {candidate_id}: {e}")
+        return None
+
+
+def _format_profile_score(score_record: CandidateProfileScore) -> dict:
+    """Format a CandidateProfileScore into API response format."""
+    # Build strengths and concerns from breakdowns
+    strengths = []
+    concerns = []
+
+    # Education
+    if score_record.education_score and score_record.education_score >= 7.5:
+        if score_record.education_breakdown:
+            uni = score_record.education_breakdown.get("university", {})
+            gpa = score_record.education_breakdown.get("gpa", {})
+            if uni.get("score", 0) >= 8:
+                strengths.append(uni.get("rationale", "Strong university"))
+            if gpa.get("score", 0) >= 8:
+                strengths.append(f"Strong academic record ({gpa.get('rationale', '')})")
+    elif score_record.education_score and score_record.education_score < 5.0:
+        concerns.append("Education profile could be stronger")
+
+    # Technical
+    if score_record.technical_score and score_record.technical_score >= 7.5:
+        if score_record.technical_breakdown:
+            depth = score_record.technical_breakdown.get("skill_depth", {})
+            if depth.get("score", 0) >= 7:
+                strengths.append(depth.get("rationale", "Strong technical skills"))
+    elif score_record.technical_score and score_record.technical_score < 5.0:
+        concerns.append("Limited technical skills demonstrated")
+
+    # GitHub
+    if score_record.github_score and score_record.github_score >= 7.0:
+        strengths.append("Active GitHub contributor with quality code")
+    elif score_record.github_breakdown:
+        status = score_record.github_breakdown.get("status", {})
+        if "not connected" in status.get("rationale", "").lower():
+            concerns.append("No GitHub profile connected")
+
+    # Activities
+    if score_record.activities_score and score_record.activities_score >= 7.0:
+        if score_record.activities_breakdown:
+            clubs = score_record.activities_breakdown.get("clubs", {})
+            if clubs.get("score", 0) >= 7:
+                strengths.append(clubs.get("rationale", "Active extracurriculars"))
+
+    # Build breakdown dict for API (maps to old format for backwards compat)
+    breakdown = {}
+    if score_record.technical_score:
+        breakdown["technical_skills"] = score_record.technical_score
+    if score_record.experience_score:
+        breakdown["experience_quality"] = score_record.experience_score
+    if score_record.education_score:
+        breakdown["education"] = score_record.education_score
+    if score_record.github_score:
+        breakdown["github_activity"] = score_record.github_score
+    if score_record.activities_score:
+        breakdown["activities"] = score_record.activities_score
+
+    return {
+        "score": score_record.total_score,
+        "breakdown": breakdown,
+        "strengths": strengths[:4],  # Limit to 4
+        "concerns": concerns[:3],  # Limit to 3
+        "scoring_version": score_record.scoring_version,
+        "computed_at": score_record.computed_at.isoformat() if score_record.computed_at else None,
+        # Detailed breakdowns available for debugging
+        "detailed_breakdown": {
+            "education": score_record.education_breakdown,
+            "technical": score_record.technical_breakdown,
+            "experience": score_record.experience_breakdown,
+            "github": score_record.github_breakdown,
+            "activities": score_record.activities_breakdown,
+        }
+    }
 
 
 async def trigger_github_analysis_if_stale(
@@ -2054,42 +2174,19 @@ async def browse_talent_pool(
             if existing_profile:
                 status_str = existing_profile.status.value if existing_profile.status else "pending"
 
-            # Build profile-based score breakdown
+            # Get profile score from persistent storage (or compute if needed)
             profile_score = None
             score_breakdown = None
+            profile_score_data = get_or_compute_profile_score(db, candidate.id)
 
-            # Simple heuristic profile score (async scoring would be called separately)
-            if candidate.resume_parsed_data or candidate.github_data:
-                # Basic profile score calculation
-                base_score = 5.0
-                tech_skills = 5.0
-                exp_quality = 5.0
-                edu_score = 5.0
-                github_score = 5.0
-
-                if candidate.resume_parsed_data:
-                    parsed = candidate.resume_parsed_data
-                    skill_count = len(parsed.get("skills", []))
-                    tech_skills = min(5.0 + skill_count * 0.3, 9.0)
-                    exp_count = len(parsed.get("experience", []))
-                    exp_quality = min(5.0 + exp_count * 1.0, 8.5)
-
-                if candidate.gpa:
-                    edu_score = max(1.0, min(5.0 + (candidate.gpa - 3.0) * 2, 9.5))
-
-                if candidate.github_data:
-                    repos = candidate.github_data.get("top_repos", candidate.github_data.get("repos", []))
-                    contributions = candidate.github_data.get("total_contributions", candidate.github_data.get("totalContributions", 0))
-                    github_score = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
-
-                # Weighted average
-                profile_score = round((tech_skills * 0.3 + exp_quality * 0.25 + edu_score * 0.25 + github_score * 0.2), 2)
-
+            if profile_score_data:
+                profile_score = profile_score_data.get("score")
+                breakdown = profile_score_data.get("breakdown", {})
                 score_breakdown = ScoreBreakdown(
-                    technical_skills=round(tech_skills, 2),
-                    experience_quality=round(exp_quality, 2),
-                    education=round(edu_score, 2),
-                    github_activity=round(github_score, 2),
+                    technical_skills=breakdown.get("technical_skills", 5.0),
+                    experience_quality=breakdown.get("experience_quality", 5.0),
+                    education=breakdown.get("education", 5.0),
+                    github_activity=breakdown.get("github_activity", 5.0),
                 )
 
             # Skip if min_score filter and profile_score is below
@@ -2293,89 +2390,10 @@ async def get_talent_candidate_detail(
                 "responses": interview_responses,
             }
 
-    # Calculate profile score if no interview
+    # Get profile score (uses persistent comprehensive scoring)
     profile_score_data = None
     if not (profile and profile.status == VerticalProfileStatus.COMPLETED):
-        # Build education data
-        education_data = {}
-        if candidate.university:
-            education_data["university"] = candidate.university
-        if candidate.major:
-            education_data["major"] = candidate.major
-        if candidate.gpa:
-            education_data["gpa"] = candidate.gpa
-        if candidate.graduation_year:
-            education_data["graduation_year"] = candidate.graduation_year
-        if candidate.courses:
-            education_data["courses"] = candidate.courses
-
-        # Get profile score (use heuristic for now, async scoring would be called separately)
-        if candidate.resume_parsed_data or candidate.github_data or education_data:
-            base_score = 5.0
-            breakdown = {}
-
-            if candidate.resume_parsed_data:
-                parsed = candidate.resume_parsed_data
-                skill_count = len(parsed.get("skills", []))
-                breakdown["technical_skills"] = min(5.0 + skill_count * 0.3, 9.0)
-                exp_count = len(parsed.get("experience", []))
-                breakdown["experience_quality"] = min(5.0 + exp_count * 1.0, 8.5)
-
-            if candidate.gpa:
-                breakdown["education"] = max(1.0, min(5.0 + (candidate.gpa - 3.0) * 2, 9.5))
-
-            if candidate.github_data:
-                repos = candidate.github_data.get("top_repos", candidate.github_data.get("repos", []))
-                contributions = candidate.github_data.get("total_contributions", candidate.github_data.get("totalContributions", 0))
-                breakdown["github_activity"] = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
-
-            # Calculate weighted average (use defaults for missing components)
-            tech_skills = breakdown.get("technical_skills", 5.0)
-            exp_quality = breakdown.get("experience_quality", 5.0)
-            edu_score = breakdown.get("education", 5.0)
-            github_score = breakdown.get("github_activity", 5.0)
-
-            # Weights sum to 1.0 for proper averaging
-            profile_score = tech_skills * 0.3 + exp_quality * 0.25 + edu_score * 0.25 + github_score * 0.2
-            if True:
-
-                # Generate strengths and concerns based on scores
-                strengths = []
-                concerns = []
-
-                tech_score = breakdown.get("technical_skills", 5.0)
-                if tech_score >= 7.5:
-                    skill_count = len((candidate.resume_parsed_data or {}).get("skills", []))
-                    strengths.append(f"Strong technical skill set ({skill_count} skills)")
-                elif tech_score < 5.0:
-                    concerns.append("Limited technical skills listed")
-
-                exp_score = breakdown.get("experience_quality", 5.0)
-                if exp_score >= 7.5:
-                    exp_list = (candidate.resume_parsed_data or {}).get("experience", [])
-                    if exp_list:
-                        strengths.append(f"Solid work experience ({len(exp_list)} positions)")
-                elif exp_score < 5.0:
-                    concerns.append("Limited work experience")
-
-                edu_score = breakdown.get("education", 5.0)
-                if edu_score >= 8.0 and candidate.gpa:
-                    strengths.append(f"Strong academic record (GPA: {candidate.gpa:.2f})")
-                elif edu_score < 5.0:
-                    concerns.append("Academic record could be stronger")
-
-                github_score = breakdown.get("github_activity", 5.0)
-                if github_score >= 7.0:
-                    strengths.append("Active GitHub contributor")
-                elif "github_activity" not in breakdown:
-                    concerns.append("No GitHub profile connected")
-
-                profile_score_data = {
-                    "score": round(profile_score, 2),
-                    "breakdown": {k: round(v, 2) for k, v in breakdown.items()},
-                    "strengths": strengths,
-                    "concerns": concerns,
-                }
+        profile_score_data = get_or_compute_profile_score(db, candidate.id)
 
     # Get current status with this employer (if any match exists)
     employer_status = None
@@ -2548,70 +2566,10 @@ async def get_talent_profile_detail(
         "transcript_uploaded": candidate.courses is not None and len(candidate.courses) > 0,
     }
 
-    # Build profile score if no completed interview
+    # Get profile score (uses persistent comprehensive scoring)
     profile_score = None
     if profile.status != VerticalProfileStatus.COMPLETED:
-        breakdown = {}
-        if candidate.resume_parsed_data:
-            parsed = candidate.resume_parsed_data
-            skill_count = len(parsed.get("skills", []))
-            breakdown["technical_skills"] = min(5.0 + skill_count * 0.3, 9.0)
-            exp_count = len(parsed.get("experience", []))
-            breakdown["experience_quality"] = min(5.0 + exp_count * 1.0, 8.5)
-        if candidate.gpa:
-            breakdown["education"] = max(1.0, min(5.0 + (candidate.gpa - 3.0) * 2, 9.5))
-        if candidate.github_data:
-            repos = candidate.github_data.get("top_repos", candidate.github_data.get("repos", []))
-            contributions = candidate.github_data.get("total_contributions", candidate.github_data.get("totalContributions", 0))
-            breakdown["github_activity"] = min(5.0 + len(repos) * 0.2 + contributions * 0.01, 9.0)
-        if breakdown:
-            # Calculate weighted average (use defaults for missing components)
-            tech_skills = breakdown.get("technical_skills", 5.0)
-            exp_quality = breakdown.get("experience_quality", 5.0)
-            edu_score_val = breakdown.get("education", 5.0)
-            github_score_val = breakdown.get("github_activity", 5.0)
-
-            # Weights sum to 1.0 for proper averaging
-            score = tech_skills * 0.3 + exp_quality * 0.25 + edu_score_val * 0.25 + github_score_val * 0.2
-            if True:
-
-                # Generate strengths and concerns
-                strengths = []
-                concerns = []
-
-                tech_score = breakdown.get("technical_skills", 5.0)
-                if tech_score >= 7.5:
-                    skill_count = len((candidate.resume_parsed_data or {}).get("skills", []))
-                    strengths.append(f"Strong technical skill set ({skill_count} skills)")
-                elif tech_score < 5.0:
-                    concerns.append("Limited technical skills listed")
-
-                exp_score = breakdown.get("experience_quality", 5.0)
-                if exp_score >= 7.5:
-                    exp_list = (candidate.resume_parsed_data or {}).get("experience", [])
-                    if exp_list:
-                        strengths.append(f"Solid work experience ({len(exp_list)} positions)")
-                elif exp_score < 5.0:
-                    concerns.append("Limited work experience")
-
-                edu_score = breakdown.get("education", 5.0)
-                if edu_score >= 8.0 and candidate.gpa:
-                    strengths.append(f"Strong academic record (GPA: {candidate.gpa:.2f})")
-                elif edu_score < 5.0:
-                    concerns.append("Academic record could be stronger")
-
-                github_score = breakdown.get("github_activity", 5.0)
-                if github_score >= 7.0:
-                    strengths.append("Active GitHub contributor")
-                elif "github_activity" not in breakdown:
-                    concerns.append("No GitHub profile connected")
-
-                profile_score = {
-                    "score": round(score, 2),
-                    "breakdown": {k: round(v, 2) for k, v in breakdown.items()},
-                    "strengths": strengths,
-                    "concerns": concerns,
-                }
+        profile_score = get_or_compute_profile_score(db, candidate.id)
 
     return {
         "profile": {
@@ -4500,3 +4458,198 @@ async def cancel_organization_invite(
 
     invite.status = InviteStatus.CANCELLED
     db.commit()
+
+
+# ============================================================================
+# ADMIN: Profile Scoring Management
+# ============================================================================
+
+
+@router.post("/admin/profile-scores/recompute/{candidate_id}")
+async def recompute_candidate_profile_score(
+    candidate_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """
+    Recompute the profile score for a specific candidate.
+    Forces a fresh computation even if a recent score exists.
+    """
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    # Force recompute
+    score_data = get_or_compute_profile_score(db, candidate_id, force_compute=True)
+
+    if not score_data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to compute profile score"
+        )
+
+    return {
+        "success": True,
+        "candidate_id": candidate_id,
+        "candidate_name": candidate.name,
+        "score": score_data
+    }
+
+
+@router.post("/admin/profile-scores/recompute-all")
+async def recompute_all_profile_scores(
+    background_tasks: BackgroundTasks,
+    limit: Optional[int] = None,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """
+    Batch recompute profile scores for all candidates.
+    Runs in background to avoid timeout.
+    Returns immediately with job status.
+    """
+    from ..services.profile_scoring import compute_all_scores
+
+    # Count candidates
+    total = db.query(Candidate).count()
+    to_process = min(total, limit) if limit else total
+
+    # Run in background
+    async def run_batch():
+        try:
+            results = await compute_all_scores(db)
+            logger.info(f"Batch scoring complete: {results}")
+        except Exception as e:
+            logger.error(f"Batch scoring failed: {e}")
+
+    background_tasks.add_task(run_batch)
+
+    return {
+        "success": True,
+        "message": f"Started batch recompute for {to_process} candidates",
+        "total_candidates": total,
+        "status": "processing"
+    }
+
+
+@router.get("/admin/profile-scores/{candidate_id}")
+async def get_profile_score_details(
+    candidate_id: str,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed profile score breakdown for debugging.
+    Includes all sub-component rationales and raw inputs.
+    """
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate not found"
+        )
+
+    score_record = db.query(CandidateProfileScore).filter(
+        CandidateProfileScore.candidate_id == candidate_id
+    ).first()
+
+    if not score_record:
+        return {
+            "candidate_id": candidate_id,
+            "candidate_name": candidate.name,
+            "has_score": False,
+            "message": "No profile score computed yet. Call recompute to generate."
+        }
+
+    return {
+        "candidate_id": candidate_id,
+        "candidate_name": candidate.name,
+        "has_score": True,
+        "score_id": score_record.id,
+        "scoring_version": score_record.scoring_version,
+        "computed_at": score_record.computed_at.isoformat() if score_record.computed_at else None,
+        "total_score": score_record.total_score,
+        "component_scores": {
+            "education": score_record.education_score,
+            "technical": score_record.technical_score,
+            "experience": score_record.experience_score,
+            "github": score_record.github_score,
+            "activities": score_record.activities_score,
+        },
+        "detailed_breakdowns": {
+            "education": score_record.education_breakdown,
+            "technical": score_record.technical_breakdown,
+            "experience": score_record.experience_breakdown,
+            "github": score_record.github_breakdown,
+            "activities": score_record.activities_breakdown,
+        },
+        "raw_inputs": score_record.raw_inputs,
+        "computation_log": score_record.computation_log,
+    }
+
+
+@router.get("/admin/profile-scores")
+async def list_profile_scores(
+    limit: int = 50,
+    offset: int = 0,
+    min_score: Optional[float] = None,
+    max_score: Optional[float] = None,
+    needs_recompute: bool = False,
+    employer: Employer = Depends(get_current_employer),
+    db: Session = Depends(get_db)
+):
+    """
+    List all profile scores with optional filters.
+    Use for admin dashboard overview.
+    """
+    from datetime import datetime, timedelta
+
+    query = db.query(CandidateProfileScore).join(
+        Candidate,
+        Candidate.id == CandidateProfileScore.candidate_id
+    )
+
+    if min_score is not None:
+        query = query.filter(CandidateProfileScore.total_score >= min_score)
+
+    if max_score is not None:
+        query = query.filter(CandidateProfileScore.total_score <= max_score)
+
+    if needs_recompute:
+        # Scores older than 7 days or using old version
+        stale_threshold = datetime.utcnow() - timedelta(days=7)
+        query = query.filter(
+            (CandidateProfileScore.computed_at < stale_threshold) |
+            (CandidateProfileScore.scoring_version != SCORING_VERSION)
+        )
+
+    total = query.count()
+    scores = query.order_by(
+        CandidateProfileScore.total_score.desc().nulls_last()
+    ).offset(offset).limit(limit).all()
+
+    return {
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "current_scoring_version": SCORING_VERSION,
+        "scores": [
+            {
+                "candidate_id": s.candidate_id,
+                "candidate_name": s.candidate.name if s.candidate else "Unknown",
+                "total_score": s.total_score,
+                "education_score": s.education_score,
+                "technical_score": s.technical_score,
+                "experience_score": s.experience_score,
+                "github_score": s.github_score,
+                "activities_score": s.activities_score,
+                "scoring_version": s.scoring_version,
+                "computed_at": s.computed_at.isoformat() if s.computed_at else None,
+                "needs_recompute": s.scoring_version != SCORING_VERSION,
+            }
+            for s in scores
+        ]
+    }

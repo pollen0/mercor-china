@@ -74,8 +74,10 @@ class Candidate(Base):
     password_hash = Column(String, nullable=True)  # Nullable for GitHub OAuth users
 
     # Education Information
-    university = Column(String, nullable=True)  # e.g., "Stanford University"
-    major = Column(String, nullable=True)  # Primary major (kept for backwards compat)
+    university = Column(String, nullable=True)  # e.g., "Stanford University" (free text, kept for backwards compat)
+    university_id = Column(String, ForeignKey("universities.id", ondelete="SET NULL"), nullable=True)  # FK to universities table
+    major = Column(String, nullable=True)  # Primary major (free text, kept for backwards compat)
+    major_id = Column(String, ForeignKey("majors.id", ondelete="SET NULL"), nullable=True)  # FK to majors table
     majors = Column(JSONB, nullable=True)  # List of majors for double/triple majors
     minors = Column(JSONB, nullable=True)  # List of minors
     certificates = Column(JSONB, nullable=True)  # List of certificates/concentrations
@@ -153,6 +155,11 @@ class Candidate(Base):
     resume_versions = relationship("ResumeVersion", back_populates="candidate", cascade="all, delete-orphan", order_by="desc(ResumeVersion.version_number)")
     github_analysis_history = relationship("GitHubAnalysisHistory", back_populates="candidate", cascade="all, delete-orphan", order_by="desc(GitHubAnalysisHistory.analyzed_at)")
     profile_change_logs = relationship("ProfileChangeLog", back_populates="candidate", cascade="all, delete-orphan", order_by="desc(ProfileChangeLog.changed_at)")
+    # Profile score (comprehensive scoring)
+    profile_score = relationship("CandidateProfileScore", back_populates="candidate", uselist=False, cascade="all, delete-orphan")
+    # Education links
+    university_record = relationship("University", foreign_keys=[university_id])
+    major_record = relationship("Major", foreign_keys=[major_id])
 
     # Indexes for common query patterns (talent pool filtering)
     __table_args__ = (

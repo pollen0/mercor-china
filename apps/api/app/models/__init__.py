@@ -27,6 +27,8 @@ from .marketing_referrer import MarketingReferrer
 from .resume_version import ResumeVersion
 from .github_analysis_history import GitHubAnalysisHistory
 from .profile_change_log import ProfileChangeLog, ProfileChangeType
+from .major import Major
+from .profile_score import CandidateProfileScore, SCORING_VERSION
 from .ml_scoring import (
     # Enums
     ScoringEventType, LabelSource, OutcomeType, OutcomeStage, CompanyTier, ExperimentStatus,
@@ -128,4 +130,8 @@ __all__ = [
     "GitHubAnalysisHistory",
     "ProfileChangeLog",
     "ProfileChangeType",
+    # Major and Profile Scoring
+    "Major",
+    "CandidateProfileScore",
+    "SCORING_VERSION",
 ]

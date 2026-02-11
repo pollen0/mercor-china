@@ -929,3 +929,456 @@ async def delete_marketing_referrer(
     logger.info(f"Deleted marketing referrer: {referrer_id}")
 
     return {"success": True, "deleted_id": referrer_id}
+
+
+# ============= University & Major Data Management =============
+
+@router.get("/universities")
+async def list_universities(
+    limit: int = Query(100, le=500),
+    offset: int = 0,
+    tier: Optional[int] = None,
+    search: Optional[str] = None,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """List all universities with tier and CS ranking info."""
+    from ..models.course import University
+
+    query = db.query(University)
+
+    if tier:
+        query = query.filter(University.tier == tier)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            (University.name.ilike(search_term)) |
+            (University.short_name.ilike(search_term)) |
+            (University.id.ilike(search_term))
+        )
+
+    total = query.count()
+    universities = query.order_by(University.tier, University.cs_ranking.nulls_last()).offset(offset).limit(limit).all()
+
+    return {
+        "total": total,
+        "universities": [
+            {
+                "id": u.id,
+                "name": u.name,
+                "short_name": u.short_name,
+                "tier": u.tier,
+                "cs_ranking": u.cs_ranking,
+                "location": u.location,
+            }
+            for u in universities
+        ]
+    }
+
+
+@router.get("/universities/{university_id}")
+async def get_university_detail(
+    university_id: str,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Get university details including majors."""
+    from ..models.course import University
+    from ..models.major import Major
+
+    university = db.query(University).filter(University.id == university_id).first()
+    if not university:
+        raise HTTPException(status_code=404, detail="University not found")
+
+    majors = db.query(Major).filter(Major.university_id == university_id).all()
+
+    return {
+        "university": {
+            "id": university.id,
+            "name": university.name,
+            "short_name": university.short_name,
+            "tier": university.tier,
+            "cs_ranking": university.cs_ranking,
+            "location": university.location,
+        },
+        "majors": [
+            {
+                "id": m.id,
+                "name": m.name,
+                "short_name": m.short_name,
+                "department": m.department,
+                "rigor_tier": m.rigor_tier,
+                "rigor_score": m.rigor_score,
+                "average_gpa": m.average_gpa,
+                "is_stem": m.is_stem,
+                "is_technical": m.is_technical,
+                "field_category": m.field_category,
+            }
+            for m in majors
+        ],
+        "major_count": len(majors),
+    }
+
+
+@router.patch("/universities/{university_id}")
+async def update_university(
+    university_id: str,
+    data: dict,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Update university tier or ranking."""
+    from ..models.course import University
+
+    university = db.query(University).filter(University.id == university_id).first()
+    if not university:
+        raise HTTPException(status_code=404, detail="University not found")
+
+    if "tier" in data:
+        university.tier = data["tier"]
+    if "cs_ranking" in data:
+        university.cs_ranking = data["cs_ranking"]
+
+    db.commit()
+    db.refresh(university)
+
+    logger.info(f"Updated university {university_id}: tier={university.tier}, cs_ranking={university.cs_ranking}")
+
+    return {"success": True, "university_id": university_id}
+
+
+@router.get("/majors")
+async def list_majors(
+    limit: int = Query(100, le=500),
+    offset: int = 0,
+    university_id: Optional[str] = None,
+    is_stem: Optional[bool] = None,
+    field_category: Optional[str] = None,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """List all majors with filtering options."""
+    from ..models.major import Major
+
+    query = db.query(Major)
+
+    if university_id:
+        query = query.filter(Major.university_id == university_id)
+
+    if is_stem is not None:
+        query = query.filter(Major.is_stem == is_stem)
+
+    if field_category:
+        query = query.filter(Major.field_category == field_category)
+
+    total = query.count()
+    majors = query.order_by(Major.university_id, Major.rigor_score.desc()).offset(offset).limit(limit).all()
+
+    return {
+        "total": total,
+        "majors": [
+            {
+                "id": m.id,
+                "university_id": m.university_id,
+                "name": m.name,
+                "short_name": m.short_name,
+                "department": m.department,
+                "rigor_tier": m.rigor_tier,
+                "rigor_score": m.rigor_score,
+                "average_gpa": m.average_gpa,
+                "is_stem": m.is_stem,
+                "is_technical": m.is_technical,
+                "field_category": m.field_category,
+                "source": m.source,
+            }
+            for m in majors
+        ]
+    }
+
+
+class MajorCreate(BaseModel):
+    id: str
+    university_id: Optional[str] = None
+    name: str
+    short_name: Optional[str] = None
+    department: Optional[str] = None
+    rigor_tier: int = 3
+    rigor_score: float = 5.0
+    average_gpa: Optional[float] = None
+    is_stem: bool = False
+    is_technical: bool = False
+    field_category: Optional[str] = None
+    source: Optional[str] = None
+
+
+@router.post("/majors")
+async def create_major(
+    data: MajorCreate,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Create a new major."""
+    from ..models.major import Major
+
+    existing = db.query(Major).filter(Major.id == data.id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Major with this ID already exists")
+
+    major = Major(
+        id=data.id,
+        university_id=data.university_id,
+        name=data.name,
+        short_name=data.short_name,
+        department=data.department,
+        rigor_tier=data.rigor_tier,
+        rigor_score=data.rigor_score,
+        average_gpa=data.average_gpa,
+        is_stem=data.is_stem,
+        is_technical=data.is_technical,
+        field_category=data.field_category,
+        source=data.source,
+    )
+
+    db.add(major)
+    db.commit()
+    db.refresh(major)
+
+    logger.info(f"Created major: {major.id}")
+
+    return {"success": True, "major_id": major.id}
+
+
+@router.patch("/majors/{major_id}")
+async def update_major(
+    major_id: str,
+    data: dict,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Update a major's data."""
+    from ..models.major import Major
+
+    major = db.query(Major).filter(Major.id == major_id).first()
+    if not major:
+        raise HTTPException(status_code=404, detail="Major not found")
+
+    allowed_fields = [
+        "name", "short_name", "department", "rigor_tier", "rigor_score",
+        "average_gpa", "median_gpa", "is_stem", "is_technical", "field_category", "source"
+    ]
+
+    for field in allowed_fields:
+        if field in data:
+            setattr(major, field, data[field])
+
+    db.commit()
+    db.refresh(major)
+
+    logger.info(f"Updated major: {major_id}")
+
+    return {"success": True, "major_id": major_id}
+
+
+@router.delete("/majors/{major_id}")
+async def delete_major(
+    major_id: str,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a major."""
+    from ..models.major import Major
+
+    major = db.query(Major).filter(Major.id == major_id).first()
+    if not major:
+        raise HTTPException(status_code=404, detail="Major not found")
+
+    db.delete(major)
+    db.commit()
+
+    logger.info(f"Deleted major: {major_id}")
+
+    return {"success": True, "deleted_id": major_id}
+
+
+# ============= Profile Score Admin Endpoints =============
+
+@router.get("/profile-scores")
+async def list_profile_scores(
+    limit: int = Query(50, le=200),
+    offset: int = 0,
+    min_score: Optional[float] = None,
+    max_score: Optional[float] = None,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """List all computed profile scores."""
+    from ..models.profile_score import CandidateProfileScore, SCORING_VERSION
+
+    query = db.query(CandidateProfileScore)
+
+    if min_score is not None:
+        query = query.filter(CandidateProfileScore.total_score >= min_score)
+
+    if max_score is not None:
+        query = query.filter(CandidateProfileScore.total_score <= max_score)
+
+    total = query.count()
+    scores = query.order_by(CandidateProfileScore.total_score.desc().nulls_last()).offset(offset).limit(limit).all()
+
+    return {
+        "total": total,
+        "current_version": SCORING_VERSION,
+        "scores": [
+            {
+                "id": s.id,
+                "candidate_id": s.candidate_id,
+                "candidate_name": s.candidate.name if s.candidate else None,
+                "total_score": s.total_score,
+                "education_score": s.education_score,
+                "technical_score": s.technical_score,
+                "experience_score": s.experience_score,
+                "github_score": s.github_score,
+                "activities_score": s.activities_score,
+                "scoring_version": s.scoring_version,
+                "computed_at": s.computed_at.isoformat() if s.computed_at else None,
+                "needs_update": s.scoring_version != SCORING_VERSION,
+            }
+            for s in scores
+        ]
+    }
+
+
+@router.get("/profile-scores/{candidate_id}")
+async def get_profile_score_debug(
+    candidate_id: str,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Get detailed profile score with full breakdown for debugging."""
+    from ..models.profile_score import CandidateProfileScore
+
+    score = db.query(CandidateProfileScore).filter(
+        CandidateProfileScore.candidate_id == candidate_id
+    ).first()
+
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    if not score:
+        return {
+            "candidate_id": candidate_id,
+            "candidate_name": candidate.name,
+            "has_score": False,
+            "message": "No profile score computed. Use /admin/profile-scores/recompute/{candidate_id} to compute."
+        }
+
+    return {
+        "candidate_id": candidate_id,
+        "candidate_name": candidate.name,
+        "has_score": True,
+        "total_score": score.total_score,
+        "component_scores": {
+            "education": score.education_score,
+            "technical": score.technical_score,
+            "experience": score.experience_score,
+            "github": score.github_score,
+            "activities": score.activities_score,
+        },
+        "breakdowns": {
+            "education": score.education_breakdown,
+            "technical": score.technical_breakdown,
+            "experience": score.experience_breakdown,
+            "github": score.github_breakdown,
+            "activities": score.activities_breakdown,
+        },
+        "raw_inputs": score.raw_inputs,
+        "scoring_version": score.scoring_version,
+        "computed_at": score.computed_at.isoformat() if score.computed_at else None,
+    }
+
+
+@router.post("/profile-scores/recompute/{candidate_id}")
+async def recompute_profile_score(
+    candidate_id: str,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Force recompute profile score for a candidate."""
+    from ..services.profile_scoring import ProfileScoringService
+    import asyncio
+
+    candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    try:
+        service = ProfileScoringService(db)
+        score_record = await service.compute_score(candidate_id)
+
+        return {
+            "success": True,
+            "candidate_id": candidate_id,
+            "candidate_name": candidate.name,
+            "total_score": score_record.total_score,
+            "component_scores": {
+                "education": score_record.education_score,
+                "technical": score_record.technical_score,
+                "experience": score_record.experience_score,
+                "github": score_record.github_score,
+                "activities": score_record.activities_score,
+            },
+        }
+    except Exception as e:
+        logger.error(f"Failed to compute score for {candidate_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to compute score: {str(e)}")
+
+
+@router.post("/profile-scores/recompute-all")
+async def batch_recompute_profile_scores(
+    limit: Optional[int] = None,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Batch recompute all profile scores. Returns results synchronously (may be slow for large datasets)."""
+    from ..services.profile_scoring import ProfileScoringService
+    from ..models.profile_score import SCORING_VERSION
+
+    service = ProfileScoringService(db)
+
+    # Get candidates to process
+    candidates_query = db.query(Candidate)
+    if limit:
+        candidates_query = candidates_query.limit(limit)
+
+    candidates = candidates_query.all()
+    total = len(candidates)
+
+    results = {
+        "success": 0,
+        "failed": 0,
+        "errors": [],
+    }
+
+    for candidate in candidates:
+        try:
+            await service.compute_score(candidate.id)
+            results["success"] += 1
+        except Exception as e:
+            results["failed"] += 1
+            results["errors"].append({
+                "candidate_id": candidate.id,
+                "candidate_name": candidate.name,
+                "error": str(e),
+            })
+
+    logger.info(f"Batch recompute complete: {results['success']} success, {results['failed']} failed")
+
+    return {
+        "total_candidates": total,
+        "scoring_version": SCORING_VERSION,
+        "success_count": results["success"],
+        "failed_count": results["failed"],
+        "errors": results["errors"][:10],  # Limit errors in response
+    }
