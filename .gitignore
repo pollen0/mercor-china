@@ -44,3 +44,7 @@ coverage/
 # Uploads (local dev)
 uploads/
 .vercel
+
+# Scraped data files
+apps/api/scripts/data/*.json
+apps/api/scripts/data/*.checkpoint.json

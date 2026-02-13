@@ -23,6 +23,7 @@ from ..models import (
     MarketingReferrer,
 )
 from ..models.candidate import CandidateVerticalProfile
+from ..models.employer import Organization, OrganizationMember
 from ..models.referral import Referral
 from ..utils.auth import get_current_employer
 from ..config import settings
@@ -476,6 +477,155 @@ async def delete_employer(
 
     logger.info(f"Admin {admin.email} deleted employer {employer_id}")
     return {"success": True, "deleted_id": employer_id}
+
+
+# ============================================================================
+# EMPLOYER DETAIL
+# ============================================================================
+
+class EmployerDetailJob(BaseModel):
+    id: str
+    title: str
+    vertical: Optional[str] = None
+    role_type: Optional[str] = None
+    location: Optional[str] = None
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    requirements: Optional[List[str]] = None
+    description: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class EmployerDetailMatch(BaseModel):
+    candidate_id: str
+    candidate_name: str
+    candidate_email: str
+    university: Optional[str] = None
+    match_score: float
+    status: str
+    job_title: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class EmployerDetailFounder(BaseModel):
+    name: str
+    title: Optional[str] = None
+    linkedin: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class EmployerDetailResponse(BaseModel):
+    id: str
+    company_name: str
+    email: str
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
+    website: Optional[str] = None
+    is_verified: bool
+    created_at: datetime
+    organization_description: Optional[str] = None
+    founders: List[EmployerDetailFounder] = []
+    jobs: List[EmployerDetailJob] = []
+    matches: List[EmployerDetailMatch] = []
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/employers/{employer_id}/detail", response_model=EmployerDetailResponse)
+async def get_employer_detail(
+    employer_id: str,
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Get detailed employer info including jobs, founders, and matched candidates."""
+    employer = db.query(Employer).filter(Employer.id == employer_id).first()
+    if not employer:
+        raise HTTPException(status_code=404, detail="Employer not found")
+
+    # Get organization info via membership
+    org_description = None
+    founders: List[dict] = []
+    membership = db.query(OrganizationMember).filter(
+        OrganizationMember.employer_id == employer_id
+    ).first()
+    if membership:
+        org = membership.organization
+        if org:
+            org_description = org.description
+            org_settings = org.settings or {}
+            founders_data = org_settings.get("founders", [])
+            if isinstance(founders_data, list):
+                founders = founders_data
+
+    # Get all jobs
+    jobs = db.query(Job).filter(Job.employer_id == employer_id).order_by(desc(Job.created_at)).all()
+
+    job_models = []
+    for j in jobs:
+        job_models.append(EmployerDetailJob(
+            id=j.id,
+            title=j.title,
+            vertical=j.vertical.value if j.vertical else None,
+            role_type=j.role_type.value if j.role_type else None,
+            location=j.location,
+            salary_min=j.salary_min,
+            salary_max=j.salary_max,
+            requirements=j.requirements,
+            description=j.description,
+            is_active=j.is_active,
+            created_at=j.created_at,
+        ))
+
+    # Get matched candidates through jobs
+    job_ids = [j.id for j in jobs]
+    matches_data = []
+    if job_ids:
+        matches = (
+            db.query(Match)
+            .filter(Match.job_id.in_(job_ids))
+            .all()
+        )
+        for m in matches:
+            candidate = m.candidate
+            job = m.job
+            matches_data.append(EmployerDetailMatch(
+                candidate_id=candidate.id if candidate else "unknown",
+                candidate_name=candidate.name if candidate else "Unknown",
+                candidate_email=candidate.email if candidate else "",
+                university=candidate.university if candidate else None,
+                match_score=m.score,
+                status=m.status.value if m.status else "PENDING",
+                job_title=job.title if job else None,
+            ))
+
+    # Get organization website (fallback to org if employer doesn't have one)
+    website = None
+    if membership and membership.organization:
+        website = membership.organization.website
+
+    return EmployerDetailResponse(
+        id=employer.id,
+        company_name=employer.company_name,
+        email=employer.email,
+        industry=employer.industry,
+        company_size=employer.company_size,
+        website=website,
+        is_verified=employer.is_verified,
+        created_at=employer.created_at,
+        organization_description=org_description,
+        founders=[EmployerDetailFounder(**f) for f in founders if isinstance(f, dict)],
+        jobs=job_models,
+        matches=matches_data,
+    )
 
 
 # ============================================================================

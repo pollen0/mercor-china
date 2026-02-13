@@ -1210,7 +1210,7 @@ export default function AdminPage() {
                     })
                     .map((e) => (
                     <tr key={e.id} className="hover:bg-stone-50/50 transition-colors">
-                      <td className="px-4 py-4 text-sm font-medium text-stone-800">{e.company_name}</td>
+                      <td className="px-4 py-4 text-sm font-medium text-stone-800"><a href={`/admin/companies/${e.id}`} className="text-teal-700 hover:underline cursor-pointer">{e.company_name}</a></td>
                       <td className="px-4 py-4 text-sm text-stone-500">{e.email}</td>
                       <td className="px-4 py-4 text-sm text-stone-600">{e.job_count}</td>
                       <td className="px-4 py-4">
