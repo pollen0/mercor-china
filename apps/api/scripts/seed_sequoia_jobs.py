@@ -6,12 +6,13 @@ FIRM: Sequoia Capital
 SCRIPT ID: sequoia
 SOURCE: jobs.sequoiacap.com + individual company career pages
 
-Companies seeded (12 new + 1 additional):
+Companies seeded (17 new + 7 additional):
   New: Harvey, Ramp, Clay, Notion, Zip, Figma, Stripe, Semgrep,
-       Rippling, Mercury, Glean, Verkada
-  Additional jobs: Athelas (already in DB as "Athelas")
+       Rippling, Mercury, Glean, Verkada, The Boring Company, Vise,
+       Zipline, DoorDash, Brex
+  Additional jobs: Athelas, Ramp, Zip, Figma, Stripe, Rippling, Glean
 
-Total: ~22 intern jobs across 13 companies
+Total: ~35 intern jobs across 18 companies
 """
 import sys
 import os
@@ -647,6 +648,281 @@ COMPANIES = [
             },
         ],
     },
+
+    # ── 13. The Boring Company ──
+    {
+        "company_name": "The Boring Company",
+        "email": "careers@boringcompany.com",
+        "name": "Steve Davis",
+        "industry": "Infrastructure / Transportation",
+        "company_size": "startup",
+        "website": "https://www.boringcompany.com",
+        "slug": "the-boring-company",
+        "description": (
+            "The Boring Company builds tunnels to solve traffic congestion, creating "
+            "underground transportation systems. Founded by Elon Musk. Operating the "
+            "Vegas Loop and expanding to other cities.\n\n"
+            "Fund: Sequoia | HQ: Pflugerville, TX"
+        ),
+        "founders": [
+            {"name": "Elon Musk", "title": "Founder & CEO", "linkedin": ""},
+            {"name": "Steve Davis", "title": "President", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Bastrop, TX",
+                "salary_min": 4000,
+                "salary_max": 5000,
+                "requirements": [
+                    "Pursuing a degree in CS, Mechanical, or Electrical Engineering",
+                    "Interest in infrastructure and transportation technology",
+                    "Previous internship experience or Not-a-Boring-Competition participation is a plus",
+                    "Available for summer 2026 in Bastrop, TX / Las Vegas, NV / Nashville, TN",
+                ],
+                "description": (
+                    "Engineering Intern at The Boring Company. Given near-employee-level responsibility "
+                    "in a fast-paced environment revolutionizing transportation. Work on tunnel boring "
+                    "machine design, support systems, and transportation technology. ~$25/hr.\n\n"
+                    "Source: https://jobs.craftventures.com/companies/the-boring-company-2/jobs/58001283-engineering-internships-summer-2026"
+                ),
+            },
+            {
+                "title": "Operations Intern (Summer 2026)",
+                "vertical": Vertical.PRODUCT,
+                "role_type": RoleType.BUSINESS_ANALYST,
+                "location": "Las Vegas, NV",
+                "salary_min": 4000,
+                "salary_max": 5000,
+                "requirements": [
+                    "Pursuing a degree in Business, Operations, Engineering, or related field",
+                    "Strong analytical and problem-solving skills",
+                    "Interest in transportation infrastructure and logistics",
+                    "Available for summer 2026",
+                ],
+                "description": (
+                    "Operations Intern at The Boring Company. Support tunnel operations, logistics, "
+                    "and project management for the Vegas Loop and other tunnel projects. Locations: "
+                    "Las Vegas, NV / Nashville, TN / Bastrop, TX.\n\n"
+                    "Source: https://jobs.sequoiacap.com/jobs/the-boring-company?internshipOnly=true"
+                ),
+            },
+        ],
+    },
+
+    # ── 14. Vise ──
+    {
+        "company_name": "Vise",
+        "email": "careers@vise.com",
+        "name": "Samir Vasavada",
+        "industry": "FinTech / Investment Management",
+        "company_size": "startup",
+        "website": "https://vise.com",
+        "slug": "vise",
+        "description": (
+            "Vise is a technology-powered asset manager that uses AI to help financial "
+            "advisors build, manage, and explain personalized portfolios at scale. Raised "
+            "$128M from Sequoia, Founders Fund, and Allen & Company.\n\n"
+            "Fund: Sequoia | HQ: New York"
+        ),
+        "founders": [
+            {"name": "Samir Vasavada", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/samir-vasavada-160865ab"},
+            {"name": "Runik Mehrotra", "title": "CIO & Co-Founder", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Accelerate Fellowship (Summer 2026)",
+                "vertical": Vertical.FINANCE,
+                "role_type": RoleType.FINANCE_ANALYST,
+                "location": "New York, NY",
+                "salary_min": 5000,
+                "salary_max": 7000,
+                "requirements": [
+                    "Interest in fintech, AI, and investment management",
+                    "Strong analytical skills and financial acumen",
+                    "Currently pursuing a degree in Finance, Economics, CS, or related field",
+                    "Available for summer 2026 fellowship in NYC",
+                ],
+                "description": (
+                    "Accelerate Fellowship at Vise. Work at the intersection of AI and investment "
+                    "management, helping financial advisors deliver personalized portfolio advice at "
+                    "scale. Tags: Stripe, Advisor, AI, Mutual Funds, Asset Management.\n\n"
+                    "Source: https://jobs.sequoiacap.com/jobs/vise"
+                ),
+            },
+        ],
+    },
+
+    # ── 15. Zipline ──
+    {
+        "company_name": "Zipline",
+        "email": "careers@flyzipline.com",
+        "name": "Keller Rinaudo Cliffton",
+        "industry": "Robotics / Drone Delivery / Healthcare",
+        "company_size": "startup",
+        "website": "https://www.flyzipline.com",
+        "slug": "zipline-delivery",
+        "description": (
+            "Zipline designs and operates the world's largest autonomous delivery system, "
+            "delivering medical supplies, consumer products, and food via drones. Operating "
+            "in 7 countries with 55M+ autonomous miles flown.\n\n"
+            "Fund: Sequoia | HQ: South San Francisco"
+        ),
+        "founders": [
+            {"name": "Keller Rinaudo Cliffton", "title": "CEO & Co-Founder", "linkedin": ""},
+            {"name": "Keenan Wyrobek", "title": "CTO & Co-Founder", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "South San Francisco, CA",
+                "salary_min": 6400,
+                "salary_max": 7000,
+                "requirements": [
+                    "Pursuing a degree in CS or related field",
+                    "Experience with React Native, Python, or Go",
+                    "Interest in autonomous systems, robotics, or healthcare logistics",
+                    "Available May/June - August for summer internship",
+                ],
+                "description": (
+                    "Software Engineering Intern at Zipline. Build features across mobile (React "
+                    "Native) and backend (Python, Go) for the world's largest autonomous delivery "
+                    "system. $40-44/hr + housing stipend.\n\n"
+                    "Source: https://wellfound.com/jobs/3662686-software-engineering-intern-summer-2026"
+                ),
+            },
+            {
+                "title": "Embedded Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.EMBEDDED_ENGINEER,
+                "location": "South San Francisco, CA",
+                "salary_min": 6000,
+                "salary_max": 6700,
+                "requirements": [
+                    "Pursuing a degree in EE, CE, or CS",
+                    "Interest in embedded systems, RF, or hardware-in-the-loop testing",
+                    "Familiarity with C/C++ or low-level systems programming",
+                    "Available May/June - August for summer internship",
+                ],
+                "description": (
+                    "Embedded Engineering Intern at Zipline. Own big problems integral to the "
+                    "autonomous delivery system — from RF radio testing to manufacturing software "
+                    "test suites and hardware-in-the-loop simulation. $38-42/hr + housing stipend.\n\n"
+                    "Source: https://jobs.techstars.com/companies/zipline/jobs/63567787-embedded-engineering-intern-summer-2026"
+                ),
+            },
+        ],
+    },
+
+    # ── 16. DoorDash ──
+    {
+        "company_name": "DoorDash",
+        "email": "careers@doordash.com",
+        "name": "Tony Xu",
+        "industry": "Logistics / Food Delivery / Marketplace",
+        "company_size": "startup",
+        "website": "https://www.doordash.com",
+        "slug": "doordash",
+        "description": (
+            "DoorDash is the leading on-demand delivery platform connecting consumers with "
+            "local businesses. Founded by Stanford classmates, backed by Sequoia. Public "
+            "company (NYSE: DASH).\n\n"
+            "Fund: Sequoia | HQ: San Francisco"
+        ),
+        "founders": [
+            {"name": "Tony Xu", "title": "CEO & Co-Founder", "linkedin": ""},
+            {"name": "Stanley Tang", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Andy Fang", "title": "Co-Founder", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 8800,
+                "salary_max": 9500,
+                "requirements": [
+                    "Pursuing a B.S., M.S., or Ph.D. in CS or related field",
+                    "Strong programming fundamentals",
+                    "Interest in building products at scale",
+                    "Available for 12-week summer internship in SF, NYC, Sunnyvale, LA, or Seattle",
+                ],
+                "description": (
+                    "Software Engineer Intern at DoorDash. Develop, maintain, and ship products "
+                    "during a 12-week immersive internship. Work on the platform powering millions "
+                    "of deliveries. $55/hr. Locations: SF, NYC, Sunnyvale, LA, Seattle.\n\n"
+                    "Source: https://careersatdoordash.com/jobs/software-engineer-intern-summer-2026---us/7262223"
+                ),
+            },
+            {
+                "title": "Machine Learning Intern (Summer 2026)",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 8800,
+                "salary_max": 9500,
+                "requirements": [
+                    "Pursuing a Master's or Ph.D. in CS, Statistics, or related field",
+                    "Experience with ML frameworks (PyTorch, TensorFlow)",
+                    "Strong foundation in statistics and mathematical modeling",
+                    "Available for summer 2026",
+                ],
+                "description": (
+                    "Machine Learning Intern at DoorDash. Apply ML techniques to improve "
+                    "delivery logistics, pricing, fraud detection, and personalization for "
+                    "the world's largest on-demand delivery platform.\n\n"
+                    "Source: https://careersatdoordash.com/jobs/machine-learning-intern-masters---summer-2026/7295800"
+                ),
+            },
+        ],
+    },
+
+    # ── 17. Brex ──
+    {
+        "company_name": "Brex",
+        "email": "careers@brex.com",
+        "name": "Pedro Franceschi",
+        "industry": "FinTech / Corporate Finance",
+        "company_size": "startup",
+        "website": "https://www.brex.com",
+        "slug": "brex",
+        "description": (
+            "Brex is an AI-powered spend platform providing integrated corporate cards, "
+            "banking, and global payments for companies of all sizes. Founded by two "
+            "Brazilian entrepreneurs who previously built a payments company.\n\n"
+            "Fund: Sequoia | HQ: San Francisco"
+        ),
+        "founders": [
+            {"name": "Pedro Franceschi", "title": "CEO & Co-Founder", "linkedin": ""},
+            {"name": "Henrique Dubugras", "title": "Co-Founder & Chairman", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "New York, NY",
+                "salary_min": 8800,
+                "salary_max": 9500,
+                "requirements": [
+                    "Pursuing a degree in CS or related field",
+                    "Strong programming skills in one or more languages",
+                    "Interest in fintech, payments, or corporate finance",
+                    "Available for summer 2026 internship",
+                ],
+                "description": (
+                    "Software Engineer Intern at Brex. Build AI-powered spend management tools "
+                    "used by companies from startups to enterprises. $55/hr.\n\n"
+                    "Source: https://www.builtinnyc.com/job/software-engineer-intern/6242226"
+                ),
+            },
+        ],
+    },
 ]
 
 
@@ -847,6 +1123,120 @@ ADDITIONAL_JOBS = [
                     "including backend services, product engineering, ML/AI/search, infrastructure, "
                     "and security. $57-69/hr depending on experience.\n\n"
                     "Source: https://job-boards.greenhouse.io/gleanwork/jobs/4595665005"
+                ),
+            },
+        ],
+    },
+    {
+        "company_name": "Zipline",
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "South San Francisco, CA",
+                "salary_min": 6400,
+                "salary_max": 7000,
+                "requirements": [
+                    "Pursuing a degree in CS or related field",
+                    "Experience with React Native, Python, or Go",
+                    "Interest in autonomous systems, robotics, or healthcare logistics",
+                    "Available May/June - August for summer internship",
+                ],
+                "description": (
+                    "Software Engineering Intern at Zipline. Build features across mobile (React "
+                    "Native) and backend (Python, Go) for the world's largest autonomous delivery "
+                    "system. $40-44/hr + housing stipend.\n\n"
+                    "Source: https://wellfound.com/jobs/3662686-software-engineering-intern-summer-2026"
+                ),
+            },
+            {
+                "title": "Embedded Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.EMBEDDED_ENGINEER,
+                "location": "South San Francisco, CA",
+                "salary_min": 6000,
+                "salary_max": 6700,
+                "requirements": [
+                    "Pursuing a degree in EE, CE, or CS",
+                    "Interest in embedded systems, RF, or hardware-in-the-loop testing",
+                    "Familiarity with C/C++ or low-level systems programming",
+                    "Available May/June - August for summer internship",
+                ],
+                "description": (
+                    "Embedded Engineering Intern at Zipline. Own big problems integral to the "
+                    "autonomous delivery system — from RF radio testing to manufacturing software "
+                    "test suites and hardware-in-the-loop simulation. $38-42/hr + housing stipend.\n\n"
+                    "Source: https://jobs.techstars.com/companies/zipline/jobs/63567787-embedded-engineering-intern-summer-2026"
+                ),
+            },
+        ],
+    },
+    {
+        "company_name": "DoorDash",
+        "jobs": [
+            {
+                "title": "Software Engineer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 8800,
+                "salary_max": 9500,
+                "requirements": [
+                    "Pursuing a B.S., M.S., or Ph.D. in CS or related field",
+                    "Strong programming fundamentals",
+                    "Interest in building products at scale",
+                    "Available for 12-week summer internship in SF, NYC, Sunnyvale, LA, or Seattle",
+                ],
+                "description": (
+                    "Software Engineer Intern at DoorDash. Develop, maintain, and ship products "
+                    "during a 12-week immersive internship. Work on the platform powering millions "
+                    "of deliveries. $55/hr. Locations: SF, NYC, Sunnyvale, LA, Seattle.\n\n"
+                    "Source: https://careersatdoordash.com/jobs/software-engineer-intern-summer-2026---us/7262223"
+                ),
+            },
+            {
+                "title": "Machine Learning Intern (Summer 2026)",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 8800,
+                "salary_max": 9500,
+                "requirements": [
+                    "Pursuing a Master's or Ph.D. in CS, Statistics, or related field",
+                    "Experience with ML frameworks (PyTorch, TensorFlow)",
+                    "Strong foundation in statistics and mathematical modeling",
+                    "Available for summer 2026",
+                ],
+                "description": (
+                    "Machine Learning Intern at DoorDash. Apply ML techniques to improve "
+                    "delivery logistics, pricing, fraud detection, and personalization for "
+                    "the world's largest on-demand delivery platform.\n\n"
+                    "Source: https://careersatdoordash.com/jobs/machine-learning-intern-masters---summer-2026/7295800"
+                ),
+            },
+        ],
+    },
+    {
+        "company_name": "Brex",
+        "jobs": [
+            {
+                "title": "Software Engineer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "New York, NY",
+                "salary_min": 8800,
+                "salary_max": 9500,
+                "requirements": [
+                    "Pursuing a degree in CS or related field",
+                    "Strong programming skills in one or more languages",
+                    "Interest in fintech, payments, or corporate finance",
+                    "Available for summer 2026 internship",
+                ],
+                "description": (
+                    "Software Engineer Intern at Brex. Build AI-powered spend management tools "
+                    "used by companies from startups to enterprises. $55/hr.\n\n"
+                    "Source: https://www.builtinnyc.com/job/software-engineer-intern/6242226"
                 ),
             },
         ],
