@@ -610,7 +610,7 @@ async function main() {
     console.log(`${"=".repeat(60)}`);
 
     // Print sample of companies found
-    const companies = [...new Set(internJobs.map((j) => j.company).filter(Boolean))];
+    const companies = Array.from(new Set(internJobs.map((j) => j.company).filter(Boolean)));
     if (companies.length > 0) {
       console.log(`\nCompanies with intern roles (${companies.length}):`);
       companies.slice(0, 20).forEach((c) => {
