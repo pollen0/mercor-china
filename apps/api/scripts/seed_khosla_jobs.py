@@ -3,11 +3,11 @@
 Seed intern jobs from Khosla Ventures portfolio companies into the Pathway database.
 
 Source: https://jobs.khoslaventures.com
-Scraped: 2026-02-11
+Scraped: 2026-02-11, updated 2026-02-13
 US-based intern positions only.
 
-Companies: 13
-Jobs: 17
+Companies: 21 (13 original + 8 new)
+Jobs: 34 (17 original + 10 additional for existing + 7 new company jobs)
 """
 import sys
 import os
@@ -692,6 +692,344 @@ COMPANIES = [
             },
         ],
     },
+    # ── 14. Anchorage Digital ──
+    {
+        "company_name": "Anchorage Digital",
+        "email": "careers@anchorage.com",
+        "name": "Nathan McCauley",
+        "industry": "Crypto / Fintech",
+        "company_size": "startup",
+        "website": "https://www.anchorage.com",
+        "slug": "anchorage-digital",
+        "description": (
+            "Anchorage Digital is the first and only US federally chartered crypto bank. "
+            "Provides institutional-grade custody, trading, staking, and governance services "
+            "for digital assets.\n\n"
+            "Fund: Khosla Ventures | HQ: New York, NY"
+        ),
+        "founders": [
+            {"name": "Nathan McCauley", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/nathanmccauley"},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Internship (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "New York, NY",
+                "salary_min": 7000,
+                "salary_max": 9000,
+                "requirements": [
+                    "Pursuing Bachelor's or Master's in Computer Science or similar",
+                    "Graduating December 2026 or Summer 2027",
+                    "Ability to write, review, test, and document code to engineering standards",
+                    "Experience with blockchain technology preferred but not required",
+                ],
+                "description": (
+                    "Software Engineering Intern at Anchorage Digital (Summer 2026)\n\n"
+                    "12-week program working within engineering teams to design, develop, and "
+                    "deploy production code. Hybrid in New York (one day/week in-office). "
+                    "Full software development lifecycle with mentorship.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/anchorage-digital/jobs/61003104-software-engineering-internship-summer-2026"
+                ),
+            },
+        ],
+    },
+    # ── 15. Hermeus ──
+    {
+        "company_name": "Hermeus",
+        "email": "careers@hermeus.com",
+        "name": "AJ Piplica",
+        "industry": "Aerospace / Hypersonic",
+        "company_size": "startup",
+        "website": "https://www.hermeus.com",
+        "slug": "hermeus",
+        "description": (
+            "Hermeus is developing the fastest aircraft in the world — a hypersonic vehicle "
+            "capable of Mach 5+ speeds. Backed by the US Air Force and top VCs, Hermeus is "
+            "redefining high-speed travel.\n\n"
+            "Fund: Khosla Ventures | HQ: Atlanta, GA"
+        ),
+        "founders": [
+            {"name": "AJ Piplica", "title": "Founder & CEO", "linkedin": "https://linkedin.com/in/ajpiplica"},
+        ],
+        "jobs": [
+            {
+                "title": "Modeling & Simulation SWE Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Los Angeles, CA",
+                "salary_min": 4300,
+                "salary_max": 5700,
+                "requirements": [
+                    "Pursuing degree in CS, Aerospace Engineering, EE, Applied Math, or related",
+                    "Proficiency in Julia or equivalent (Python, MATLAB, C++)",
+                    "Understanding of 6DOF dynamics and simulation principles",
+                    "Minimum 3.0 GPA; US person required (ITAR)",
+                ],
+                "description": (
+                    "Modeling & Simulation SWE Intern at Hermeus (Summer 2026)\n\n"
+                    "Develop high-performance simulation code for 6DOF Software-in-the-Loop "
+                    "system. Collaborate across Flight Software, HMI, and Flight Sciences teams. "
+                    "Design physics-informed models, validate against flight data. ~10 weeks, "
+                    "$25-$33/hr.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/hermeus/jobs/59687412-modeling-simulation-software-engineering-intern-summer-2026"
+                ),
+            },
+        ],
+    },
+    # ── 16. World (Worldcoin) ──
+    {
+        "company_name": "World",
+        "email": "careers@world.org",
+        "name": "Alex Blania",
+        "industry": "Crypto / Identity / AI",
+        "company_size": "startup",
+        "website": "https://world.org",
+        "slug": "world-worldcoin",
+        "description": (
+            "World (formerly Worldcoin) is building a global identity and financial network. "
+            "Using biometric verification through the Orb device, World aims to create "
+            "a universal proof of personhood. 17M+ verified World ID users.\n\n"
+            "Fund: Khosla Ventures | HQ: San Francisco, CA"
+        ),
+        "founders": [
+            {"name": "Alex Blania", "title": "CEO", "linkedin": ""},
+            {"name": "Sam Altman", "title": "Co-Founder & Chairman", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Security Engineering Intern (2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 7000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Experience or study in verifiable compute (zero knowledge ML, zkVMs)",
+                    "Rust programming exposure",
+                    "Critical thinking and communication skills",
+                    "Familiarity with RiscZero, Succinct, or similar zkVM frameworks a plus",
+                ],
+                "description": (
+                    "Security Engineering Intern at World (Summer 2026)\n\n"
+                    "On-site in San Francisco. Build a blockchain-based verifiable compute system "
+                    "for detection engineering. Work on distributed analytics platform protecting "
+                    "17M+ World ID users across mobile, hardware, and blockchain infrastructure.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/world-2/jobs/64961374-security-engineering-internship"
+                ),
+            },
+        ],
+    },
+    # ── 17. Checkr ──
+    {
+        "company_name": "Checkr",
+        "email": "careers@checkr.com",
+        "name": "Daniel Yanisse",
+        "industry": "HR Tech / Background Checks",
+        "company_size": "startup",
+        "website": "https://checkr.com",
+        "slug": "checkr",
+        "description": (
+            "Checkr is a leading background check platform built for the modern workforce. "
+            "Uses AI and machine learning to streamline background screening for employers. "
+            "Trusted by companies like Uber, DoorDash, and Instacart.\n\n"
+            "Fund: Khosla Ventures | HQ: Denver, CO"
+        ),
+        "founders": [
+            {"name": "Daniel Yanisse", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/yanisse"},
+        ],
+        "jobs": [
+            {
+                "title": "Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Denver, CO",
+                "salary_min": 6000,
+                "salary_max": 6500,
+                "requirements": [
+                    "Pursuing degree in Computer Science or related field",
+                    "Programming experience in one or more languages",
+                    "Strong analytical and problem-solving skills",
+                    "Not able to provide visa sponsorship",
+                ],
+                "description": (
+                    "Engineering Intern at Checkr (Summer 2026)\n\n"
+                    "10-week internship working on high-value engineering projects. "
+                    "Work from Denver office 4 days/week. $35/hr.\n\n"
+                    "Source: https://job-boards.greenhouse.io/checkr/jobs/7575425"
+                ),
+            },
+        ],
+    },
+    # ── 18. Square (Block) ──
+    {
+        "company_name": "Square",
+        "email": "careers@block.xyz",
+        "name": "Jack Dorsey",
+        "industry": "Fintech / Payments",
+        "company_size": "enterprise",
+        "website": "https://squareup.com",
+        "slug": "square-block",
+        "description": (
+            "Square (a Block company) builds tools that help sellers of all sizes start, "
+            "run, and grow their businesses. Products include Square POS, Cash App, and "
+            "TIDAL. Founded by Jack Dorsey.\n\n"
+            "Fund: Khosla Ventures | HQ: San Francisco, CA"
+        ),
+        "founders": [
+            {"name": "Jack Dorsey", "title": "Co-Founder & Chairman", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Mobile Software Engineer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 6750,
+                "salary_max": 8850,
+                "requirements": [
+                    "Pursuing degree in CS, EE, Math, or related field (graduating May 2027-2030)",
+                    "Previous internship or project experience building iOS or Android apps",
+                    "Programming experience in Kotlin, Swift, Java, or Python",
+                    "Strong problem-solving and communication skills",
+                ],
+                "description": (
+                    "Mobile Software Engineer Intern at Square/Block (Summer 2026)\n\n"
+                    "Work on iOS and Android mobile applications on a small team across "
+                    "engineering, product, and creative. Build products serving millions of "
+                    "users. San Francisco Bay Area. $39-$51/hr.\n\n"
+                    "Source: https://block.xyz/careers/jobs/5083061008"
+                ),
+            },
+        ],
+    },
+    # ── 19. Parallel Web Systems ──
+    {
+        "company_name": "Parallel Web Systems",
+        "email": "careers@parallelweb.com",
+        "name": "Parag Agrawal",
+        "industry": "AI / Web Infrastructure",
+        "company_size": "startup",
+        "website": "https://parallelweb.com",
+        "slug": "parallel-web-systems",
+        "description": (
+            "Parallel Web Systems is building a new web by and for AIs, with innovations "
+            "across crawling, indexing, ranking, retrieval, and reasoning systems. "
+            "Founded by former Twitter CEO Parag Agrawal.\n\n"
+            "Fund: Khosla Ventures | HQ: Palo Alto, CA"
+        ),
+        "founders": [
+            {"name": "Parag Agrawal", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/paragagr"},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Palo Alto, CA",
+                "salary_min": 7000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Strong programming skills",
+                    "Interest in web infrastructure, search, or AI systems",
+                    "Ability to work in-person in Palo Alto",
+                    "Self-directed with strong problem-solving skills",
+                ],
+                "description": (
+                    "Software Engineering Intern at Parallel Web Systems (Summer 2026)\n\n"
+                    "Join a small, talent-dense team building AI-powered web infrastructure. "
+                    "Fully in-person in Palo Alto. Work on crawling, indexing, ranking, retrieval, "
+                    "and reasoning systems.\n\n"
+                    "Source: https://jobs.ashbyhq.com/parallel/c77e251e-c976-451a-85da-564bfe2fb454"
+                ),
+            },
+        ],
+    },
+    # ── 20. Glydways ──
+    {
+        "company_name": "Glydways",
+        "email": "careers@glydways.com",
+        "name": "Gokul Hemmady",
+        "industry": "Autonomous Vehicles / Transit",
+        "company_size": "startup",
+        "website": "https://www.glydways.com",
+        "slug": "glydways",
+        "description": (
+            "Glydways is building autonomous transit systems — small, electric, self-driving "
+            "vehicles that operate on dedicated guideways. Reimagining public transit with "
+            "on-demand, point-to-point autonomous pods.\n\n"
+            "Fund: Khosla Ventures | HQ: San Mateo, CA"
+        ),
+        "founders": [
+            {"name": "Mark Seeger", "title": "Founder", "linkedin": ""},
+            {"name": "Gokul Hemmady", "title": "CEO", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Intern, Dispatch - Fleet Optimization (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Remote, US",
+                "salary_min": 5000,
+                "salary_max": 7000,
+                "requirements": [
+                    "Strong programming skills in C++ and/or Python",
+                    "Background in optimization, robotics, applied math, or simulation",
+                    "Interest in autonomous systems and fleet optimization",
+                    "Ability to write production-quality code with tests and documentation",
+                ],
+                "description": (
+                    "SWE Intern at Glydways - Dispatch & Fleet Optimization (Summer 2026)\n\n"
+                    "Design and implement algorithms for fleet-level planning and optimization. "
+                    "Work on real-time routing, load-balancing, charging decisions, and "
+                    "simulation experiments. C++ and Python codebase.\n\n"
+                    "Source: https://job-boards.greenhouse.io/glydways/jobs/5032392007"
+                ),
+            },
+        ],
+    },
+    # ── 21. Commonwealth Fusion Systems ──
+    {
+        "company_name": "Commonwealth Fusion Systems",
+        "email": "careers@cfs.energy",
+        "name": "Bob Mumgaard",
+        "industry": "Energy / Fusion",
+        "company_size": "startup",
+        "website": "https://cfs.energy",
+        "slug": "commonwealth-fusion-systems",
+        "description": (
+            "Commonwealth Fusion Systems is developing commercial fusion energy using "
+            "high-temperature superconducting magnets. A spinout from MIT, CFS is building "
+            "SPARC, a compact fusion device.\n\n"
+            "Fund: Khosla Ventures | HQ: Devens, MA"
+        ),
+        "founders": [
+            {"name": "Bob Mumgaard", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/mumgaard"},
+        ],
+        "jobs": [
+            {
+                "title": "Materials Test Engineer Intern - Fall Co-op 2026",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.EMBEDDED_ENGINEER,
+                "location": "Devens, MA",
+                "salary_min": 4500,
+                "salary_max": 6000,
+                "requirements": [
+                    "Pursuing degree in Materials Science, Mechanical Engineering, or related field",
+                    "Lab experience with materials testing preferred",
+                    "Strong analytical and problem-solving skills",
+                    "Interest in fusion energy and clean energy technology",
+                ],
+                "description": (
+                    "Materials Test Engineer Intern at Commonwealth Fusion Systems (Fall 2026)\n\n"
+                    "Co-op position in Devens, MA. Work on testing and characterization of "
+                    "materials for fusion energy systems. Hands-on lab work supporting "
+                    "the SPARC fusion project.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/commonwealth-fusion-systems"
+                ),
+            },
+        ],
+    },
 ]
 
 
@@ -700,7 +1038,161 @@ COMPANIES = [
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ADDITIONAL_JOBS = [
-    # No overlapping companies found in current DB
+    # ── DoorDash: ML Intern ──
+    {
+        "company_name": "DoorDash",
+        "jobs": [
+            {
+                "title": "Machine Learning Intern, Masters (Summer 2026)",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 11000,
+                "salary_max": 16000,
+                "requirements": [
+                    "Pursuing Master's in CS, ML, NLP, Statistics, or related",
+                    "Graduating Fall 2026 to Summer 2027",
+                    "Proficiency in Python, Java, C++, or ML frameworks",
+                    "Research experience in ML/AI preferred",
+                ],
+                "description": (
+                    "Machine Learning Intern at DoorDash (Summer 2026)\n\n"
+                    "12-week internship in SF, Sunnyvale, NYC, or Seattle. Work on ML/AI, "
+                    "NLP, RecSys, Ranking, Computer Vision, Causal Inference, Ad Tech. "
+                    "$130,600-$192,000/yr.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/doordash/jobs/60463270-machine-learning-intern-masters-summer-2026"
+                ),
+            },
+        ],
+    },
+    # ── Rocket Lab: Software Intern (Colorado) ──
+    {
+        "company_name": "Rocket Lab",
+        "jobs": [
+            {
+                "title": "Software Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Littleton, CO",
+                "salary_min": 4700,
+                "salary_max": 4700,
+                "requirements": [
+                    "Enrolled in BS/MS/PhD in CS, Computer Engineering, or Software Engineering",
+                    "Minimum 3.0 GPA; 3.5+ preferred",
+                    "3+ months applied engineering experience",
+                    "Python, C/C++, or Git experience preferred",
+                    "US person required (ITAR)",
+                ],
+                "description": (
+                    "Software Intern at Rocket Lab (Summer 2026)\n\n"
+                    "Support Flight Software Team in Littleton, CO. Develop modern software "
+                    "engineering products to advance spacecraft software development, simulation, "
+                    "configuration, and test. $27/hr + relocation stipend. 12+ weeks on-site.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/rocket-lab/jobs/58037527-software-intern-summer-2026"
+                ),
+            },
+        ],
+    },
+    # ── Okta: BDR Intern ──
+    {
+        "company_name": "Okta",
+        "jobs": [
+            {
+                "title": "Business Development Representative Intern (Summer 2026)",
+                "vertical": Vertical.PRODUCT,
+                "role_type": RoleType.BUSINESS_ANALYST,
+                "location": "San Francisco, CA",
+                "salary_min": 4000,
+                "salary_max": 5500,
+                "requirements": [
+                    "Pursuing Bachelor's degree (graduating December 2026 or Spring 2027)",
+                    "Excellent verbal and written communication skills",
+                    "Strong organizational and analytical abilities",
+                    "Interest in sales career",
+                ],
+                "description": (
+                    "BDR Intern at Okta (Summer 2026)\n\n"
+                    "12-week internship on Okta's Business Development team. Research prospects, "
+                    "use Salesforce, attend enablement meetings, qualify leads. In-office 4 days/week. "
+                    "Multiple US locations: SF, Chicago, Seattle, Bellevue, DC.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/okta/jobs/65218878-business-development-representative-intern-summer-2026"
+                ),
+            },
+        ],
+    },
+    # ── Zocdoc: SWE Summer Internship ──
+    {
+        "company_name": "Zocdoc",
+        "jobs": [
+            {
+                "title": "Software Engineering Summer Internship (2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "New York, NY",
+                "salary_min": 7000,
+                "salary_max": 7500,
+                "requirements": [
+                    "Pursuing degree in Computer Science or related field",
+                    "Strong CS fundamentals (data structures, algorithms)",
+                    "Experience with object-oriented or functional programming",
+                    "Available for summer 2026",
+                ],
+                "description": (
+                    "Software Engineering Summer Intern at Zocdoc (2026)\n\n"
+                    "Work on production code in New York. Technologies include Python, Scala, "
+                    "C#, React. Participate in ZocU training and present project to leadership. "
+                    "$40-$43/hr.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/zocdoc-3"
+                ),
+            },
+        ],
+    },
+    # ── BambooHR: Cloud Engineering + Business Systems ──
+    {
+        "company_name": "BambooHR",
+        "jobs": [
+            {
+                "title": "Cloud Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Draper, UT",
+                "salary_min": 4500,
+                "salary_max": 6000,
+                "requirements": [
+                    "Pursuing degree in Computer Science, IT, or related field",
+                    "Interest in cloud infrastructure and DevOps",
+                    "Familiarity with AWS or GCP",
+                    "Strong problem-solving skills",
+                ],
+                "description": (
+                    "Cloud Engineering Intern at BambooHR (Summer 2026)\n\n"
+                    "Work on cloud infrastructure projects in Draper, UT (hybrid/remote). "
+                    "Full-time paid internship May-August 2026.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/bamboohr-llc"
+                ),
+            },
+            {
+                "title": "Business Systems Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Draper, UT",
+                "salary_min": 4500,
+                "salary_max": 6000,
+                "requirements": [
+                    "Pursuing degree in CS, Information Systems, or related field",
+                    "Interest in business systems and integrations",
+                    "SQL and scripting experience preferred",
+                    "Strong analytical skills",
+                ],
+                "description": (
+                    "Business Systems Engineering Intern at BambooHR (Summer 2026)\n\n"
+                    "Work on business systems and integrations in Draper, UT (hybrid/remote). "
+                    "Full-time paid internship May-August 2026.\n\n"
+                    "Source: https://jobs.khoslaventures.com/companies/bamboohr-llc"
+                ),
+            },
+        ],
+    },
 ]
 
 
