@@ -695,6 +695,89 @@ COMPANIES = [
             },
         ],
     },
+
+    # ── 10. Genies ──
+    {
+        "company_name": "Genies",
+        "email": "careers@genies.com",
+        "name": "Akash Nigam",
+        "industry": "AI / Gaming / Avatar Technology",
+        "company_size": "startup",
+        "website": "https://www.genies.com",
+        "slug": "genies",
+        "description": (
+            "Genies is an AI avatar and gaming technology company powering the next era of digital "
+            "experiences. Their technology stack empowers developers and creators to seamlessly create "
+            "and integrate AI-powered, game-ready Smart Avatars and user-generated content (UGC) into "
+            "any game or experience. Backed by Bob Iger, Silver Lake, BOND, and NEA.\n\n"
+            "Fund: NEA | HQ: Los Angeles, CA"
+        ),
+        "founders": [
+            {"name": "Akash Nigam", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/akash-nigam"},
+        ],
+        "jobs": [
+            {
+                "title": "Backend Engineer Intern, LLM (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.BACKEND_ENGINEER,
+                "location": "Los Angeles, CA",
+                "salary_min": 7000,
+                "salary_max": 8700,
+                "requirements": [
+                    "Pursuing or recent graduate of a Master's or Bachelor's in Computer Science, Engineering, ML, or related field",
+                    "Strong programming skills in Python, Java, or C++",
+                    "Understanding of AI/LLM concepts and experience with Docker, Kubernetes, AWS",
+                    "Minimum 12-week internship commitment",
+                ],
+                "description": (
+                    "Backend Engineer Intern (LLM) at Genies. Join the AI Engineering Team to develop "
+                    "LLM agent systems within the AI-powered avatar framework. Design and implement "
+                    "scalable backend infrastructure for AI applications. $40-50/hr.\n\n"
+                    "Source: https://job-boards.greenhouse.io/genies/jobs/7534272003"
+                ),
+            },
+            {
+                "title": "Machine Learning Engineer Intern: 3D Generative AI (Q1 2026)",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "Los Angeles, CA",
+                "salary_min": 7800,
+                "salary_max": 7800,
+                "requirements": [
+                    "Master's degree in Computer Science, Computer Graphics, or related field",
+                    "3+ years experience in ML, Computer Vision, or Computer Graphics",
+                    "Proficiency in Python and deep learning frameworks (PyTorch)",
+                    "Understanding of computer graphics pipelines and 3D principles",
+                ],
+                "description": (
+                    "Machine Learning Engineer Intern: 3D Generative AI at Genies. Design, develop, "
+                    "and deploy ML models that produce high-quality 3D assets for the avatar creation "
+                    "ecosystem. Work with cutting-edge generative AI for meshes, images, and motion. $45/hr.\n\n"
+                    "Source: https://job-boards.greenhouse.io/genies/jobs/7549190003"
+                ),
+            },
+            {
+                "title": "Research Engineer Intern, Speech Generation (Spring 2026)",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 7800,
+                "salary_max": 9500,
+                "requirements": [
+                    "Currently pursuing a Master's or PhD in Computer Science, ML, Electrical Engineering, or related field",
+                    "Experience with deep learning frameworks (PyTorch) and Python",
+                    "Solid understanding of digital signal processing and audio synthesis",
+                    "Experience with Speech Synthesis, Voice Clone, or Generative Modeling",
+                ],
+                "description": (
+                    "Research Engineer Intern, Speech Generation at Genies (San Francisco). Research and "
+                    "implement state-of-the-art generative AI models for text-to-speech and voice cloning. "
+                    "Work with Flow Matching and Autoregressive Transformers for audio fidelity. $45-55/hr.\n\n"
+                    "Source: https://job-boards.greenhouse.io/genies/jobs/7540237003"
+                ),
+            },
+        ],
+    },
 ]
 
 
