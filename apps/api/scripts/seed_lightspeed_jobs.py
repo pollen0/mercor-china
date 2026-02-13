@@ -6,17 +6,13 @@ FIRM: Lightspeed Venture Partners (LSVP)
 JOB BOARD: https://jobs.lsvp.com
 SCRIPT ID: lightspeed
 
-Companies included (10 companies, 14 jobs):
-- Affirm (FinTech / BNPL)
-- Snap Inc. (Social Media / AR)
-- Rubrik (Data Security / Cloud)
-- Glean (AI / Enterprise Search)
-- Databricks (Data / AI / Analytics)
-- Rippling (HR / IT / Finance Platform)
-- Anduril Industries (Defense Technology)
-- Abridge (Healthcare / AI)
-- Nominal (Hardware Data Platform)
-- Epic Games (Gaming / Interactive Entertainment)
+Round 1 - 10 companies, 11 jobs (6 new companies, 4 existing w/ additional jobs):
+- Affirm, Snap Inc., Rubrik, Glean, Databricks, Rippling,
+- Anduril Industries, Abridge, Nominal, Epic Games
+
+Round 2 - 4 new companies + additional jobs for 4 existing companies:
+- NEW: Nutanix, Guardant Health, CertiK, Kodiak Robotics
+- ADDITIONAL JOBS: Neuralink, Stripe, Verkada, Whatnot
 """
 import sys
 import os
@@ -551,6 +547,209 @@ COMPANIES = [
             },
         ],
     },
+
+    # ── 11. Nutanix ──
+    {
+        "company_name": "Nutanix",
+        "email": "careers@nutanix.com",
+        "name": "Rajiv Ramaswami",
+        "industry": "Cloud Computing / Infrastructure",
+        "company_size": "enterprise",
+        "website": "https://www.nutanix.com",
+        "slug": "nutanix",
+        "description": (
+            "Nutanix pioneered hyperconverged infrastructure, providing a unified cloud "
+            "platform for private, public, and hybrid cloud operations. The Nutanix Cloud "
+            "Platform simplifies enterprise computing across datacenters worldwide.\n\n"
+            "Fund: Lightspeed | HQ: San Jose, CA"
+        ),
+        "founders": [
+            {"name": "Dheeraj Pandey", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Mohit Aron", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Ajeet Singh", "title": "Co-Founder", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Jose, CA",
+                "salary_min": 8667,
+                "salary_max": 8667,
+                "requirements": [
+                    "Currently pursuing Bachelor's degree in Computer Science or related field",
+                    "No professional experience required; prior internships acceptable",
+                    "Must be authorized to work in US without visa sponsorship",
+                    "Minimum 3 days/week in office",
+                ],
+                "description": (
+                    "Software Engineering Intern at Nutanix (Summer 2026)\n\n"
+                    "12-week paid internship starting May or June 2026. Join one of many "
+                    "R&D teams including Nutanix Database, AI Organization, Cloud Clusters, "
+                    "Flow, and Disaster Recovery & Backup. Also available in Durham, NC.\n\n"
+                    "$50/hr | San Jose, CA or Durham, NC\n\n"
+                    "Source: https://careers.nutanix.com/en/jobs/30256/software-engineering-intern-undergrad-please-only-apply/"
+                ),
+            },
+        ],
+    },
+
+    # ── 12. Guardant Health ──
+    {
+        "company_name": "Guardant Health",
+        "email": "careers@guardanthealth.com",
+        "name": "Helmy Eltoukhy",
+        "industry": "Biotechnology / Genomics / Healthcare",
+        "company_size": "enterprise",
+        "website": "https://guardanthealth.com",
+        "slug": "guardant-health",
+        "description": (
+            "Guardant Health is a precision oncology company using liquid biopsy blood "
+            "tests to detect cancer from genetic mutations. The company provides genomics-based "
+            "cancer detection and treatment solutions for healthcare providers worldwide.\n\n"
+            "Fund: Lightspeed | HQ: Palo Alto, CA"
+        ),
+        "founders": [
+            {"name": "Helmy Eltoukhy", "title": "Co-CEO & Co-Founder", "linkedin": ""},
+            {"name": "AmirAli Talasaz", "title": "Co-CEO & Co-Founder", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineer Intern - LIMS (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Palo Alto, CA",
+                "salary_min": 5000,
+                "salary_max": 7280,
+                "requirements": [
+                    "Pursuing Bachelor's in Computer Science, Software Engineering, or related field",
+                    "Exposure to OOP languages (Java, JavaScript, C#)",
+                    "Exposure to UI frameworks (React, AngularJS)",
+                    "Interest in healthcare technology and genomics",
+                ],
+                "description": (
+                    "Software Engineer Intern (LIMS) at Guardant Health (Summer 2026)\n\n"
+                    "Work on laboratory information management systems for cancer genomics. "
+                    "Hybrid work model (onsite Mon/Tue/Thu). Compensation varies by level: "
+                    "undergrad $29/hr, graduate $34/hr, doctorate $42/hr.\n\n"
+                    "$29-$42/hr | Palo Alto, CA\n\n"
+                    "Source: https://startup.jobs/summer-intern-software-engineer-guardant-health-5304427"
+                ),
+            },
+        ],
+    },
+
+    # ── 13. CertiK ──
+    {
+        "company_name": "CertiK",
+        "email": "careers@certik.com",
+        "name": "Ronghui Gu",
+        "industry": "Blockchain Security / Cybersecurity",
+        "company_size": "startup",
+        "website": "https://www.certik.com",
+        "slug": "certik",
+        "description": (
+            "CertiK is the world's largest Web3 security services provider, using formal "
+            "verification technology to protect blockchain protocols and smart contracts. "
+            "The company has secured over $530 billion in digital assets and detected "
+            "180,000+ vulnerabilities.\n\n"
+            "Fund: Lightspeed | HQ: New York, NY"
+        ),
+        "founders": [
+            {"name": "Ronghui Gu", "title": "Co-Founder & CEO", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Security Research Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "New York, NY",
+                "salary_min": 5000,
+                "salary_max": 8000,
+                "requirements": [
+                    "Pursuing Masters or PhD in Computer Science or Cybersecurity",
+                    "Knowledge of malware analysis, vulnerability detection, or reverse engineering",
+                    "CTF experience and WASM/Rust/Go development skills valued",
+                    "Interest in blockchain security and Web3",
+                ],
+                "description": (
+                    "Security Research Intern at CertiK (Summer 2026)\n\n"
+                    "Focus on malware analysis, vulnerability detection, network anomaly "
+                    "detection, mobile app analysis, reverse engineering, and fraud detection "
+                    "in the Web3 space. Also available in SF Bay Area and Seattle.\n\n"
+                    "$3,000-$8,000/mo | NYC, SF, or Seattle\n\n"
+                    "Source: https://jobs.lever.co/certik/148afcf8-106b-42fa-a516-6bb8f1184e33"
+                ),
+            },
+        ],
+    },
+
+    # ── 14. Kodiak Robotics ──
+    {
+        "company_name": "Kodiak Robotics",
+        "email": "careers@kodiak.ai",
+        "name": "Don Burnette",
+        "industry": "Autonomous Vehicles / Robotics",
+        "company_size": "startup",
+        "website": "https://kodiak.ai",
+        "slug": "kodiak-robotics",
+        "description": (
+            "Kodiak Robotics is a leader in autonomous ground transportation, developing "
+            "self-driving technology for long-haul trucking, industrial/off-road operations, "
+            "and military defense applications. The company has achieved driverless "
+            "semi-truck deliveries to customers.\n\n"
+            "Fund: Lightspeed | HQ: Mountain View, CA"
+        ),
+        "founders": [
+            {"name": "Don Burnette", "title": "CEO & Founder", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "AI/Machine Learning Intern (Summer 2026)",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "Mountain View, CA",
+                "salary_min": 7100,
+                "salary_max": 7100,
+                "requirements": [
+                    "Strong background in machine learning and computer vision",
+                    "Experience with Python, PyTorch, or TensorFlow",
+                    "Interest in autonomous vehicles and robotics",
+                    "Available for 12-16 week program starting June 2026",
+                ],
+                "description": (
+                    "AI/Machine Learning Intern at Kodiak Robotics (Summer 2026)\n\n"
+                    "Work on perception, prediction, and planning systems for autonomous "
+                    "trucks. 12-16 week program starting June 2026. Free catered lunch, "
+                    "dog-friendly office in Mountain View.\n\n"
+                    "~$41/hr | Mountain View, CA\n\n"
+                    "Source: https://job-boards.greenhouse.io/kodiak/jobs/4024627009"
+                ),
+            },
+            {
+                "title": "Simulation Engineer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Mountain View, CA",
+                "salary_min": 7100,
+                "salary_max": 10000,
+                "requirements": [
+                    "Experience with simulation frameworks and 3D environments",
+                    "Strong programming skills in C++ or Python",
+                    "Interest in autonomous driving simulation",
+                    "Background in physics, math, or robotics",
+                ],
+                "description": (
+                    "Simulation Engineer Intern at Kodiak Robotics (Summer 2026)\n\n"
+                    "Build and improve simulation environments for testing autonomous "
+                    "driving systems. Work across Systems Engineering, Perception, "
+                    "Hardware, and Motion Planning & Controls.\n\n"
+                    "Mountain View, CA\n\n"
+                    "Source: https://job-boards.greenhouse.io/kodiak/jobs/4024796009"
+                ),
+            },
+        ],
+    },
 ]
 
 
@@ -684,6 +883,183 @@ ADDITIONAL_JOBS = [
                     "Paid, in-person, 12-week internship. Multiple locations: Costa Mesa, CA; "
                     "Irvine, CA; Atlanta, GA; Seattle, WA; Boston, MA; Reston, VA. $51/hr\n\n"
                     "Source: https://job-boards.greenhouse.io/andurilindustries/jobs/4807506007"
+                ),
+            },
+        ],
+    },
+    # ── Neuralink (already in DB) ──
+    {
+        "company_name": "Neuralink",
+        "jobs": [
+            {
+                "title": "Software Engineer Intern - Robotics (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Fremont, CA",
+                "salary_min": 6067,
+                "salary_max": 6067,
+                "requirements": [
+                    "Pursuing degree in Computer Science, Robotics, or related field",
+                    "Experience with Python, C++, or similar languages",
+                    "Interest in robotics and brain-computer interfaces",
+                    "Available for 12-week internship Summer 2026",
+                ],
+                "description": (
+                    "Software Engineer Intern (Robotics) at Neuralink (Summer 2026)\n\n"
+                    "Work on software for Neuralink's robotic surgical systems that implant "
+                    "brain-computer interfaces. Contribute to real-time control systems, "
+                    "computer vision, and surgical automation.\n\n"
+                    "$35/hr | Fremont, CA\n\n"
+                    "Source: https://boards.greenhouse.io/neuralink"
+                ),
+            },
+            {
+                "title": "Software Engineer Intern - BCI Applications (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Austin, TX",
+                "salary_min": 6067,
+                "salary_max": 6067,
+                "requirements": [
+                    "Pursuing degree in Computer Science, Neuroscience, or related field",
+                    "Strong programming skills in Python or C++",
+                    "Interest in neurotechnology and signal processing",
+                    "Available for 12-week internship Summer 2026",
+                ],
+                "description": (
+                    "Software Engineer Intern (BCI Applications) at Neuralink (Summer 2026)\n\n"
+                    "Work on brain-computer interface applications, signal processing, "
+                    "and user-facing software for Neuralink's neural implant platform.\n\n"
+                    "$35/hr | Austin, TX\n\n"
+                    "Source: https://boards.greenhouse.io/neuralink"
+                ),
+            },
+        ],
+    },
+    # ── Stripe (already in DB) ──
+    {
+        "company_name": "Stripe",
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 10833,
+                "salary_max": 10833,
+                "requirements": [
+                    "Currently enrolled in a degree program in CS, Engineering, or related field",
+                    "Strong coding skills in at least one programming language",
+                    "Ability to learn and apply new technologies quickly",
+                    "Graduating in Winter 2026 or Spring/Summer 2027",
+                ],
+                "description": (
+                    "Software Engineering Intern at Stripe (Summer 2026)\n\n"
+                    "Build the economic infrastructure for the internet. Work on payments, "
+                    "billing, fraud prevention, or developer tools. 12-week internship with "
+                    "1:1 mentor and real impact projects. Also available in Seattle, WA "
+                    "and New York, NY.\n\n"
+                    "~$62.50/hr | SF, Seattle, or NYC\n\n"
+                    "Source: https://stripe.com/jobs/listing/software-engineering-intern"
+                ),
+            },
+        ],
+    },
+    # ── Verkada (already in DB) ──
+    {
+        "company_name": "Verkada",
+        "jobs": [
+            {
+                "title": "Backend Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.BACKEND_ENGINEER,
+                "location": "San Mateo, CA",
+                "salary_min": 11267,
+                "salary_max": 11267,
+                "requirements": [
+                    "Pursuing Bachelor's or Master's in Computer Science or related field",
+                    "Experience with backend development and APIs",
+                    "Proficiency in Go, Python, or Java",
+                    "Available for 12-week summer internship",
+                ],
+                "description": (
+                    "Backend Software Engineering Intern at Verkada (Summer 2026)\n\n"
+                    "Build backend systems for Verkada's cloud-managed security platform. "
+                    "Work on scalable APIs, data pipelines, and cloud infrastructure.\n\n"
+                    "$65/hr | San Mateo, CA\n\n"
+                    "Source: https://jobs.lever.co/verkada"
+                ),
+            },
+            {
+                "title": "Frontend Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.FRONTEND_ENGINEER,
+                "location": "San Mateo, CA",
+                "salary_min": 11267,
+                "salary_max": 11267,
+                "requirements": [
+                    "Pursuing Bachelor's or Master's in Computer Science or related field",
+                    "Experience with React, TypeScript, or modern frontend frameworks",
+                    "Strong UI/UX sensibility",
+                    "Available for 12-week summer internship",
+                ],
+                "description": (
+                    "Frontend Software Engineering Intern at Verkada (Summer 2026)\n\n"
+                    "Build user interfaces for Verkada's cloud-managed building security "
+                    "platform. Work on React-based dashboards, real-time video interfaces, "
+                    "and device management tools.\n\n"
+                    "$65/hr | San Mateo, CA\n\n"
+                    "Source: https://jobs.lever.co/verkada"
+                ),
+            },
+            {
+                "title": "Mobile Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Mateo, CA",
+                "salary_min": 11267,
+                "salary_max": 11267,
+                "requirements": [
+                    "Pursuing Bachelor's or Master's in Computer Science or related field",
+                    "Experience with iOS (Swift) or Android (Kotlin) development",
+                    "Understanding of mobile app architecture patterns",
+                    "Available for 12-week summer internship",
+                ],
+                "description": (
+                    "Mobile Software Engineering Intern at Verkada (Summer 2026)\n\n"
+                    "Build mobile applications for Verkada's security platform. Work on "
+                    "real-time video streaming, push notifications, and device control "
+                    "features for iOS and Android.\n\n"
+                    "$65/hr | San Mateo, CA\n\n"
+                    "Source: https://jobs.lever.co/verkada"
+                ),
+            },
+        ],
+    },
+    # ── Whatnot (already in DB) ──
+    {
+        "company_name": "Whatnot",
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Los Angeles, CA",
+                "salary_min": 10000,
+                "salary_max": 11267,
+                "requirements": [
+                    "Currently pursuing a degree in Computer Science or related field",
+                    "Strong programming skills and ability to learn quickly",
+                    "Interest in live commerce and marketplace platforms",
+                    "Available for 12-week summer internship",
+                ],
+                "description": (
+                    "Software Engineering Intern at Whatnot (Summer 2026)\n\n"
+                    "Work on the largest livestream shopping platform in the US. Build "
+                    "features for real-time bidding, live video, and marketplace tools. "
+                    "Also available in NYC, SF, and Seattle.\n\n"
+                    "$57.69-$65/hr | LA, NYC, SF, or Seattle\n\n"
+                    "Source: https://job-boards.greenhouse.io/whatnot"
                 ),
             },
         ],
