@@ -1146,6 +1146,222 @@ COMPANIES = [
             },
         ],
     },
+
+    # ── Athelas / Commure (YC S16) ──
+    {
+        "company_name": "Athelas",
+        "email": "careers@athelas.com",
+        "name": "Tanay Tandon",
+        "industry": "Healthcare / AI",
+        "company_size": "enterprise",
+        "website": "https://athelas.com",
+        "slug": "athelas",
+        "description": (
+            "Extensible, integrated technology that simplifies health systems. "
+            "Athelas (merged with Commure) develops AI solutions for clinical "
+            "documentation, provider support tools, and revenue cycle management. "
+            "Serves 500,000+ clinicians across hundreds of care sites, processing "
+            "$10B+ annually."
+        ),
+        "founders": [
+            {
+                "name": "Deepika Bodapati",
+                "title": "Co-Founder",
+                "linkedin": "https://www.linkedin.com/pub/deepika-bodapati/73/297/102",
+            },
+            {
+                "name": "Tanay Tandon",
+                "title": "Co-Founder",
+                "linkedin": "https://www.linkedin.com/pub/tanay-tandon/52/452/231",
+            },
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Francisco / Mountain View, CA",
+                "salary_min": 5000,
+                "salary_max": 7000,
+                "requirements": [
+                    "Bachelor's or Master's in CS or related field by June 2027",
+                    "Proficiency in TypeScript/Node, Python, or Go",
+                    "Strong CS fundamentals and debugging skills",
+                    "Product sense and builder mentality",
+                ],
+                "description": (
+                    "Software Engineering Intern at Athelas/Commure (YC S16)\n\n"
+                    "Design and ship product features across web, mobile, and backend. "
+                    "Support clinical workflow platforms serving 500K+ clinicians.\n\n"
+                    "Tech Stack: JavaScript, React, TypeScript, Flutter, Python, Flask, "
+                    "FastAPI, GCP, AWS, Docker, Kubernetes, PostgreSQL\n\n"
+                    "In-office 5 days/week in SF or Mountain View.\n\n"
+                    "Source: https://www.workatastartup.com/jobs/80681"
+                ),
+            },
+        ],
+    },
+
+    # ── Circleback (YC W24) ──
+    {
+        "company_name": "Circleback",
+        "email": "careers@circleback.ai",
+        "name": "Ali Haghani",
+        "industry": "AI / Productivity",
+        "company_size": "startup",
+        "website": "https://circleback.ai",
+        "slug": "circleback",
+        "description": (
+            "AI-powered meeting notes and automations. Circleback builds the "
+            "source of truth for everything said at a company — AI meeting notes, "
+            "action items, and search across conversations."
+        ),
+        "founders": [
+            {
+                "name": "Ali Haghani",
+                "title": "Co-Founder & CEO",
+                "linkedin": "https://www.linkedin.com/in/alihaghani",
+            },
+            {
+                "name": "Kevin Jacyna",
+                "title": "Co-Founder",
+                "linkedin": "https://www.linkedin.com/in/kevinjacyna",
+            },
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 7000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Experience with React, React Native, TypeScript, PostgreSQL",
+                    "Hands-on building experience and high attention to detail",
+                    "Curiosity about how great products work",
+                    "Values ownership, urgency, and software quality",
+                ],
+                "description": (
+                    "Software Engineering Intern at Circleback (YC W24)\n\n"
+                    "Build end-to-end features from database models to APIs and UI "
+                    "components for web (React), desktop (Electron), and mobile "
+                    "(React Native) applications. Enhance product foundations including "
+                    "AI outcomes, search, transcription, and performance.\n\n"
+                    "Tech Stack: TypeScript, Next.js, React, Tailwind, GCP, Prisma, PostgreSQL\n\n"
+                    "Source: https://www.workatastartup.com/jobs/80433"
+                ),
+            },
+        ],
+    },
+
+    # ── SID (YC S23) ──
+    {
+        "company_name": "SID",
+        "email": "careers@sid.ai",
+        "name": "Maximilian-David Rumpf",
+        "industry": "AI / Infrastructure",
+        "company_size": "startup",
+        "website": "https://www.sid.ai",
+        "slug": "sid",
+        "description": (
+            "AI research lab training models that can retrieve and reason over "
+            "any data source. SID makes AI capable of accessing and reasoning "
+            "over diverse data beyond internet-available information. Backed by "
+            "Y Combinator, Canaan, Rebel, and General Catalyst."
+        ),
+        "founders": [
+            {
+                "name": "Maximilian-David Rumpf",
+                "title": "Co-Founder & CEO",
+                "linkedin": "https://www.linkedin.com/in/maximiliandavid",
+            },
+            {
+                "name": "Lotte Seifert",
+                "title": "Co-Founder",
+                "linkedin": "https://www.linkedin.com/in/lotte-seifert",
+            },
+        ],
+        "jobs": [
+            {
+                "title": "Research Intern (Summer 2026)",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 5000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Comfort with mathematical concepts and technical backgrounds",
+                    "Python proficiency",
+                    "Familiarity with RL pipelines for language models",
+                    "Experience with torchrun/accelerate/multi-node training",
+                    "Ability to work across abstraction layers (PyTorch/CUDA)",
+                ],
+                "description": (
+                    "Research Intern at SID (YC S23)\n\n"
+                    "Post-train reasoning into LLMs using GRPO and SFT. Design and "
+                    "iterate RL training environments for retrieval across unstructured, "
+                    "structured, and web data. Develop next-generation vision-first "
+                    "embedding models.\n\n"
+                    "Tech Stack: PyTorch, Reinforcement Learning, CUDA, torchrun\n\n"
+                    "In-person in San Francisco.\n\n"
+                    "Source: https://www.workatastartup.com/jobs/81528"
+                ),
+            },
+        ],
+    },
+
+    # ── Cuckoo Labs (YC W25) ──
+    {
+        "company_name": "Cuckoo Labs",
+        "email": "careers@cuckoo.so",
+        "name": "Yong Hee Lee",
+        "industry": "AI / Sales / Marketing",
+        "company_size": "startup",
+        "website": "https://www.cuckoo.so",
+        "slug": "cuckoo-labs",
+        "description": (
+            "Real-time AI translator for global sales, marketing, and support. "
+            "Instantly learns technical details from conversations and documents, "
+            "and interprets into 20+ languages. Customers include Snowflake, "
+            "PagerDuty, ClickHouse, dbt Labs, and Weights & Biases."
+        ),
+        "founders": [
+            {
+                "name": "Yong Hee Lee",
+                "title": "Co-Founder & CEO",
+                "linkedin": "https://www.linkedin.com/in/harryyongheelee/",
+            },
+            {
+                "name": "Gunwoo Kim",
+                "title": "Co-Founder & CTO",
+                "linkedin": "https://www.linkedin.com/in/gunwooterry/",
+            },
+        ],
+        "jobs": [
+            {
+                "title": "Full Stack Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "San Francisco, CA / Seoul, KR",
+                "salary_min": 5000,
+                "salary_max": 8000,
+                "requirements": [
+                    "Experience with real-time systems and distributed infrastructure",
+                    "Familiarity with AI/ML and web platforms",
+                    "Interest in enterprise security and multilingual systems",
+                ],
+                "description": (
+                    "Full Stack Engineering Intern at Cuckoo Labs (YC W25)\n\n"
+                    "Scale infrastructure for 1,000+ concurrent multilingual meetings. "
+                    "Build resilient fallback systems across Zoom, desktop, and mobile. "
+                    "Implement enterprise-grade security (SOC 2 Type II). Extract and "
+                    "apply context using RAG with integrations to Notion, HubSpot.\n\n"
+                    "Source: https://www.workatastartup.com/jobs/80699"
+                ),
+            },
+        ],
+    },
 ]
 
 
