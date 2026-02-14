@@ -1065,6 +1065,7 @@ async def get_personalized_questions(
 async def upload_transcript(
     request: Request,
     candidate_id: str,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_candidate: Candidate = Depends(get_current_candidate),
@@ -1206,6 +1207,15 @@ async def upload_transcript(
         candidate.transcript_confidence_score = verification_result.confidence_score
 
     db.commit()
+
+    # Run matching in background if all prerequisites are met (resume + transcript + GitHub)
+    if candidate.resume_url and candidate.transcript_key and candidate.github_username:
+        from ..services.tasks import rematch_candidate_after_profile_update
+        background_tasks.add_task(
+            rematch_candidate_after_profile_update,
+            candidate_id,
+            str(settings.database_url),
+        )
 
     # Build verification response
     verification_response = None
@@ -1746,6 +1756,15 @@ async def github_callback(
             run_github_analysis_background(current_candidate.id)
         )
         logger.info(f"Scheduled background GitHub analysis for candidate {current_candidate.id}")
+
+        # Run matching in background if all prerequisites are met (resume + transcript + GitHub)
+        if current_candidate.resume_url and current_candidate.transcript_key and current_candidate.github_username:
+            from ..services.tasks import rematch_candidate_after_profile_update
+            background_tasks.add_task(
+                rematch_candidate_after_profile_update,
+                current_candidate.id,
+                str(settings.database_url),
+            )
 
         return GitHubConnectResponse(
             success=True,
@@ -2410,15 +2429,22 @@ async def get_my_opportunities(
 ):
     """
     Get all active jobs grouped by the student's eligibility.
-    Eligible = student has a completed interview in the job's vertical.
+    Eligible = student has uploaded resume, transcript, and connected GitHub.
     """
-    # Get candidate's completed vertical profiles
-    completed_profiles = db.query(CandidateVerticalProfile).filter(
-        CandidateVerticalProfile.candidate_id == current_candidate.id,
-        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
-    ).all()
+    # Check the three profile prerequisites
+    has_resume = bool(current_candidate.resume_url)
+    has_transcript = bool(current_candidate.transcript_key)
+    has_github = bool(current_candidate.github_username)
+    profile_complete = has_resume and has_transcript and has_github
 
-    completed_verticals = {p.vertical for p in completed_profiles}
+    # Build missing items list for reason strings
+    missing_items = []
+    if not has_resume:
+        missing_items.append("resume")
+    if not has_transcript:
+        missing_items.append("transcript")
+    if not has_github:
+        missing_items.append("GitHub")
 
     # Query ALL active jobs with employer eagerly loaded
     jobs = db.query(Job).options(
@@ -2443,10 +2469,9 @@ async def get_my_opportunities(
             reason=None,
         )
 
-        # Check vertical match first (primary eligibility gate)
-        if job.vertical not in completed_verticals:
-            vertical_name = job.vertical.value.replace("_", " ").title() if job.vertical else "Unknown"
-            job_response.reason = f"Complete a {vertical_name} interview"
+        # Profile prerequisites gate (resume + transcript + GitHub)
+        if not profile_complete:
+            job_response.reason = f"Upload your {', '.join(missing_items)}"
             not_eligible_jobs.append(job_response)
             continue
 

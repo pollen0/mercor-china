@@ -668,9 +668,10 @@ def rematch_candidate_after_profile_update(
     db_url: str,
 ):
     """
-    Re-run matching for a candidate after resume upload/update.
-    Finds all completed vertical profiles and matches against all active jobs in those verticals.
-    Creates new matches or updates existing ones with refreshed resume data.
+    Re-run matching for a candidate after profile update (resume, transcript, or GitHub).
+    Requires all three prerequisites: resume, transcript, and GitHub connected.
+    Matches against ALL active jobs. If the candidate has completed vertical interviews,
+    those scores are used; otherwise profile-only matching runs (no interview score).
     """
     from ..models import CandidateVerticalProfile, VerticalProfileStatus, Job, Match, Candidate
     from datetime import datetime
@@ -686,91 +687,113 @@ def rematch_candidate_after_profile_update(
             logger.warning(f"[rematch] Candidate {candidate_id} not found")
             return
 
-        # Find all completed vertical profiles for this candidate
+        # Check prerequisites: resume + transcript + GitHub
+        has_resume = bool(candidate.resume_url)
+        has_transcript = bool(candidate.transcript_key)
+        has_github = bool(candidate.github_username)
+
+        if not (has_resume and has_transcript and has_github):
+            missing = []
+            if not has_resume:
+                missing.append("resume")
+            if not has_transcript:
+                missing.append("transcript")
+            if not has_github:
+                missing.append("GitHub")
+            logger.debug(f"[rematch] Candidate {candidate_id} missing: {', '.join(missing)} — skipping matching")
+            return
+
+        # Find completed vertical profiles (optional — used for interview scores if available)
         profiles = db.query(CandidateVerticalProfile).filter(
             CandidateVerticalProfile.candidate_id == candidate_id,
             CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
         ).all()
 
-        if not profiles:
-            logger.debug(f"[rematch] No completed profiles for candidate {candidate_id}")
-            return
+        # Build vertical → profile map for interview scores
+        vertical_profile_map = {}
+        for profile in profiles:
+            vertical_profile_map[profile.vertical] = profile
 
         candidate_data = candidate.resume_parsed_data
         candidate_preferences = candidate.sharing_preferences if hasattr(candidate, 'sharing_preferences') else None
         total_created = 0
         total_updated = 0
 
-        for profile in profiles:
-            # Find all active jobs matching this vertical
-            matching_jobs = db.query(Job).filter(
-                Job.is_active == True,
-                Job.vertical == profile.vertical
-            ).all()
+        # Match against ALL active jobs
+        all_jobs = db.query(Job).filter(Job.is_active == True).all()
 
-            for job in matching_jobs:
-                try:
-                    # Get employer info for preference boost
-                    employer = job.employer
-                    job_company_stage = getattr(employer, 'company_stage', None) if employer else None
-                    job_industry = getattr(employer, 'industry', None) if employer else None
+        for job in all_jobs:
+            try:
+                # Get employer info for preference boost
+                employer = job.employer
+                job_company_stage = getattr(employer, 'company_stage', None) if employer else None
+                job_industry = getattr(employer, 'industry', None) if employer else None
 
-                    match_result = _run_async(
-                        matching_service.calculate_match(
-                            interview_score=profile.best_score or profile.interview_score or 5.0,
-                            candidate_data=candidate_data,
-                            job_title=job.title,
-                            job_requirements=job.requirements or [],
-                            job_location=job.location,
-                            job_vertical=job.vertical.value if job.vertical else None,
-                            candidate_preferences=candidate_preferences,
-                            job_company_stage=job_company_stage,
-                            job_industry=job_industry,
-                        )
+                # Use interview score from matching vertical profile if available
+                profile = vertical_profile_map.get(job.vertical)
+                interview_score = None
+                if profile:
+                    interview_score = profile.best_score or profile.interview_score
+
+                match_result = _run_async(
+                    matching_service.calculate_match(
+                        interview_score=interview_score,
+                        candidate_data=candidate_data,
+                        job_title=job.title,
+                        job_requirements=job.requirements or [],
+                        job_location=job.location,
+                        job_vertical=job.vertical.value if job.vertical else None,
+                        candidate_preferences=candidate_preferences,
+                        job_company_stage=job_company_stage,
+                        job_industry=job_industry,
                     )
+                )
 
-                    # Check for existing match
-                    existing_match = db.query(Match).filter(
-                        Match.candidate_id == candidate_id,
-                        Match.job_id == job.id
-                    ).first()
+                # Check for existing match
+                existing_match = db.query(Match).filter(
+                    Match.candidate_id == candidate_id,
+                    Match.job_id == job.id
+                ).first()
 
-                    if existing_match:
-                        existing_match.score = profile.best_score or profile.interview_score or 5.0
-                        existing_match.interview_score = match_result.interview_score
-                        existing_match.skills_match_score = match_result.skills_match_score
-                        existing_match.experience_match_score = match_result.experience_match_score
-                        existing_match.location_match = match_result.location_match
-                        existing_match.overall_match_score = match_result.boosted_match_score
-                        existing_match.factors = json.dumps(match_result.factors, ensure_ascii=False)
-                        existing_match.ai_reasoning = match_result.ai_reasoning
+                score_val = interview_score or 5.0
+
+                if existing_match:
+                    existing_match.score = score_val
+                    existing_match.interview_score = match_result.interview_score
+                    existing_match.skills_match_score = match_result.skills_match_score
+                    existing_match.experience_match_score = match_result.experience_match_score
+                    existing_match.location_match = match_result.location_match
+                    existing_match.overall_match_score = match_result.boosted_match_score
+                    existing_match.factors = json.dumps(match_result.factors, ensure_ascii=False)
+                    existing_match.ai_reasoning = match_result.ai_reasoning
+                    if profile:
                         existing_match.vertical_profile_id = profile.id
-                        total_updated += 1
-                    else:
-                        new_match = Match(
-                            id=f"m{uuid.uuid4().hex[:24]}",
-                            candidate_id=candidate_id,
-                            job_id=job.id,
-                            vertical_profile_id=profile.id,
-                            score=profile.best_score or profile.interview_score or 5.0,
-                            interview_score=match_result.interview_score,
-                            skills_match_score=match_result.skills_match_score,
-                            experience_match_score=match_result.experience_match_score,
-                            location_match=match_result.location_match,
-                            overall_match_score=match_result.boosted_match_score,
-                            factors=json.dumps(match_result.factors, ensure_ascii=False),
-                            ai_reasoning=match_result.ai_reasoning,
-                        )
-                        db.add(new_match)
-                        total_created += 1
+                    total_updated += 1
+                else:
+                    new_match = Match(
+                        id=f"m{uuid.uuid4().hex[:24]}",
+                        candidate_id=candidate_id,
+                        job_id=job.id,
+                        vertical_profile_id=profile.id if profile else None,
+                        score=score_val,
+                        interview_score=match_result.interview_score,
+                        skills_match_score=match_result.skills_match_score,
+                        experience_match_score=match_result.experience_match_score,
+                        location_match=match_result.location_match,
+                        overall_match_score=match_result.boosted_match_score,
+                        factors=json.dumps(match_result.factors, ensure_ascii=False),
+                        ai_reasoning=match_result.ai_reasoning,
+                    )
+                    db.add(new_match)
+                    total_created += 1
 
-                except Exception as e:
-                    logger.error(f"[rematch] Failed to match candidate {candidate_id} with job {job.id}: {e}")
+            except Exception as e:
+                logger.error(f"[rematch] Failed to match candidate {candidate_id} with job {job.id}: {e}")
 
         db.commit()
         logger.info(
             f"[rematch] Candidate {candidate_id}: {total_created} matches created, "
-            f"{total_updated} updated across {len(profiles)} vertical profiles"
+            f"{total_updated} updated across {len(all_jobs)} jobs"
         )
 
     except Exception as e:

@@ -127,7 +127,7 @@ export default function OpportunitiesTab({ token }: { token: string }) {
         {eligibleJobs.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center">
-              <p className="text-stone-400 text-sm">Complete an interview to start qualifying for roles</p>
+              <p className="text-stone-400 text-sm">Upload your resume, transcript, and connect GitHub to qualify for roles</p>
             </CardContent>
           </Card>
         ) : (
