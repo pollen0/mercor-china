@@ -2854,6 +2854,26 @@ export interface MatchingJob {
   matchStatus?: string
 }
 
+export interface OpportunityJob {
+  jobId: string
+  jobTitle: string
+  companyName: string
+  companyLogo?: string
+  vertical: string
+  roleType?: string
+  location?: string
+  eligible: boolean
+  reason?: string
+}
+
+export interface OpportunitiesResponse {
+  eligibleJobs: OpportunityJob[]
+  notEligibleJobs: OpportunityJob[]
+  totalEligible: number
+  totalNotEligible: number
+  total: number
+}
+
 // ==================== GROWTH TIMELINE TYPES ====================
 
 export interface GrowthTimelineSummary {
@@ -3007,6 +3027,46 @@ export const candidateVerticalApi = {
         matchScore: j.match_score,
         matchStatus: j.match_status,
       })),
+      total: data.total,
+    }
+  },
+
+  getOpportunities: async (token?: string): Promise<OpportunitiesResponse> => {
+    const url = `${API_BASE_URL}/api/candidates/me/opportunities`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('candidate_token') : null)
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
+    const response = await fetch(url, { headers })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new ApiError(response.status, error.detail || 'Failed to get opportunities')
+    }
+
+    const data = await response.json()
+    const transformJob = (j: Record<string, unknown>): OpportunityJob => ({
+      jobId: j.job_id as string,
+      jobTitle: j.job_title as string,
+      companyName: j.company_name as string,
+      companyLogo: j.company_logo as string | undefined,
+      vertical: j.vertical as string,
+      roleType: j.role_type as string | undefined,
+      location: j.location as string | undefined,
+      eligible: j.eligible as boolean,
+      reason: j.reason as string | undefined,
+    })
+
+    return {
+      eligibleJobs: (data.eligible_jobs as Record<string, unknown>[]).map(transformJob),
+      notEligibleJobs: (data.not_eligible_jobs as Record<string, unknown>[]).map(transformJob),
+      totalEligible: data.total_eligible,
+      totalNotEligible: data.total_not_eligible,
       total: data.total,
     }
   },

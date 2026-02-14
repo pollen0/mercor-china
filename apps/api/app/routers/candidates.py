@@ -1,12 +1,13 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from typing import Optional
 from datetime import datetime, timedelta
 from pydantic import BaseModel as PydanticBaseModel
 import uuid
+import re
 
 from ..database import get_db
 from ..models.candidate import Candidate, CandidateVerticalProfile, VerticalProfileStatus
@@ -2240,6 +2241,64 @@ class MatchingJobsResponse(PydanticBaseModel):
     total: int
 
 
+class OpportunityJobResponse(PydanticBaseModel):
+    """A job opportunity with eligibility info for the student."""
+    job_id: str
+    job_title: str
+    company_name: str
+    company_logo: Optional[str] = None
+    vertical: str
+    role_type: Optional[str] = None
+    location: Optional[str] = None
+    eligible: bool
+    reason: Optional[str] = None
+
+
+class OpportunitiesResponse(PydanticBaseModel):
+    """All active jobs grouped by student eligibility."""
+    eligible_jobs: list[OpportunityJobResponse]
+    not_eligible_jobs: list[OpportunityJobResponse]
+    total_eligible: int
+    total_not_eligible: int
+    total: int
+
+
+def _check_education_requirement(job: Job) -> Optional[str]:
+    """Check if job title indicates an advanced degree requirement."""
+    title_lower = job.title.lower()
+    if "phd" in title_lower or "ph.d" in title_lower:
+        return "PhD required"
+    if "mba" in title_lower:
+        return "MBA required"
+    if "master" in title_lower and "master" not in title_lower.replace("master's", "").replace("masters", ""):
+        return "Master's degree required"
+    # Check for explicit "Master's" or "Masters" in title
+    if re.search(r"\bmaster'?s?\b", title_lower):
+        return "Master's degree required"
+    return None
+
+
+def _check_graduation_year(job: Job, candidate: Candidate) -> Optional[str]:
+    """Check if job targets specific graduation years that don't match the candidate."""
+    if not candidate.graduation_year:
+        return None
+
+    title = job.title
+    # Match patterns like "Summer 2026", "Fall 2025", "Class of 2025", "2026 Graduates"
+    year_patterns = re.findall(r'(?:summer|fall|spring|winter|class of|graduating)\s*(\d{4})|(\d{4})\s*(?:graduate|grad|intern)', title, re.IGNORECASE)
+    years = set()
+    for groups in year_patterns:
+        for y in groups:
+            if y:
+                years.add(int(y))
+
+    if years and candidate.graduation_year not in years:
+        year_list = ", ".join(str(y) for y in sorted(years))
+        return f"Targets {year_list} graduates"
+
+    return None
+
+
 @router.get("/me/verticals", response_model=VerticalProfileList)
 async def get_my_vertical_profiles(
     current_candidate: Candidate = Depends(get_current_candidate),
@@ -2342,6 +2401,80 @@ async def get_my_matching_jobs(
         ))
 
     return MatchingJobsResponse(jobs=result, total=len(result))
+
+
+@router.get("/me/opportunities", response_model=OpportunitiesResponse)
+async def get_my_opportunities(
+    current_candidate: Candidate = Depends(get_current_candidate),
+    db: Session = Depends(get_db),
+):
+    """
+    Get all active jobs grouped by the student's eligibility.
+    Eligible = student has a completed interview in the job's vertical.
+    """
+    # Get candidate's completed vertical profiles
+    completed_profiles = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.candidate_id == current_candidate.id,
+        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
+    ).all()
+
+    completed_verticals = {p.vertical for p in completed_profiles}
+
+    # Query ALL active jobs with employer eagerly loaded
+    jobs = db.query(Job).options(
+        joinedload(Job.employer)
+    ).filter(
+        Job.is_active == True,
+    ).order_by(Job.created_at.desc()).all()
+
+    eligible_jobs = []
+    not_eligible_jobs = []
+
+    for job in jobs:
+        job_response = OpportunityJobResponse(
+            job_id=job.id,
+            job_title=job.title,
+            company_name=job.employer.company_name if job.employer else "Unknown",
+            company_logo=job.employer.logo if job.employer else None,
+            vertical=job.vertical.value if job.vertical else "",
+            role_type=job.role_type.value if job.role_type else None,
+            location=job.location,
+            eligible=False,
+            reason=None,
+        )
+
+        # Check vertical match first (primary eligibility gate)
+        if job.vertical not in completed_verticals:
+            vertical_name = job.vertical.value.replace("_", " ").title() if job.vertical else "Unknown"
+            job_response.reason = f"Complete a {vertical_name} interview"
+            not_eligible_jobs.append(job_response)
+            continue
+
+        # Check education requirement
+        edu_reason = _check_education_requirement(job)
+        if edu_reason:
+            job_response.reason = edu_reason
+            not_eligible_jobs.append(job_response)
+            continue
+
+        # Check graduation year
+        grad_reason = _check_graduation_year(job, current_candidate)
+        if grad_reason:
+            job_response.reason = grad_reason
+            not_eligible_jobs.append(job_response)
+            continue
+
+        # All checks passed
+        job_response.eligible = True
+        eligible_jobs.append(job_response)
+
+    return OpportunitiesResponse(
+        eligible_jobs=eligible_jobs,
+        not_eligible_jobs=not_eligible_jobs,
+        total_eligible=len(eligible_jobs),
+        total_not_eligible=len(not_eligible_jobs),
+        total=len(jobs),
+    )
 
 
 @router.get("/me/verticals/{vertical}", response_model=VerticalProfileResponse)

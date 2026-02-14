@@ -168,6 +168,24 @@ export function useSkillGap(token: string | null) {
   }
 }
 
+// Hook for fetching opportunities (lazy — only loads when tab is active)
+export function useOpportunities(token: string | null) {
+  const { data, error, isLoading } = useSWR(
+    token ? ['opportunities', token] : null,
+    ([, t]) => candidateVerticalApi.getOpportunities(t),
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // 1 minute
+    }
+  )
+
+  return {
+    opportunities: data,
+    isLoading,
+    error,
+  }
+}
+
 // Combined hook for all dashboard data
 // Note: useSkillGap is exported separately and should be called directly
 // by consumers to avoid TypeScript inference depth limits with the large candidateApi object

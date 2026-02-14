@@ -17,6 +17,7 @@ import { useDashboardData, useSkillGap } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
 import { MatchingReadinessAlert } from '@/components/dashboard/matching-readiness-alert'
 import VibeCodeSection from '@/components/dashboard/vibe-code-section'
+import OpportunitiesTab from '@/components/dashboard/opportunities-tab'
 import { logout, clearAuthTokens } from '@/lib/auth'
 
 interface Candidate {
@@ -93,7 +94,7 @@ function DashboardContent() {
   const searchParams = useSearchParams()
   const initialTab = searchParams.get('tab') || 'profile'
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'interviews'>(initialTab as 'profile' | 'interviews')
+  const [activeTab, setActiveTab] = useState<'profile' | 'interviews' | 'opportunities'>(initialTab as 'profile' | 'interviews' | 'opportunities')
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -846,6 +847,16 @@ function DashboardContent() {
               }`}
             >
               Interviews
+            </button>
+            <button
+              onClick={() => setActiveTab('opportunities')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                activeTab === 'opportunities'
+                  ? 'border-stone-900 text-stone-900'
+                  : 'border-transparent text-stone-500 hover:text-stone-700'
+              }`}
+            >
+              Opportunities
             </button>
           </div>
         </div>
@@ -1972,40 +1983,28 @@ function DashboardContent() {
               </div>
             </div>
 
-            {/* Matching Jobs */}
-            {hasCompletedProfiles && (
-              <div>
-                <h2 className="text-lg font-semibold text-stone-900 mb-4">
-                  Matching Opportunities ({jobs.length})
-                </h2>
-
-                {jobs.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-8 text-center">
-                      <p className="text-stone-400">No matches yet</p>
-                      <p className="text-stone-300 text-sm">Employers will contact you when they find a match</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {jobs.map((job) => (
-                      <Card key={job.jobId} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-5">
-                          <h3 className="font-medium text-stone-900 mb-1">{job.jobTitle}</h3>
-                          <p className="text-sm text-stone-400 mb-3">{job.companyName}</p>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
-                              {VERTICAL_CONFIG[job.vertical as keyof typeof VERTICAL_CONFIG]?.name || job.vertical}
-                            </span>
-                            {/* Match scores are employer-only */}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+            {/* Opportunities CTA */}
+            <button
+              onClick={() => setActiveTab('opportunities')}
+              className="w-full text-left"
+            >
+              <Card className="hover:shadow-sm transition-shadow border-stone-100">
+                <CardContent className="py-4 px-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-stone-900">
+                      Opportunities
+                      {jobs.length > 0 && (
+                        <span className="text-stone-400 font-normal"> — {jobs.length} jobs match your verticals</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-stone-400 mt-0.5">See all companies that can discover your profile</p>
                   </div>
-                )}
-              </div>
-            )}
+                  <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </CardContent>
+              </Card>
+            </button>
 
             {/* How it works */}
             <Card className="bg-stone-50 border-stone-100">
@@ -2028,6 +2027,11 @@ function DashboardContent() {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Opportunities Tab */}
+        {activeTab === 'opportunities' && token && (
+          <OpportunitiesTab token={token} />
         )}
       </div>
 
