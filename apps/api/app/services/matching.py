@@ -32,6 +32,7 @@ class MatchResult:
     # Preference boost (optional, based on candidate preferences matching job)
     preference_boost: float = 0.0  # 0-30 (max +30 points)
     boosted_match_score: float = 0.0  # overall_match_score + preference_boost (capped at 100)
+    has_interview: bool = True  # Whether match includes interview data
 
 
 @dataclass
@@ -165,6 +166,22 @@ class MatchingService:
         'skills_match': 0.25,  # 25% weight
         'experience_match': 0.20,  # 20% weight
         'location_match': 0.15,  # 15% weight
+    }
+
+    # Weights when no interview is available (legacy)
+    NO_INTERVIEW_WEIGHTS = {
+        'skills_match': 0.40,  # 40% weight (was 25%)
+        'experience_match': 0.35,  # 35% weight (was 20%)
+        'location_match': 0.25,  # 25% weight (was 15%)
+    }
+
+    # Weights when no interview is available (enhanced)
+    NO_INTERVIEW_BASE_WEIGHTS = {
+        'skills_match': 0.35,  # 35% weight
+        'experience_match': 0.25,  # 25% weight
+        'github_signal': 0.20,  # 20% weight
+        'education': 0.15,  # 15% weight
+        'location_match': 0.05,  # 5% weight
     }
 
     def __init__(self):
@@ -442,7 +459,7 @@ class MatchingService:
 
     async def calculate_match(
         self,
-        interview_score: float,  # 0-10
+        interview_score: Optional[float],  # 0-10 or None if no interview
         candidate_data: Optional[dict],  # Parsed resume data as dict
         job_title: str,
         job_requirements: list[str],
@@ -457,7 +474,7 @@ class MatchingService:
         Calculate overall match score for a candidate-job pair.
 
         Args:
-            interview_score: Score from completed interview (0-10)
+            interview_score: Score from completed interview (0-10), or None for profile-only matching
             candidate_data: Parsed resume data dict
             job_title: Job title
             job_requirements: List of job requirements
@@ -471,13 +488,19 @@ class MatchingService:
             MatchResult with all scoring details including preference boost
         """
         factors = {}
+        has_interview = interview_score is not None
 
-        # Interview score (already 0-10)
-        interview_score = min(10.0, max(0.0, interview_score))
-        factors['interview'] = {
-            'score': interview_score,
-            'weight': self.WEIGHTS['interview_score']
-        }
+        # Choose weight set based on interview availability
+        if has_interview:
+            weights = self.WEIGHTS
+            interview_score = min(10.0, max(0.0, interview_score))
+            factors['interview'] = {
+                'score': interview_score,
+                'weight': weights['interview_score']
+            }
+        else:
+            weights = self.NO_INTERVIEW_WEIGHTS
+            interview_score = 0.0
 
         # Skills match
         candidate_skills = []
@@ -486,7 +509,7 @@ class MatchingService:
         skills_score, skills_details = self.calculate_skills_match(candidate_skills, job_requirements)
         factors['skills'] = {
             'score': skills_score,
-            'weight': self.WEIGHTS['skills_match'],
+            'weight': weights['skills_match'],
             'details': skills_details
         }
 
@@ -499,7 +522,7 @@ class MatchingService:
         )
         factors['experience'] = {
             'score': experience_score,
-            'weight': self.WEIGHTS['experience_match'],
+            'weight': weights['experience_match'],
             'details': experience_details
         }
 
@@ -512,17 +535,24 @@ class MatchingService:
         factors['location'] = {
             'score': location_score,
             'match': location_match,
-            'weight': self.WEIGHTS['location_match'],
+            'weight': weights['location_match'],
             'details': location_details
         }
 
         # Calculate weighted overall score (0-100)
-        overall_score = (
-            interview_score * 10 * self.WEIGHTS['interview_score'] +
-            skills_score * 10 * self.WEIGHTS['skills_match'] +
-            experience_score * 10 * self.WEIGHTS['experience_match'] +
-            location_score * 10 * self.WEIGHTS['location_match']
-        )
+        if has_interview:
+            overall_score = (
+                interview_score * 10 * weights['interview_score'] +
+                skills_score * 10 * weights['skills_match'] +
+                experience_score * 10 * weights['experience_match'] +
+                location_score * 10 * weights['location_match']
+            )
+        else:
+            overall_score = (
+                skills_score * 10 * weights['skills_match'] +
+                experience_score * 10 * weights['experience_match'] +
+                location_score * 10 * weights['location_match']
+            )
 
         # Calculate preference boost (new)
         preference_boost, boost_details = self.calculate_preference_boost(
@@ -537,9 +567,14 @@ class MatchingService:
         boosted_score = min(100.0, overall_score + preference_boost)
 
         # Generate reasoning
-        ai_reasoning = self._generate_reasoning(
-            interview_score, skills_score, experience_score, location_match, factors
-        )
+        if has_interview:
+            ai_reasoning = self._generate_reasoning(
+                interview_score, skills_score, experience_score, location_match, factors
+            )
+        else:
+            ai_reasoning = self._generate_no_interview_reasoning(
+                skills_score, experience_score, location_match, factors
+            )
 
         # Add boost info to reasoning if applicable
         if preference_boost > 0:
@@ -556,6 +591,7 @@ class MatchingService:
             ai_reasoning=ai_reasoning,
             preference_boost=preference_boost,
             boosted_match_score=round(boosted_score, 1),
+            has_interview=has_interview,
         )
 
     def _generate_reasoning(
@@ -604,6 +640,43 @@ class MatchingService:
 
         return "; ".join(parts) + "."
 
+    def _generate_no_interview_reasoning(
+        self,
+        skills_score: float,
+        experience_score: float,
+        location_match: bool,
+        factors: dict
+    ) -> str:
+        """Generate reasoning for profile-only match (no interview)."""
+        parts = ["No interview completed (profile-only match)"]
+
+        # Skills assessment
+        if skills_score >= 8:
+            parts.append("strong skills match")
+        elif skills_score >= 5:
+            parts.append("adequate skills coverage")
+        else:
+            skills_details = factors.get('skills', {}).get('details', {})
+            missing = skills_details.get('missing', [])
+            if missing:
+                parts.append(f"missing some required skills ({', '.join(missing[:3])})")
+            else:
+                parts.append("skills gap identified")
+
+        # Experience assessment
+        if experience_score >= 8:
+            parts.append("highly relevant experience")
+        elif experience_score >= 5:
+            parts.append("relevant background")
+        else:
+            parts.append("limited relevant experience")
+
+        # Location
+        if not location_match:
+            parts.append("location may be a concern")
+
+        return "; ".join(parts) + "."
+
 
     # ==========================================
     # ENHANCED ML-POWERED MATCHING
@@ -611,7 +684,7 @@ class MatchingService:
 
     async def calculate_enhanced_match(
         self,
-        interview_score: float,
+        interview_score: Optional[float],
         candidate_data: Optional[dict],
         job_title: str,
         job_requirements: list[str],
@@ -625,7 +698,7 @@ class MatchingService:
         Calculate enhanced match score with ML-powered insights.
 
         Args:
-            interview_score: Score from completed interview (0-10)
+            interview_score: Score from completed interview (0-10), or None for profile-only
             candidate_data: Parsed resume data dict
             job_title: Job title
             job_requirements: List of job requirements
@@ -639,13 +712,19 @@ class MatchingService:
             EnhancedMatchResult with detailed insights
         """
         factors = {}
+        has_interview = interview_score is not None
 
-        # Interview score (already 0-10)
-        interview_score = min(10.0, max(0.0, interview_score))
-        factors['interview'] = {
-            'score': interview_score,
-            'weight': self.BASE_WEIGHTS['interview_score']
-        }
+        # Choose weight set based on interview availability
+        if has_interview:
+            weights = self.BASE_WEIGHTS
+            interview_score = min(10.0, max(0.0, interview_score))
+            factors['interview'] = {
+                'score': interview_score,
+                'weight': weights['interview_score']
+            }
+        else:
+            weights = self.NO_INTERVIEW_BASE_WEIGHTS
+            interview_score = 0.0
 
         # Enhanced skills match with semantic matching
         candidate_skills = []
@@ -662,7 +741,7 @@ class MatchingService:
         )
         factors['skills'] = {
             'score': skills_score,
-            'weight': self.BASE_WEIGHTS['skills_match'],
+            'weight': weights['skills_match'],
             'details': skills_details
         }
 
@@ -675,7 +754,7 @@ class MatchingService:
         )
         factors['experience'] = {
             'score': experience_score,
-            'weight': self.BASE_WEIGHTS['experience_match'],
+            'weight': weights['experience_match'],
             'details': experience_details
         }
 
@@ -683,7 +762,7 @@ class MatchingService:
         github_score, github_details = self.calculate_github_signal(github_data, job_vertical)
         factors['github'] = {
             'score': github_score,
-            'weight': self.BASE_WEIGHTS['github_signal'],
+            'weight': weights['github_signal'],
             'details': github_details
         }
 
@@ -691,7 +770,7 @@ class MatchingService:
         edu_score, edu_details = self.calculate_education_score(education_data, job_vertical)
         factors['education'] = {
             'score': edu_score,
-            'weight': self.BASE_WEIGHTS['education'],
+            'weight': weights['education'],
             'details': edu_details
         }
 
@@ -704,7 +783,7 @@ class MatchingService:
         factors['location'] = {
             'score': location_score,
             'match': location_match,
-            'weight': self.BASE_WEIGHTS['location_match'],
+            'weight': weights['location_match'],
             'details': location_details
         }
 
@@ -716,14 +795,23 @@ class MatchingService:
         }
 
         # Calculate weighted overall score (0-100)
-        overall_score = (
-            interview_score * 10 * self.BASE_WEIGHTS['interview_score'] +
-            skills_score * 10 * self.BASE_WEIGHTS['skills_match'] +
-            experience_score * 10 * self.BASE_WEIGHTS['experience_match'] +
-            github_score * 10 * self.BASE_WEIGHTS['github_signal'] +
-            edu_score * 10 * self.BASE_WEIGHTS['education'] +
-            location_score * 10 * self.BASE_WEIGHTS['location_match']
-        )
+        if has_interview:
+            overall_score = (
+                interview_score * 10 * weights['interview_score'] +
+                skills_score * 10 * weights['skills_match'] +
+                experience_score * 10 * weights['experience_match'] +
+                github_score * 10 * weights['github_signal'] +
+                edu_score * 10 * weights['education'] +
+                location_score * 10 * weights['location_match']
+            )
+        else:
+            overall_score = (
+                skills_score * 10 * weights['skills_match'] +
+                experience_score * 10 * weights['experience_match'] +
+                github_score * 10 * weights['github_signal'] +
+                edu_score * 10 * weights['education'] +
+                location_score * 10 * weights['location_match']
+            )
 
         # Apply trajectory bonus
         if trajectory_score >= 8:
@@ -755,6 +843,7 @@ class MatchingService:
             overall_match_score=round(overall_score, 1),
             factors=factors,
             ai_reasoning=ai_reasoning,
+            has_interview=has_interview,
             github_signal_score=github_score,
             education_score=edu_score,
             growth_trajectory_score=trajectory_score,
@@ -1253,13 +1342,16 @@ class MatchingService:
         parts = []
 
         # Interview
-        interview_score = factors.get('interview', {}).get('score', 0)
-        if interview_score >= 8:
-            parts.append("Excellent interview performance")
-        elif interview_score >= 6:
-            parts.append("Good interview performance")
+        if 'interview' in factors:
+            interview_score = factors['interview'].get('score', 0)
+            if interview_score >= 8:
+                parts.append("Excellent interview performance")
+            elif interview_score >= 6:
+                parts.append("Good interview performance")
+            else:
+                parts.append("Interview performance needs improvement")
         else:
-            parts.append("Interview performance needs improvement")
+            parts.append("No interview completed (profile-only match)")
 
         # Skills
         skills_score = factors.get('skills', {}).get('score', 0)

@@ -57,7 +57,7 @@ COMPANIES = [
             "Fund: 2048 Ventures | HQ: Somerville, MA"
         ),
         "founders": [
-            {"name": "Annie Lu", "title": "Co-Founder & CEO", "linkedin": ""},
+            {"name": "Annie Lu", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/annielu"},
         ],
         "jobs": [
             {

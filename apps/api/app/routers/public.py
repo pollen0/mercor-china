@@ -1,19 +1,36 @@
 """
 Public endpoints that don't require authentication.
-Used for shareable candidate profiles via magic links.
+Used for shareable candidate profiles via magic links
+and public platform stats.
 """
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime
+from pydantic import BaseModel
 
 from ..database import get_db
 from ..models.candidate import Candidate, CandidateVerticalProfile, InterviewHistoryEntry
+from ..models.employer import Employer, Job
 from ..models.profile_token import ProfileToken
 from ..schemas.profile_token import PublicCandidateProfile
 
 logger = logging.getLogger("pathway.public")
 router = APIRouter()
+
+
+class PlatformStats(BaseModel):
+    active_jobs: int
+    companies: int
+
+
+@router.get("/stats", response_model=PlatformStats)
+async def get_platform_stats(db: Session = Depends(get_db)):
+    """Public platform stats — no authentication required."""
+    active_jobs = db.query(func.count(Job.id)).filter(Job.is_active == True).scalar() or 0
+    companies = db.query(func.count(Employer.id)).scalar() or 0
+    return PlatformStats(active_jobs=active_jobs, companies=companies)
 
 
 @router.get("/talent/{candidate_id}", response_model=PublicCandidateProfile)

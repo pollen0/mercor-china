@@ -104,9 +104,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Grant LaFontaine", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/grantlafontaine"},
             {"name": "Logan Head", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/logan-head"},
         ],
         "jobs": [
             {
@@ -152,9 +152,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Eric Glyman", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/eglyman"},
             {"name": "Karim Atiyeh", "title": "Co-Founder & CTO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/karimatiyeh"},
         ],
         "jobs": [
             {
@@ -222,7 +222,7 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Arvind Jain", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/arvindjain1"},
         ],
         "jobs": [
             {
@@ -267,11 +267,11 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Palmer Luckey", "title": "Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/palmer-luckey-a5a75943"},
             {"name": "Brian Schimpf", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/brian-schimpf"},
             {"name": "Trae Stephens", "title": "Co-Founder & Executive Chairman",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/traestephens"},
         ],
         "jobs": [
             {
@@ -316,9 +316,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Sajith Wickramasekara", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/sajithw"},
             {"name": "Ashu Singhal", "title": "Co-Founder & President",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/ashu-singhal"},
         ],
         "jobs": [
             {
@@ -362,9 +362,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Dylan Field", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/dylanfield"},
             {"name": "Evan Wallace", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/evanwallace"},
         ],
         "jobs": [
             {
@@ -408,7 +408,7 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Guillermo Rauch", "title": "Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/guillermo-rauch-b834b917b"},
         ],
         "jobs": [
             {
@@ -452,9 +452,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Garrett Langley", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/garrettlangley"},
             {"name": "Matt Feury", "title": "Co-Founder & CTO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/mattfeury"},
         ],
         "jobs": [
             {
@@ -503,7 +503,7 @@ COMPANIES = [
             {"name": "Faris Masad", "title": "Co-Founder",
              "linkedin": ""},
             {"name": "Haya Odeh", "title": "Co-Founder & Designer",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/hayaodeh"},
         ],
         "jobs": [
             {
@@ -551,7 +551,7 @@ COMPANIES = [
             {"name": "Griffin Cleverly", "title": "Co-Founder & CTO",
              "linkedin": ""},
             {"name": "Shaurya Luthra", "title": "Co-Founder & Head of Software",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/shauryaluthra"},
         ],
         "jobs": [
             {
@@ -596,9 +596,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "John Gedmark", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/johngedmark"},
             {"name": "Ryan McLinko", "title": "Co-Founder & CTO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/ryanmclinko"},
         ],
         "jobs": [
             {
@@ -644,7 +644,7 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Elon Musk", "title": "Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/elonrmusk"},
         ],
         "jobs": [
             {
@@ -690,9 +690,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Evan Feinberg", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/evanfeinberg"},
             {"name": "Ben Sklaroff", "title": "Co-Founder & CTO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/bensklaroff"},
         ],
         "jobs": [
             {
@@ -756,7 +756,7 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "David Marcus", "title": "Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/davidmarcus"},
         ],
         "jobs": [
             {
@@ -799,9 +799,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Doug Bernauer", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/dougbernauer"},
             {"name": "Bob Urberger", "title": "Co-Founder & CTO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/boburberger"},
         ],
         "jobs": [
             {
@@ -845,11 +845,11 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Keller Rinaudo Cliffton", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/kellerrinaudo"},
             {"name": "Jeremy Baker", "title": "Co-Founder & CTO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/jeremybaker11"},
             {"name": "Keenan Wyrobek", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/keenanwyrobek"},
         ],
         "jobs": [
             {
@@ -916,9 +916,9 @@ COMPANIES = [
         ),
         "founders": [
             {"name": "Christina Cacioppo", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/ccacioppo"},
             {"name": "Matt Spitz", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/mattspitz"},
         ],
         "jobs": [
             {

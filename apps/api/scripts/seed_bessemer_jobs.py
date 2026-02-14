@@ -274,9 +274,9 @@ COMPANIES = [
             "Fund: Bessemer Venture Partners | HQ: Boston, MA"
         ),
         "founders": [
-            {"name": "Sean Grundy", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Eliza Becton", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Frank Lee", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Sean Grundy", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/seangrundy"},
+            {"name": "Eliza Becton", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/elizabecton"},
+            {"name": "Frank Lee", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/frankleepe"},
         ],
         "jobs": [
             {

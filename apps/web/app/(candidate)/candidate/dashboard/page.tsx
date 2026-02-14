@@ -15,6 +15,7 @@ import { CustomSelect } from '@/components/ui/custom-select'
 import { candidateApi, referralApi, transformParsedResume, type GitHubData, type GitHubAnalysis as GitHubAnalysisType, type Activity as ApiActivity, type Award as ApiAward, type ClubOption, type ReferralStats, type ReferralEntry } from '@/lib/api'
 import { useDashboardData, useSkillGap } from '@/lib/hooks/use-candidate-data'
 import { EmailVerificationBanner } from '@/components/verification/email-verification-banner'
+import { MatchingReadinessAlert } from '@/components/dashboard/matching-readiness-alert'
 import VibeCodeSection from '@/components/dashboard/vibe-code-section'
 import { logout, clearAuthTokens } from '@/lib/auth'
 
@@ -888,6 +889,16 @@ function DashboardContent() {
           <EmailVerificationBanner email={candidate.email} />
         )}
 
+        {/* Matching Readiness Alert */}
+        {!isLoading && (
+          <MatchingReadinessAlert
+            resumeUploaded={!!resumeData?.parsedData}
+            githubConnected={!!githubData}
+            transcriptUploaded={!!transcriptData}
+            interviewCompleted={!!verticalProfiles?.some((p: { status: string }) => p.status === 'completed')}
+          />
+        )}
+
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="space-y-6">
@@ -1010,7 +1021,7 @@ function DashboardContent() {
             </Card>
 
             {/* Resume Section */}
-            <Card>
+            <Card id="resume-section">
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div>
@@ -1303,7 +1314,7 @@ function DashboardContent() {
             </Card>
 
             {/* GitHub Section */}
-            <Card>
+            <Card id="github-section">
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div>
@@ -1464,7 +1475,7 @@ function DashboardContent() {
             <VibeCodeSection />
 
             {/* Transcript Section */}
-            <Card>
+            <Card id="transcript-section">
               <CardHeader className="pb-4">
                 <div className="flex justify-between items-start">
                   <div>

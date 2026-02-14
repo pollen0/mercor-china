@@ -272,7 +272,7 @@ COMPANIES = [
             "Fund: Accel | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Tom Gonser", "title": "Founder", "linkedin": ""},
+            {"name": "Tom Gonser", "title": "Founder", "linkedin": "https://linkedin.com/in/tomgonser"},
         ],
         "jobs": [
             {
@@ -314,8 +314,8 @@ COMPANIES = [
             "Fund: Accel | HQ: Provo, UT / Seattle, WA"
         ),
         "founders": [
-            {"name": "Ryan Smith", "title": "Founder & Executive Chairman", "linkedin": ""},
-            {"name": "Jared Smith", "title": "Co-founder", "linkedin": ""},
+            {"name": "Ryan Smith", "title": "Founder & Executive Chairman", "linkedin": "https://linkedin.com/in/ryanqsmith"},
+            {"name": "Jared Smith", "title": "Co-founder", "linkedin": "https://linkedin.com/in/jaredsmith"},
         ],
         "jobs": [
             {

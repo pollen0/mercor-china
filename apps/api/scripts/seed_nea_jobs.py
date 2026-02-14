@@ -4,11 +4,12 @@ Seed intern jobs from NEA (New Enterprise Associates) portfolio companies.
 
 NEA is a global venture capital firm with $28B+ AUM, investing in technology
 and healthcare companies at all stages. Portfolio includes Databricks, Cloudflare,
-Plaid, Robinhood, MongoDB, Coursera, Tempus AI, Patreon, and GoodLeap.
+Plaid, Robinhood, MongoDB, Coursera, Tempus AI, Patreon, GoodLeap, Genies,
+August, Matroid, Virtru, Together AI, and Fizz.
 
 Sources:
 - https://www.nea.com/portfolio
-- https://careers.nea.com/
+- https://careers.nea.com/ (scraped via Playwright — apps/web/scripts/scrape-nea.ts)
 - Individual company career pages
 
 SCRIPT ID: nea
@@ -397,9 +398,9 @@ COMPANIES = [
             "Fund: NEA | HQ: New York, NY | NASDAQ: MDB"
         ),
         "founders": [
-            {"name": "Dwight Merriman", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Eliot Horowitz", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Kevin P. Ryan", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Dwight Merriman", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/dmerriman"},
+            {"name": "Eliot Horowitz", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/eliothorowitz"},
+            {"name": "Kevin P. Ryan", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/kevinryan"},
         ],
         "jobs": [
             {
@@ -696,7 +697,279 @@ COMPANIES = [
         ],
     },
 
-    # ── 10. Genies ──
+    # ── 10. August (via Playwright scraper — careers.nea.com) ──
+    {
+        "company_name": "August",
+        "email": "team@august.law",
+        "name": "August Team",
+        "industry": "AI / Legal Services",
+        "company_size": "startup",
+        "website": "https://august.law",
+        "slug": "august-law",
+        "description": (
+            "August builds best-in-class legal AI tools for mid-sized law firms. "
+            "Their platform is tailored to level the playing field for mid-sized firms, "
+            "specifically configured to each firm's type of work with customized precedents and style.\n\n"
+            "Fund: NEA, Pear VC | HQ: New York, NY"
+        ),
+        "founders": [],
+        "jobs": [
+            {
+                "title": "Software Engineer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "New York, NY",
+                "salary_min": 6000,
+                "salary_max": 8000,
+                "requirements": [
+                    "Proficiency in React.js, TypeScript, and JavaScript",
+                    "Experience with Next.js or similar modern web frameworks",
+                    "Interest in AI and legal technology",
+                    "Available for summer 2026 internship",
+                ],
+                "description": (
+                    "Software Engineer Intern at August. Build AI-powered legal tools using "
+                    "React.js, TypeScript, and Next.js. Work on a product that serves clients "
+                    "across four continents.\n\n"
+                    "Source: https://jobs.ashbyhq.com/august/af171c43-5b05-45da-8ac3-67e63fcdd207"
+                ),
+            },
+        ],
+    },
+
+    # ── 11. Matroid (via Playwright scraper — careers.nea.com) ──
+    {
+        "company_name": "Matroid",
+        "email": "solutions@matroid.com",
+        "name": "Reza Zadeh",
+        "industry": "AI / Computer Vision",
+        "company_size": "startup",
+        "website": "https://www.matroid.com",
+        "slug": "matroid",
+        "description": (
+            "Matroid automates visual inspection by providing an intuitive Studio for creating "
+            "and deploying Detectors (trained computer vision models) to search images and video "
+            "for actions, objects, and events with no additional programming required.\n\n"
+            "Fund: NEA | HQ: Palo Alto, CA"
+        ),
+        "founders": [
+            {"name": "Reza Zadeh", "title": "CEO & Founder", "linkedin": "https://linkedin.com/in/rezab"},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Intern, Product (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Palo Alto, CA",
+                "salary_min": 7000,
+                "salary_max": 9000,
+                "requirements": [
+                    "Proficiency in React.js, TypeScript, JavaScript, and Node.js",
+                    "Interest in machine learning and computer vision applications",
+                    "Strong attention to detail and problem-solving skills",
+                    "Available for summer 2026 internship",
+                ],
+                "description": (
+                    "Software Engineering Intern (Product) at Matroid. Build product features for "
+                    "an AI-powered computer vision platform. Work with React.js, Node.js, TypeScript, "
+                    "and cutting-edge ML/CV technology.\n\n"
+                    "Source: https://matroid.breezy.hr/p/f6dea6b23c47-software-engineering-intern-product-summer-2026"
+                ),
+            },
+        ],
+    },
+
+    # ── 12. Virtru (via Playwright scraper — careers.nea.com) ──
+    {
+        "company_name": "Virtru",
+        "email": "careers@virtru.com",
+        "name": "John Ackerly",
+        "industry": "Security / Data Privacy",
+        "company_size": "startup",
+        "website": "https://www.virtru.com",
+        "slug": "virtru",
+        "description": (
+            "Virtru is a global leader in data privacy and protection, equipping customers to "
+            "take control of their data everywhere it's shared through end-to-end encryption "
+            "for Google, Microsoft, and other data sharing platforms.\n\n"
+            "Fund: NEA | HQ: Washington, DC"
+        ),
+        "founders": [
+            {"name": "John Ackerly", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/johnackerly"},
+            {"name": "Will Ackerly", "title": "CTO & Co-Founder", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Software Developer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Washington, DC",
+                "salary_min": 5500,
+                "salary_max": 7000,
+                "requirements": [
+                    "Proficiency in React.js, TypeScript, and JavaScript",
+                    "Interest in cryptography and data privacy",
+                    "Strong CS fundamentals",
+                    "Able to work hybrid in Washington, DC office",
+                ],
+                "description": (
+                    "Software Developer Intern at Virtru. Build end-to-end encryption tools using "
+                    "React.js, TypeScript, and JavaScript. Work on cryptographic systems that protect "
+                    "data across Google and Microsoft platforms.\n\n"
+                    "Source: https://job-boards.greenhouse.io/virtru/jobs/4653403005"
+                ),
+            },
+            {
+                "title": "Graduate Software Developer Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "Washington, DC",
+                "salary_min": 6000,
+                "salary_max": 7500,
+                "requirements": [
+                    "Pursuing a graduate degree in Computer Science or related field",
+                    "Experience with Java, Android, and REST APIs",
+                    "Understanding of information security and data privacy principles",
+                    "Interest in AI applications for cybersecurity",
+                ],
+                "description": (
+                    "Graduate Software Developer Intern at Virtru. Work on data protection and "
+                    "encryption systems. Experience with Java, Android, REST, and information security. "
+                    "Hybrid role in Washington, DC.\n\n"
+                    "Source: https://job-boards.greenhouse.io/virtru/jobs/4653402005"
+                ),
+            },
+            {
+                "title": "Software Developer in Test (SDET) Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.QA_ENGINEER,
+                "location": "Washington, DC",
+                "salary_min": 5500,
+                "salary_max": 7000,
+                "requirements": [
+                    "Proficiency in test automation and quality assurance",
+                    "Experience with GCP, Terraform, or cloud infrastructure",
+                    "Strong understanding of algorithms and REST APIs",
+                    "Familiarity with Git and CI/CD workflows",
+                ],
+                "description": (
+                    "SDET Intern at Virtru. Build and maintain test automation for data privacy "
+                    "and encryption products. Work with GCP, Terraform, REST APIs, and Git. "
+                    "Hybrid in Washington, DC.\n\n"
+                    "Source: https://job-boards.greenhouse.io/virtru/jobs/4653401005"
+                ),
+            },
+        ],
+    },
+
+    # ── 13. Together AI (via Playwright scraper — careers.nea.com) ──
+    {
+        "company_name": "Together AI",
+        "email": "careers@together.ai",
+        "name": "Vipul Ved Prakash",
+        "industry": "AI / Cloud Infrastructure",
+        "company_size": "startup",
+        "website": "https://www.together.ai",
+        "slug": "together-ai",
+        "description": (
+            "Together AI is a research-driven AI cloud infrastructure provider. Their purpose-built "
+            "GPU cloud platform empowers AI engineers and researchers to train, fine-tune, and run "
+            "frontier-class AI models. Customers include Salesforce, Zoom, ElevenLabs, and Hedra.\n\n"
+            "Fund: NEA | HQ: San Francisco, CA"
+        ),
+        "founders": [
+            {"name": "Vipul Ved Prakash", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/vipulvedprakash"},
+            {"name": "Ce Zhang", "title": "Co-Founder & Chief Scientist", "linkedin": ""},
+        ],
+        "jobs": [
+            {
+                "title": "Research Intern, Model Shaping (Summer 2026)",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 8000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Pursuing a PhD or Master's in Computer Science, ML, or related field",
+                    "Strong background in machine learning and NLP",
+                    "Proficiency in Python and PyTorch",
+                    "Research experience in deep learning, with publications at ACL/NeurIPS/ICML preferred",
+                ],
+                "description": (
+                    "Research Intern (Model Shaping) at Together AI. Conduct research on frontier AI model "
+                    "training, fine-tuning, and alignment. Work with cutting-edge open-source AI models "
+                    "on purpose-built GPU infrastructure.\n\n"
+                    "Source: https://job-boards.greenhouse.io/togetherai/jobs/5015074007"
+                ),
+            },
+        ],
+    },
+
+    # ── 14. Fizz (via Playwright scraper — careers.nea.com) ──
+    {
+        "company_name": "Fizz",
+        "email": "careers@fizzsocial.app",
+        "name": "Teddy Solomon",
+        "industry": "Social Networking / EdTech",
+        "company_size": "startup",
+        "website": "https://fizzsocial.app",
+        "slug": "fizz",
+        "description": (
+            "Fizz is a private and authenticated social platform for college communities. "
+            "Students use Fizz to post questions, memes, polls, and chat with verified students "
+            "while maintaining full control of their identity and privacy. Founded by two Stanford "
+            "dropouts, Fizz is expanding across US colleges.\n\n"
+            "Fund: NEA | HQ: New York, NY"
+        ),
+        "founders": [
+            {"name": "Teddy Solomon", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/teddy-solomon"},
+            {"name": "Ashton Cofer", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/ashtoncofer"},
+        ],
+        "jobs": [
+            {
+                "title": "Software Engineering Intern (Summer 2026)",
+                "vertical": Vertical.SOFTWARE_ENGINEERING,
+                "role_type": RoleType.SOFTWARE_ENGINEER,
+                "location": "New York, NY",
+                "salary_min": 7000,
+                "salary_max": 9000,
+                "requirements": [
+                    "Proficiency in TypeScript, Swift, or Node.js",
+                    "Experience with GCP or cloud platforms",
+                    "Interest in social networking and college community platforms",
+                    "Available for summer 2026 internship",
+                ],
+                "description": (
+                    "Software Engineering Intern at Fizz. Build features for the college social "
+                    "platform used by students at universities across the US. Work with TypeScript, "
+                    "Swift, Node.js, and Google Cloud Platform.\n\n"
+                    "Source: https://jobs.ashbyhq.com/fizz/c33b0bb7-d87f-4666-8622-36604fe10b20"
+                ),
+            },
+            {
+                "title": "Sales Development Representative Intern (2026)",
+                "vertical": Vertical.PRODUCT,
+                "role_type": RoleType.MARKETING_ASSOCIATE,
+                "location": "Remote, US",
+                "salary_min": 4000,
+                "salary_max": 5000,
+                "requirements": [
+                    "Strong written communication skills",
+                    "Experience with social media marketing or brand outreach",
+                    "Detail-oriented with strong organizational skills",
+                    "Interest in advertising and sales development",
+                ],
+                "description": (
+                    "Sales Development Representative Intern at Fizz. Drive outreach and sales "
+                    "prospecting for the college social platform. Work on advertising partnerships "
+                    "and brand marketing initiatives.\n\n"
+                    "Source: https://jobs.ashbyhq.com/fizz/f084fa92-e30e-4226-af9a-db4913752555"
+                ),
+            },
+        ],
+    },
+
+    # ── 15. Genies ──
     {
         "company_name": "Genies",
         "email": "careers@genies.com",
@@ -807,6 +1080,141 @@ ADDITIONAL_JOBS = [
                     "engineers on cloud infrastructure, data platform, and analytics products. "
                     "Options include winter 16-week co-op, summer 16-week co-op, or summer 12-week internship.\n\n"
                     "Source: https://www.databricks.com/company/careers/university-recruiting/software-engineering-intern-2026-6866534002"
+                ),
+            },
+            # ── New roles found via Playwright scraper ──
+            {
+                "title": "MBA Intern - Strategic Finance (Summer 2026)",
+                "vertical": Vertical.FINANCE,
+                "role_type": RoleType.FINANCE_ANALYST,
+                "location": "San Francisco, CA",
+                "salary_min": 9000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Pursuing an MBA with focus on finance or strategy",
+                    "Experience in investment banking, management consulting, or financial analysis",
+                    "Proficiency in SQL and business intelligence tools",
+                    "Strong analytical and financial modeling skills",
+                ],
+                "description": (
+                    "MBA Intern - Strategic Finance at Databricks. Drive financial analysis, forecasting, "
+                    "and strategic planning for the unified Data Intelligence Platform company.\n\n"
+                    "Source: https://databricks.com/company/careers/open-positions/job?gh_jid=8402610002"
+                ),
+            },
+            {
+                "title": "MBA Intern - Technical Program Management (Summer 2026)",
+                "vertical": Vertical.PRODUCT,
+                "role_type": RoleType.PRODUCT_MANAGER,
+                "location": "Mountain View, CA",
+                "salary_min": 9000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Pursuing an MBA with technical background",
+                    "Experience in program management or product operations",
+                    "Proficiency in SQL and data visualization",
+                    "Strong cross-functional leadership skills",
+                ],
+                "description": (
+                    "MBA Intern - Technical Program Management at Databricks. Drive cross-functional "
+                    "programs across engineering, product, and go-to-market teams. Mountain View and "
+                    "San Francisco offices.\n\n"
+                    "Source: https://databricks.com/company/careers/open-positions/job?gh_jid=8399537002"
+                ),
+            },
+            {
+                "title": "MBA Intern - Product Operations (Summer 2026)",
+                "vertical": Vertical.PRODUCT,
+                "role_type": RoleType.PRODUCT_MANAGER,
+                "location": "San Francisco, CA",
+                "salary_min": 9000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Pursuing an MBA with product or operations focus",
+                    "Experience in product operations or strategy consulting",
+                    "Proficiency in SQL and analytics tools",
+                    "Strong analytical and communication skills",
+                ],
+                "description": (
+                    "MBA Intern - Product Operations at Databricks. Drive product operations and "
+                    "strategy for the Data Intelligence Platform used by over 60%% of the Fortune 500.\n\n"
+                    "Source: https://databricks.com/company/careers/open-positions/job?gh_jid=8399535002"
+                ),
+            },
+        ],
+    },
+    # ── New additional jobs found via Playwright scraper ──
+    {
+        "company_name": "Robinhood",
+        "jobs": [
+            {
+                "title": "Corporate Treasury Operations Intern (Summer 2026)",
+                "vertical": Vertical.FINANCE,
+                "role_type": RoleType.FINANCE_ANALYST,
+                "location": "Washington, DC",
+                "salary_min": 7000,
+                "salary_max": 8000,
+                "requirements": [
+                    "Pursuing a degree in Finance, Economics, or related field",
+                    "Strong financial analysis and written communication skills",
+                    "Interest in financial technology and treasury management",
+                    "Familiarity with financial services and TMS systems preferred",
+                ],
+                "description": (
+                    "Corporate Treasury Operations Intern at Robinhood (Washington, DC). Work on treasury "
+                    "operations for one of the largest fintech platforms. Support financial analysis, "
+                    "reporting, and treasury management systems.\n\n"
+                    "Source: https://boards.greenhouse.io/robinhood/jobs/7155913"
+                ),
+            },
+        ],
+    },
+    {
+        "company_name": "Patreon",
+        "jobs": [
+            {
+                "title": "Machine Learning Intern (PhD) - Summer 2026",
+                "vertical": Vertical.DATA,
+                "role_type": RoleType.ML_ENGINEER,
+                "location": "San Francisco, CA",
+                "salary_min": 9000,
+                "salary_max": 10000,
+                "requirements": [
+                    "Pursuing a PhD in Machine Learning, Computer Science, Physics, Bioinformatics, or related field",
+                    "Strong background in machine learning and data structures",
+                    "Proficiency in Python and data processing frameworks",
+                    "Experience with prototyping and cross-functional collaboration",
+                ],
+                "description": (
+                    "Machine Learning Intern (PhD) at Patreon. Apply ML techniques to improve the "
+                    "creator economy platform used by hundreds of thousands of creators. Work on "
+                    "analytics, recommendations, and data-driven product features. SF or NYC, hybrid.\n\n"
+                    "Source: https://jobs.ashbyhq.com/patreon/7f4b2ec9-28a8-4254-883f-0e64c720e931"
+                ),
+            },
+        ],
+    },
+    {
+        "company_name": "GoodLeap",
+        "jobs": [
+            {
+                "title": "Financial Analyst Intern (Summer 2026)",
+                "vertical": Vertical.FINANCE,
+                "role_type": RoleType.FINANCE_ANALYST,
+                "location": "West Palm Beach, FL",
+                "salary_min": 5000,
+                "salary_max": 6000,
+                "requirements": [
+                    "Pursuing a degree in Finance, Accounting, or related field",
+                    "Strong financial modeling and forecasting skills",
+                    "Proficiency in Excel and financial analysis tools",
+                    "CFA or CPA candidacy a plus",
+                ],
+                "description": (
+                    "Financial Analyst Intern at GoodLeap. Support financial planning, analysis, "
+                    "and budgeting for the largest sustainability-focused fintech in the US. "
+                    "$27B+ in loan volume since 2018.\n\n"
+                    "Source: https://jobs.lever.co/goodleap/b89b4c2e-f5ab-4bed-b2dd-2593298128df"
                 ),
             },
         ],

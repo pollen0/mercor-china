@@ -662,6 +662,124 @@ def _process_vertical_interview_completion(session, db):
     logger.info(f"Completed vertical interview processing for session {session.id}")
 
 
+@with_retry(max_retries=2, base_delay=2.0, task_name="rematch_candidate_after_profile_update")
+def rematch_candidate_after_profile_update(
+    candidate_id: str,
+    db_url: str,
+):
+    """
+    Re-run matching for a candidate after resume upload/update.
+    Finds all completed vertical profiles and matches against all active jobs in those verticals.
+    Creates new matches or updates existing ones with refreshed resume data.
+    """
+    from ..models import CandidateVerticalProfile, VerticalProfileStatus, Job, Match, Candidate
+    from datetime import datetime
+    import uuid
+
+    engine = create_engine(db_url)
+    SessionLocal = sessionmaker(bind=engine)
+    db = SessionLocal()
+
+    try:
+        candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
+        if not candidate:
+            logger.warning(f"[rematch] Candidate {candidate_id} not found")
+            return
+
+        # Find all completed vertical profiles for this candidate
+        profiles = db.query(CandidateVerticalProfile).filter(
+            CandidateVerticalProfile.candidate_id == candidate_id,
+            CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
+        ).all()
+
+        if not profiles:
+            logger.debug(f"[rematch] No completed profiles for candidate {candidate_id}")
+            return
+
+        candidate_data = candidate.resume_parsed_data
+        candidate_preferences = candidate.sharing_preferences if hasattr(candidate, 'sharing_preferences') else None
+        total_created = 0
+        total_updated = 0
+
+        for profile in profiles:
+            # Find all active jobs matching this vertical
+            matching_jobs = db.query(Job).filter(
+                Job.is_active == True,
+                Job.vertical == profile.vertical
+            ).all()
+
+            for job in matching_jobs:
+                try:
+                    # Get employer info for preference boost
+                    employer = job.employer
+                    job_company_stage = getattr(employer, 'company_stage', None) if employer else None
+                    job_industry = getattr(employer, 'industry', None) if employer else None
+
+                    match_result = _run_async(
+                        matching_service.calculate_match(
+                            interview_score=profile.best_score or profile.interview_score or 5.0,
+                            candidate_data=candidate_data,
+                            job_title=job.title,
+                            job_requirements=job.requirements or [],
+                            job_location=job.location,
+                            job_vertical=job.vertical.value if job.vertical else None,
+                            candidate_preferences=candidate_preferences,
+                            job_company_stage=job_company_stage,
+                            job_industry=job_industry,
+                        )
+                    )
+
+                    # Check for existing match
+                    existing_match = db.query(Match).filter(
+                        Match.candidate_id == candidate_id,
+                        Match.job_id == job.id
+                    ).first()
+
+                    if existing_match:
+                        existing_match.score = profile.best_score or profile.interview_score or 5.0
+                        existing_match.interview_score = match_result.interview_score
+                        existing_match.skills_match_score = match_result.skills_match_score
+                        existing_match.experience_match_score = match_result.experience_match_score
+                        existing_match.location_match = match_result.location_match
+                        existing_match.overall_match_score = match_result.boosted_match_score
+                        existing_match.factors = json.dumps(match_result.factors, ensure_ascii=False)
+                        existing_match.ai_reasoning = match_result.ai_reasoning
+                        existing_match.vertical_profile_id = profile.id
+                        total_updated += 1
+                    else:
+                        new_match = Match(
+                            id=f"m{uuid.uuid4().hex[:24]}",
+                            candidate_id=candidate_id,
+                            job_id=job.id,
+                            vertical_profile_id=profile.id,
+                            score=profile.best_score or profile.interview_score or 5.0,
+                            interview_score=match_result.interview_score,
+                            skills_match_score=match_result.skills_match_score,
+                            experience_match_score=match_result.experience_match_score,
+                            location_match=match_result.location_match,
+                            overall_match_score=match_result.boosted_match_score,
+                            factors=json.dumps(match_result.factors, ensure_ascii=False),
+                            ai_reasoning=match_result.ai_reasoning,
+                        )
+                        db.add(new_match)
+                        total_created += 1
+
+                except Exception as e:
+                    logger.error(f"[rematch] Failed to match candidate {candidate_id} with job {job.id}: {e}")
+
+        db.commit()
+        logger.info(
+            f"[rematch] Candidate {candidate_id}: {total_created} matches created, "
+            f"{total_updated} updated across {len(profiles)} vertical profiles"
+        )
+
+    except Exception as e:
+        logger.error(f"[rematch] Error for candidate {candidate_id}: {e}")
+        raise
+    finally:
+        db.close()
+
+
 def process_coding_response(
     response_id: str,
     code: str,

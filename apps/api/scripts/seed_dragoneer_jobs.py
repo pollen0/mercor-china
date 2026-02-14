@@ -189,7 +189,7 @@ COMPANIES = [
             "Fund: Dragoneer | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Sanjit Biswas", "title": "CEO & Co-founder", "linkedin": ""},
+            {"name": "Sanjit Biswas", "title": "CEO & Co-founder", "linkedin": "https://linkedin.com/in/sanjitbiswas"},
             {"name": "John Bicket", "title": "CTO & Co-founder", "linkedin": "https://linkedin.com/in/jbicket"},
         ],
         "jobs": [
@@ -529,8 +529,8 @@ COMPANIES = [
             "Fund: Dragoneer | HQ: Santa Barbara, CA"
         ),
         "founders": [
-            {"name": "Klaus Schauser", "title": "Co-founder & Chief Strategist", "linkedin": ""},
-            {"name": "Jon Walker", "title": "Co-founder", "linkedin": ""},
+            {"name": "Klaus Schauser", "title": "Co-founder & Chief Strategist", "linkedin": "https://linkedin.com/in/klausschauser"},
+            {"name": "Jon Walker", "title": "Co-founder", "linkedin": "https://linkedin.com/in/jonwalker1"},
         ],
         "jobs": [
             {
@@ -572,7 +572,7 @@ COMPANIES = [
             "Fund: Dragoneer | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Apoorva Mehta", "title": "Founder", "linkedin": ""},
+            {"name": "Apoorva Mehta", "title": "Founder", "linkedin": "https://linkedin.com/in/apoorvamehta"},
         ],
         "jobs": [
             {

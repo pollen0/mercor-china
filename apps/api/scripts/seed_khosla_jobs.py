@@ -278,8 +278,8 @@ COMPANIES = [
             "Fund: Khosla Ventures | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Todd McKinnon", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Frederic Kerrest", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Todd McKinnon", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/toddmckinnon"},
+            {"name": "Frederic Kerrest", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/frederickerrest"},
         ],
         "jobs": [
             {
@@ -383,9 +383,9 @@ COMPANIES = [
             "Fund: Khosla Ventures | HQ: Santa Clara, CA"
         ),
         "founders": [
-            {"name": "Andy Bechtolsheim", "title": "Co-Founder", "linkedin": ""},
-            {"name": "David Cheriton", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Ken Duda", "title": "Co-Founder & CTO", "linkedin": ""},
+            {"name": "Andy Bechtolsheim", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/andybechtolsheim"},
+            {"name": "David Cheriton", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/david-cheriton-860b7712"},
+            {"name": "Ken Duda", "title": "Co-Founder & CTO", "linkedin": "https://linkedin.com/in/kenduda"},
         ],
         "jobs": [
             {
@@ -578,7 +578,7 @@ COMPANIES = [
             "Fund: Khosla Ventures | HQ: Draper, UT"
         ),
         "founders": [
-            {"name": "Ben Peterson", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Ben Peterson", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/benpeterson"},
             {"name": "Ryan Sanders", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/ryan-sanders-483113"},
         ],
         "jobs": [
@@ -623,8 +623,8 @@ COMPANIES = [
             "Fund: Khosla Ventures | HQ: Berkeley, CA"
         ),
         "founders": [
-            {"name": "Vinayak Nagpal", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Jimmy Wang", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Vinayak Nagpal", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/vinayaknagpal"},
+            {"name": "Jimmy Wang", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/jinweiwang"},
         ],
         "jobs": [
             {
@@ -793,8 +793,8 @@ COMPANIES = [
             "Fund: Khosla Ventures | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Alex Blania", "title": "CEO", "linkedin": ""},
-            {"name": "Sam Altman", "title": "Co-Founder & Chairman", "linkedin": ""},
+            {"name": "Alex Blania", "title": "CEO", "linkedin": "https://linkedin.com/in/alexblania"},
+            {"name": "Sam Altman", "title": "Co-Founder & Chairman", "linkedin": "https://linkedin.com/in/samaltman"},
         ],
         "jobs": [
             {
@@ -877,7 +877,7 @@ COMPANIES = [
             "Fund: Khosla Ventures | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Jack Dorsey", "title": "Co-Founder & Chairman", "linkedin": ""},
+            {"name": "Jack Dorsey", "title": "Co-Founder & Chairman", "linkedin": "https://linkedin.com/in/jackdorsey1"},
         ],
         "jobs": [
             {
@@ -961,8 +961,8 @@ COMPANIES = [
             "Fund: Khosla Ventures | HQ: San Mateo, CA"
         ),
         "founders": [
-            {"name": "Mark Seeger", "title": "Founder", "linkedin": ""},
-            {"name": "Gokul Hemmady", "title": "CEO", "linkedin": ""},
+            {"name": "Mark Seeger", "title": "Founder", "linkedin": "https://linkedin.com/in/markseeger"},
+            {"name": "Gokul Hemmady", "title": "CEO", "linkedin": "https://linkedin.com/in/gokulhemmady"},
         ],
         "jobs": [
             {

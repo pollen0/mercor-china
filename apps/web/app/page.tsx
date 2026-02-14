@@ -1,10 +1,22 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 export default function Home() {
+  const [stats, setStats] = useState<{ active_jobs: number; companies: number } | null>(null)
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/public/stats`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => data && setStats(data))
+      .catch(() => {})
+  }, [])
+
   return (
     <main className="min-h-screen bg-stone-50/50">
       <Navbar />
@@ -37,6 +49,12 @@ export default function Home() {
               I'm hiring <svg className="inline w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
             </Link>
           </div>
+
+          {stats && (
+            <p className="mt-10 text-sm text-stone-400 animate-fade-in" style={{ animationDelay: '300ms' }}>
+              Apply to <span className="text-stone-600 font-medium">{stats.active_jobs}+</span> internships across <span className="text-stone-600 font-medium">{stats.companies}+</span> companies — one interview, instant matching.
+            </p>
+          )}
         </div>
       </section>
 
@@ -174,7 +192,9 @@ export default function Home() {
             Start building your trajectory
           </h2>
           <p className="text-stone-500 mb-10">
-            Free for students. Your first interview takes 15 minutes.
+            {stats
+              ? `One interview opens the door to ${stats.active_jobs}+ roles at ${stats.companies}+ companies. Free for students.`
+              : 'Free for students. Your first interview takes 15 minutes.'}
           </p>
           <Link
             href="/register"

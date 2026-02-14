@@ -199,7 +199,7 @@ COMPANIES = [
             "Fund: Contrary | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Dan Wright", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/wrightdh"},
+            {"name": "Dan Wright", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/danwright6"},
             {"name": "Jon Runyan", "title": "COO & Co-Founder", "linkedin": ""},
         ],
         "jobs": [
@@ -244,9 +244,9 @@ COMPANIES = [
             "Fund: Contrary, Forerunner, GSV Ventures | HQ: Lehi, UT"
         ),
         "founders": [
-            {"name": "John Koelliker", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/john-koelliker"},
+            {"name": "John Koelliker", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/johnkoelliker"},
             {"name": "Erika Mahterian", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Zando Ward", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Zando Ward", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/zandoward"},
         ],
         "jobs": [
             {
@@ -311,9 +311,9 @@ COMPANIES = [
             "Fund: Contrary, General Catalyst, Y Combinator | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Vignan Velivela", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/vignanv8"},
+            {"name": "Vignan Velivela", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/vignan"},
             {"name": "Tushar Misra", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Harshita Arora", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Harshita Arora", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/harshitaarora"},
         ],
         "jobs": [
             {
@@ -358,9 +358,9 @@ COMPANIES = [
             "Fund: Contrary | HQ: Chicago, IL"
         ),
         "founders": [
-            {"name": "Alex Jones", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Erich Kerekes", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Alessandro DiSanto", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Alex Jones", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/alexjoneshallow"},
+            {"name": "Erich Kerekes", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/erichkerekes"},
+            {"name": "Alessandro DiSanto", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/alessandrodisanto"},
         ],
         "jobs": [
             {

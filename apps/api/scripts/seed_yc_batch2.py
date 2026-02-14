@@ -57,7 +57,7 @@ NEW_COMPANIES = [
             {"name": "Hayden Housen", "title": "Co-Founder",
              "linkedin": ""},
             {"name": "Ryan Tremblay", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/ryantremblay"},
         ],
         "jobs": [
             {
@@ -147,9 +147,9 @@ NEW_COMPANIES = [
         ),
         "founders": [
             {"name": "Charlene Wang", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/charlenewang"},
             {"name": "Warren Wang", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/warrenwang"},
         ],
         "jobs": [
             {
@@ -235,11 +235,11 @@ NEW_COMPANIES = [
         ),
         "founders": [
             {"name": "Sean Miller", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/seanmiller"},
             {"name": "Rafi Sands", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/rafisands"},
             {"name": "Brendan Suh", "title": "Co-Founder",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/brendansuh"},
         ],
         "jobs": [
             {
@@ -398,7 +398,7 @@ NEW_COMPANIES = [
         ),
         "founders": [
             {"name": "Matt Puchalski", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/mattpuchalski"},
         ],
         "jobs": [
             {
@@ -713,7 +713,7 @@ NEW_COMPANIES = [
         ),
         "founders": [
             {"name": "Wilson Spearman", "title": "Co-Founder & CEO",
-             "linkedin": ""},
+             "linkedin": "https://linkedin.com/in/wilsonspearman"},
             {"name": "Jeffrey", "title": "Co-Founder & CTO",
              "linkedin": ""},
         ],

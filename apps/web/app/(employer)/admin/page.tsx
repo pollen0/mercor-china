@@ -174,6 +174,16 @@ export default function AdminPage() {
   const [openNudgeDropdown, setOpenNudgeDropdown] = useState<string | null>(null)
   const [sendingNudge, setSendingNudge] = useState<string | null>(null)
 
+  // Batch matching state
+  const [batchMatchingRunning, setBatchMatchingRunning] = useState(false)
+  const [batchMatchResult, setBatchMatchResult] = useState<{
+    jobs_processed: number
+    profiles_checked: number
+    matches_created: number
+    matches_updated: number
+    errors: number
+  } | null>(null)
+
   useEffect(() => {
     // Admin only requires password - no employer login needed
     const storedPassword = localStorage.getItem('admin_password')
@@ -234,6 +244,28 @@ export default function AdminPage() {
     localStorage.removeItem('admin_password')
     setAdminPassword(null)
     setShowPasswordPrompt(true)
+  }
+
+  const runBatchMatching = async () => {
+    setBatchMatchingRunning(true)
+    setBatchMatchResult(null)
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/run-batch-matching`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      })
+      if (!response.ok) {
+        throw new Error(`Failed: ${response.statusText}`)
+      }
+      const data = await response.json()
+      setBatchMatchResult(data)
+      // Refresh stats to show updated match count
+      fetchStats()
+    } catch (err: any) {
+      setError(err.message || 'Failed to run batch matching')
+    } finally {
+      setBatchMatchingRunning(false)
+    }
   }
 
   const fetchStats = async () => {
@@ -926,6 +958,42 @@ export default function AdminPage() {
                     <p className="text-sm text-stone-500 mt-1">New Interviews</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Admin Actions */}
+            <Card className="border-stone-100 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium text-stone-700">Admin Actions</CardTitle>
+                <CardDescription className="text-stone-400">Batch operations and maintenance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <Button
+                    onClick={runBatchMatching}
+                    disabled={batchMatchingRunning}
+                    className="bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-50"
+                  >
+                    {batchMatchingRunning ? 'Running...' : 'Run Batch Matching'}
+                  </Button>
+                  <p className="text-sm text-stone-400">
+                    Match all completed vertical profiles against all active jobs
+                  </p>
+                </div>
+                {batchMatchResult && (
+                  <div className="mt-4 p-3 bg-teal-50 border border-teal-100 rounded-lg">
+                    <p className="text-sm font-medium text-teal-700">Batch matching complete</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2 text-sm text-teal-600">
+                      <div>{batchMatchResult.jobs_processed} jobs processed</div>
+                      <div>{batchMatchResult.profiles_checked} profiles checked</div>
+                      <div>{batchMatchResult.matches_created} matches created</div>
+                      <div>{batchMatchResult.matches_updated} matches updated</div>
+                    </div>
+                    {batchMatchResult.errors > 0 && (
+                      <p className="text-sm text-amber-600 mt-1">{batchMatchResult.errors} errors</p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

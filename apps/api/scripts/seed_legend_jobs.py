@@ -64,8 +64,8 @@ COMPANIES = [
             "Fund: Legend Capital (Series A co-lead) | HQ: Fremont, CA"
         ),
         "founders": [
-            {"name": "James Peng", "title": "CEO & Chairman", "linkedin": ""},
-            {"name": "Tiancheng Lou", "title": "CTO", "linkedin": ""},
+            {"name": "James Peng", "title": "CEO & Chairman", "linkedin": "https://linkedin.com/in/jamespeng"},
+            {"name": "Tiancheng Lou", "title": "CTO", "linkedin": "https://linkedin.com/in/tianchenglou"},
         ],
         "jobs": [
             {

@@ -258,7 +258,7 @@ COMPANIES = [
         "founders": [
             {"name": "Ali Ghodsi", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/alighodsi"},
             {"name": "Matei Zaharia", "title": "CTO & Co-Founder", "linkedin": ""},
-            {"name": "Ion Stoica", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Ion Stoica", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/ionstoica"},
         ],
         "jobs": [
             {
@@ -376,9 +376,9 @@ COMPANIES = [
             "Fund: Lightspeed | HQ: Costa Mesa, CA"
         ),
         "founders": [
-            {"name": "Palmer Luckey", "title": "Founder", "linkedin": "https://linkedin.com/in/palmerluckey"},
+            {"name": "Palmer Luckey", "title": "Founder", "linkedin": "https://linkedin.com/in/palmer-luckey-a5a75943"},
             {"name": "Trae Stephens", "title": "Co-Founder & Executive Chairman", "linkedin": ""},
-            {"name": "Brian Schimpf", "title": "Co-Founder & CEO", "linkedin": ""},
+            {"name": "Brian Schimpf", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/brian-schimpf"},
         ],
         "jobs": [
             {
@@ -472,9 +472,9 @@ COMPANIES = [
             "Fund: Lightspeed | HQ: Los Angeles / New York"
         ),
         "founders": [
-            {"name": "Cameron McCord", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Bryce Strauss", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Jason Hoch", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Cameron McCord", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/cameronmccord"},
+            {"name": "Bryce Strauss", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/brycestrauss"},
+            {"name": "Jason Hoch", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/jasonhoch"},
         ],
         "jobs": [
             {
@@ -519,7 +519,7 @@ COMPANIES = [
             "Fund: Lightspeed | HQ: Cary, NC"
         ),
         "founders": [
-            {"name": "Tim Sweeney", "title": "CEO & Founder", "linkedin": ""},
+            {"name": "Tim Sweeney", "title": "CEO & Founder", "linkedin": "https://linkedin.com/in/timsweeney"},
         ],
         "jobs": [
             {
@@ -564,9 +564,9 @@ COMPANIES = [
             "Fund: Lightspeed | HQ: San Jose, CA"
         ),
         "founders": [
-            {"name": "Dheeraj Pandey", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Mohit Aron", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Ajeet Singh", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Dheeraj Pandey", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/dheerajpandey"},
+            {"name": "Mohit Aron", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/mohitaron"},
+            {"name": "Ajeet Singh", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/ajeetsingh1"},
         ],
         "jobs": [
             {
@@ -610,8 +610,8 @@ COMPANIES = [
             "Fund: Lightspeed | HQ: Palo Alto, CA"
         ),
         "founders": [
-            {"name": "Helmy Eltoukhy", "title": "Co-CEO & Co-Founder", "linkedin": ""},
-            {"name": "AmirAli Talasaz", "title": "Co-CEO & Co-Founder", "linkedin": ""},
+            {"name": "Helmy Eltoukhy", "title": "Co-CEO & Co-Founder", "linkedin": "https://linkedin.com/in/helmy-eltoukhy-8a48604"},
+            {"name": "AmirAli Talasaz", "title": "Co-CEO & Co-Founder", "linkedin": "https://linkedin.com/in/amirali-talasaz-4476652"},
         ],
         "jobs": [
             {
@@ -656,7 +656,7 @@ COMPANIES = [
             "Fund: Lightspeed | HQ: New York, NY"
         ),
         "founders": [
-            {"name": "Ronghui Gu", "title": "Co-Founder & CEO", "linkedin": ""},
+            {"name": "Ronghui Gu", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/ronghuigu"},
         ],
         "jobs": [
             {
@@ -701,7 +701,7 @@ COMPANIES = [
             "Fund: Lightspeed | HQ: Mountain View, CA"
         ),
         "founders": [
-            {"name": "Don Burnette", "title": "CEO & Founder", "linkedin": ""},
+            {"name": "Don Burnette", "title": "CEO & Founder", "linkedin": "https://linkedin.com/in/donburnette"},
         ],
         "jobs": [
             {

@@ -865,6 +865,14 @@ async def upload_resume(
             candidate.university,
         )
 
+    # Re-run matching in background (updates match scores with new resume data)
+    from ..services.tasks import rematch_candidate_after_profile_update
+    background_tasks.add_task(
+        rematch_candidate_after_profile_update,
+        candidate_id,
+        str(settings.database_url),
+    )
+
     # Generate a signed URL for the resume if we have a storage key
     signed_resume_url = resume_url
     if resume_url and not resume_url.startswith('http'):

@@ -894,6 +894,70 @@ def auto_match_job_with_talent_pool(job_id: str, db_url: str):
                 logger.error(f"Failed to create match for profile {profile.id}: {e}")
 
         db.commit()
+
+        # Second pass: match candidates without completed interviews but with profile data
+        matched_candidate_ids = {p.candidate_id for p in profiles}
+
+        from sqlalchemy import or_
+        profile_candidates = db.query(Candidate).filter(
+            or_(
+                Candidate.resume_url.isnot(None),
+                Candidate.github_username.isnot(None),
+            ),
+            ~Candidate.id.in_(matched_candidate_ids) if matched_candidate_ids else True,
+        ).all()
+
+        logger.info(f"Auto-matching job {job_id} with {len(profile_candidates)} profile-only candidates")
+
+        for candidate in profile_candidates:
+            try:
+                candidate_data = candidate.resume_parsed_data
+                candidate_preferences = getattr(candidate, 'sharing_preferences', None)
+
+                match_result = _run_async(
+                    matching_service.calculate_match(
+                        interview_score=None,  # No interview
+                        candidate_data=candidate_data,
+                        job_title=job.title,
+                        job_requirements=job.requirements or [],
+                        job_location=job.location,
+                        job_vertical=job.vertical.value,
+                        candidate_preferences=candidate_preferences,
+                        job_company_stage=job_company_stage,
+                        job_industry=job_industry,
+                    )
+                )
+
+                # Only create match if score >= 30 to avoid noise
+                if match_result.boosted_match_score < 30:
+                    continue
+
+                existing_match = db.query(Match).filter(
+                    Match.candidate_id == candidate.id,
+                    Match.job_id == job_id
+                ).first()
+
+                if not existing_match:
+                    new_match = Match(
+                        id=f"m{uuid.uuid4().hex[:24]}",
+                        candidate_id=candidate.id,
+                        job_id=job_id,
+                        score=0.0,  # No interview score
+                        interview_score=None,
+                        skills_match_score=match_result.skills_match_score,
+                        experience_match_score=match_result.experience_match_score,
+                        location_match=match_result.location_match,
+                        overall_match_score=match_result.boosted_match_score,
+                        factors=json.dumps(match_result.factors, ensure_ascii=False),
+                        ai_reasoning=match_result.ai_reasoning,
+                    )
+                    db.add(new_match)
+                    logger.info(f"Created profile-only match for candidate {candidate.id}, score: {match_result.boosted_match_score}")
+
+            except Exception as e:
+                logger.error(f"Failed to create profile-only match for candidate {candidate.id}: {e}")
+
+        db.commit()
         logger.info(f"Completed auto-matching for job {job_id}")
 
     except Exception as e:

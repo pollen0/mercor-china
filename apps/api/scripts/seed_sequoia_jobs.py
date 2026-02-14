@@ -410,7 +410,7 @@ COMPANIES = [
         "founders": [
             {"name": "Isaac Evans", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/isaacevans"},
             {"name": "Drew Dennison", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Luke O'Malley", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Luke O'Malley", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/lukeomalley"},
         ],
         "jobs": [
             {
@@ -515,7 +515,7 @@ COMPANIES = [
         "founders": [
             {"name": "Immad Akhund", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/iakhund"},
             {"name": "Max Tagher", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Jason Zhang", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Jason Zhang", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/jasonzhang1"},
         ],
         "jobs": [
             {
@@ -559,7 +559,7 @@ COMPANIES = [
         "founders": [
             {"name": "Arvind Jain", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/jain-arvind"},
             {"name": "T.R. Vishwanath", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Tony Gentilcore", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Tony Gentilcore", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/tonygentilcore"},
         ],
         "jobs": [
             {
@@ -603,7 +603,7 @@ COMPANIES = [
         "founders": [
             {"name": "Filip Kaliszan", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/filipkaliszan"},
             {"name": "James Ren", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Benjamin Bercovitz", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Benjamin Bercovitz", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/benbercovitz"},
         ],
         "jobs": [
             {
@@ -665,8 +665,8 @@ COMPANIES = [
             "Fund: Sequoia | HQ: Pflugerville, TX"
         ),
         "founders": [
-            {"name": "Elon Musk", "title": "Founder & CEO", "linkedin": ""},
-            {"name": "Steve Davis", "title": "President", "linkedin": ""},
+            {"name": "Elon Musk", "title": "Founder & CEO", "linkedin": "https://linkedin.com/in/elonrmusk"},
+            {"name": "Steve Davis", "title": "President", "linkedin": "https://linkedin.com/in/stevedavis"},
         ],
         "jobs": [
             {
@@ -771,8 +771,8 @@ COMPANIES = [
             "Fund: Sequoia | HQ: South San Francisco"
         ),
         "founders": [
-            {"name": "Keller Rinaudo Cliffton", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Keenan Wyrobek", "title": "CTO & Co-Founder", "linkedin": ""},
+            {"name": "Keller Rinaudo Cliffton", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/kellerrinaudo"},
+            {"name": "Keenan Wyrobek", "title": "CTO & Co-Founder", "linkedin": "https://linkedin.com/in/keenanwyrobek"},
         ],
         "jobs": [
             {
@@ -834,9 +834,9 @@ COMPANIES = [
             "Fund: Sequoia | HQ: San Francisco"
         ),
         "founders": [
-            {"name": "Tony Xu", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Stanley Tang", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Andy Fang", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Tony Xu", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/xutony"},
+            {"name": "Stanley Tang", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/stanleytang"},
+            {"name": "Andy Fang", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/andyfang"},
         ],
         "jobs": [
             {
@@ -898,8 +898,8 @@ COMPANIES = [
             "Fund: Sequoia | HQ: San Francisco"
         ),
         "founders": [
-            {"name": "Pedro Franceschi", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Henrique Dubugras", "title": "Co-Founder & Chairman", "linkedin": ""},
+            {"name": "Pedro Franceschi", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/pedrofranceschi"},
+            {"name": "Henrique Dubugras", "title": "Co-Founder & Chairman", "linkedin": "https://linkedin.com/in/hdubugras"},
         ],
         "jobs": [
             {

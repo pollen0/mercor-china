@@ -110,9 +110,9 @@ COMPANIES = [
             "Fund: Precursor Ventures | HQ: San Francisco (cloud-first)"
         ),
         "founders": [
-            {"name": "Alex Robinson", "title": "Co-Founder & CEO", "linkedin": ""},
-            {"name": "Adam Ginsburg", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Yonas Fisseha", "title": "Co-Founder, Engineering", "linkedin": ""},
+            {"name": "Alex Robinson", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/alexrobinson"},
+            {"name": "Adam Ginsburg", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/agins"},
+            {"name": "Yonas Fisseha", "title": "Co-Founder, Engineering", "linkedin": "https://linkedin.com/in/yonasfisseha"},
         ],
         "jobs": [
             {
@@ -158,8 +158,8 @@ COMPANIES = [
             "Fund: Precursor Ventures | HQ: San Francisco (Remote-first)"
         ),
         "founders": [
-            {"name": "Doktor Gurson", "title": "Co-Founder & CEO", "linkedin": ""},
-            {"name": "Dr. Jeff Chang", "title": "Co-Founder & CPO", "linkedin": ""},
+            {"name": "Doktor Gurson", "title": "Co-Founder & CEO", "linkedin": "https://www.linkedin.com/in/doktorgurson"},
+            {"name": "Dr. Jeff Chang", "title": "Co-Founder & CPO", "linkedin": "https://www.linkedin.com/in/jechang"},
         ],
         "jobs": [
             {

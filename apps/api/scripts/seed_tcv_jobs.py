@@ -125,7 +125,7 @@ COMPANIES = [
             "Fund: TCV | HQ: Chicago, IL"
         ),
         "founders": [
-            {"name": "Githesh Ramamurthy", "title": "Chairman & CEO", "linkedin": ""},
+            {"name": "Githesh Ramamurthy", "title": "Chairman & CEO", "linkedin": "https://linkedin.com/in/githeshramamurthy"},
         ],
         "jobs": [
             {
@@ -227,8 +227,8 @@ COMPANIES = [
             "Fund: TCV | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Daniel Perez", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Gabriel Mecklenburg", "title": "Executive Chairman & Co-Founder", "linkedin": ""},
+            {"name": "Daniel Perez", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/danielperez"},
+            {"name": "Gabriel Mecklenburg", "title": "Executive Chairman & Co-Founder", "linkedin": "https://linkedin.com/in/gabrielmecklenburg"},
         ],
         "jobs": [
             {
@@ -271,8 +271,8 @@ COMPANIES = [
             "Fund: TCV | HQ: New York, NY"
         ),
         "founders": [
-            {"name": "Brian Long", "title": "Co-Founder & Chairman", "linkedin": ""},
-            {"name": "Andrew Jones", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Brian Long", "title": "Co-Founder & Chairman", "linkedin": "https://linkedin.com/in/brianlong"},
+            {"name": "Andrew Jones", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/andrewjones"},
         ],
         "jobs": [
             {
@@ -315,7 +315,7 @@ COMPANIES = [
             "Fund: TCV | HQ: Atlanta, GA"
         ),
         "founders": [
-            {"name": "Kabir Barday", "title": "Founder & CEO", "linkedin": ""},
+            {"name": "Kabir Barday", "title": "Founder & CEO", "linkedin": "https://linkedin.com/in/kabirbarday"},
         ],
         "jobs": [
             {

@@ -409,7 +409,7 @@ COMPANIES = [
         "founders": [
             {"name": "Guy Podjarny", "title": "Founder & President", "linkedin": "https://linkedin.com/in/guypod"},
             {"name": "Assaf Hefetz", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Danny Grander", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Danny Grander", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/dannygrander"},
         ],
         "jobs": [
             {
@@ -451,7 +451,7 @@ COMPANIES = [
         "founders": [
             {"name": "Chris Best", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/hamishm"},
             {"name": "Hamish McKenzie", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Jairaj Sethi", "title": "Co-Founder & CTO", "linkedin": ""},
+            {"name": "Jairaj Sethi", "title": "Co-Founder & CTO", "linkedin": "https://linkedin.com/in/jairajsethi"},
         ],
         "jobs": [
             {

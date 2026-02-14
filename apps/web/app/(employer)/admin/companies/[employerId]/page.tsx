@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -85,6 +85,7 @@ export default function CompanyDetailPage() {
   const [data, setData] = useState<EmployerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [expandedJob, setExpandedJob] = useState<string | null>(null)
 
   useEffect(() => {
     const password = localStorage.getItem('admin_password')
@@ -253,20 +254,63 @@ export default function CompanyDetailPage() {
                     </thead>
                     <tbody className="divide-y divide-stone-100">
                       {data.jobs.map(j => (
-                        <tr key={j.id} className="hover:bg-stone-50/50 transition-colors">
-                          <td className="px-4 py-3 text-sm font-medium text-stone-800">{j.title}</td>
-                          <td className="px-4 py-3 text-sm text-stone-500">{formatVertical(j.vertical)}</td>
-                          <td className="px-4 py-3 text-sm text-stone-500">{j.location || '-'}</td>
-                          <td className="px-4 py-3 text-sm text-stone-500">{formatSalary(j.salary_min, j.salary_max)}</td>
-                          <td className="px-4 py-3">
-                            <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
-                              j.is_active ? 'bg-teal-50 text-teal-700' : 'bg-stone-100 text-stone-500'
-                            }`}>
-                              {j.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-stone-400">{new Date(j.created_at).toLocaleDateString()}</td>
-                        </tr>
+                        <Fragment key={j.id}>
+                          <tr
+                            className="hover:bg-stone-50/50 transition-colors cursor-pointer"
+                            onClick={() => setExpandedJob(expandedJob === j.id ? null : j.id)}
+                          >
+                            <td className="px-4 py-3 text-sm font-medium text-stone-800 flex items-center gap-1.5">
+                              <svg className={`w-3.5 h-3.5 text-stone-400 transition-transform ${expandedJob === j.id ? 'rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                              {j.title}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-stone-500">{formatVertical(j.vertical)}</td>
+                            <td className="px-4 py-3 text-sm text-stone-500">{j.location || '-'}</td>
+                            <td className="px-4 py-3 text-sm text-stone-500">{formatSalary(j.salary_min, j.salary_max)}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                                j.is_active ? 'bg-teal-50 text-teal-700' : 'bg-stone-100 text-stone-500'
+                              }`}>
+                                {j.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-stone-400">{new Date(j.created_at).toLocaleDateString()}</td>
+                          </tr>
+                          {expandedJob === j.id && (
+                            <tr key={`${j.id}-detail`}>
+                              <td colSpan={6} className="px-6 py-4 bg-stone-50/30">
+                                <div className="space-y-3">
+                                  {j.role_type && (
+                                    <div>
+                                      <span className="text-xs font-medium text-stone-500 uppercase">Role Type</span>
+                                      <p className="text-sm text-stone-700 mt-0.5">{formatVertical(j.role_type)}</p>
+                                    </div>
+                                  )}
+                                  {j.description && (
+                                    <div>
+                                      <span className="text-xs font-medium text-stone-500 uppercase">Description</span>
+                                      <p className="text-sm text-stone-700 mt-0.5 whitespace-pre-line max-w-3xl">{j.description}</p>
+                                    </div>
+                                  )}
+                                  {j.requirements && j.requirements.length > 0 && (
+                                    <div>
+                                      <span className="text-xs font-medium text-stone-500 uppercase">Requirements</span>
+                                      <ul className="mt-1 space-y-1">
+                                        {j.requirements.map((r, idx) => (
+                                          <li key={idx} className="text-sm text-stone-600 flex items-start gap-2">
+                                            <span className="text-stone-400 mt-1">&#8226;</span>
+                                            {r}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>

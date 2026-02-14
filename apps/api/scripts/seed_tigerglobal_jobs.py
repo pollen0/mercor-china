@@ -248,9 +248,9 @@ COMPANIES = [
             "Fund: Tiger Global | HQ: Boston, MA"
         ),
         "founders": [
-            {"name": "Aman Narang", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Steve Fredette", "title": "President & Co-Founder", "linkedin": ""},
-            {"name": "Jonathan Grimm", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Aman Narang", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/amannarang"},
+            {"name": "Steve Fredette", "title": "President & Co-Founder", "linkedin": "https://linkedin.com/in/stevefredette"},
+            {"name": "Jonathan Grimm", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/jonathangrimm"},
         ],
         "jobs": [
             {
@@ -297,7 +297,7 @@ COMPANIES = [
         "founders": [
             {"name": "Ali Ghodsi", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/alighodsi"},
             {"name": "Ion Stoica", "title": "Co-Founder & Executive Chairman", "linkedin": ""},
-            {"name": "Matei Zaharia", "title": "Co-Founder & CTO", "linkedin": ""},
+            {"name": "Matei Zaharia", "title": "Co-Founder & CTO", "linkedin": "https://linkedin.com/in/mateizaharia"},
         ],
         "jobs": [
             {
@@ -388,8 +388,8 @@ COMPANIES = [
             "Fund: Tiger Global, Y Combinator | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Rujul Zaparde", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Lu Cheng", "title": "CTO & Co-Founder", "linkedin": ""},
+            {"name": "Rujul Zaparde", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/rujulzaparde"},
+            {"name": "Lu Cheng", "title": "CTO & Co-Founder", "linkedin": "https://linkedin.com/in/lucheng"},
         ],
         "jobs": [
             {
@@ -438,7 +438,7 @@ COMPANIES = [
         "founders": [
             {"name": "Jay Kreps", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/jaykreps"},
             {"name": "Neha Narkhede", "title": "Co-Founder & Former CTO", "linkedin": ""},
-            {"name": "Jun Rao", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Jun Rao", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/junrao"},
         ],
         "jobs": [
             {
@@ -483,8 +483,8 @@ COMPANIES = [
             "Fund: Tiger Global (Series E) | HQ: All-Remote (San Francisco)"
         ),
         "founders": [
-            {"name": "Sid Sijbrandij", "title": "CEO & Co-Founder", "linkedin": ""},
-            {"name": "Dmitriy Zaporozhets", "title": "Co-Founder & Engineering Fellow", "linkedin": ""},
+            {"name": "Sid Sijbrandij", "title": "CEO & Co-Founder", "linkedin": "https://linkedin.com/in/sijbrandij"},
+            {"name": "Dmitriy Zaporozhets", "title": "Co-Founder & Engineering Fellow", "linkedin": "https://linkedin.com/in/dzaporozhets"},
         ],
         "jobs": [
             {

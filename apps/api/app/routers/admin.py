@@ -22,11 +22,12 @@ from ..models import (
     MatchStatus,
     MarketingReferrer,
 )
-from ..models.candidate import CandidateVerticalProfile
+from ..models.candidate import CandidateVerticalProfile, VerticalProfileStatus
 from ..models.employer import Organization, OrganizationMember
 from ..models.referral import Referral
 from ..utils.auth import get_current_employer
 from ..config import settings
+from ..services.matching import matching_service
 
 logger = logging.getLogger("pathway.admin")
 router = APIRouter()
@@ -1349,6 +1350,140 @@ async def delete_major(
     logger.info(f"Deleted major: {major_id}")
 
     return {"success": True, "deleted_id": major_id}
+
+
+# ============= Batch Matching =============
+
+class BatchMatchResult(BaseModel):
+    jobs_processed: int
+    profiles_checked: int
+    matches_created: int
+    matches_updated: int
+    errors: int
+
+
+@router.post("/run-batch-matching", response_model=BatchMatchResult)
+async def run_batch_matching(
+    admin=Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """
+    Run matching for all active jobs against all completed vertical profiles.
+    Creates Match records for any (candidate, job) pairs that don't already have one.
+    Used to backfill matches for seeded companies.
+    """
+    import json
+    import asyncio
+
+    # Get all active jobs that have a vertical
+    active_jobs = db.query(Job).filter(
+        Job.is_active == True,
+        Job.vertical.isnot(None)
+    ).all()
+
+    # Get all completed vertical profiles
+    completed_profiles = db.query(CandidateVerticalProfile).filter(
+        CandidateVerticalProfile.status == VerticalProfileStatus.COMPLETED
+    ).all()
+
+    # Index profiles by vertical for fast lookup
+    profiles_by_vertical = {}
+    for profile in completed_profiles:
+        v = profile.vertical
+        if v not in profiles_by_vertical:
+            profiles_by_vertical[v] = []
+        profiles_by_vertical[v].append(profile)
+
+    jobs_processed = 0
+    profiles_checked = 0
+    matches_created = 0
+    matches_updated = 0
+    errors = 0
+
+    for job in active_jobs:
+        jobs_processed += 1
+        matching_profiles = profiles_by_vertical.get(job.vertical, [])
+
+        # Get employer info for preference boost
+        employer = job.employer if job else None
+        job_company_stage = getattr(employer, 'company_stage', None) if employer else None
+        job_industry = getattr(employer, 'industry', None) if employer else None
+
+        for profile in matching_profiles:
+            profiles_checked += 1
+            try:
+                candidate = profile.candidate
+                candidate_data = candidate.resume_parsed_data if candidate else None
+                candidate_preferences = candidate.sharing_preferences if candidate else None
+
+                # Calculate match score
+                match_result = await matching_service.calculate_match(
+                    interview_score=profile.best_score or profile.interview_score or 5.0,
+                    candidate_data=candidate_data,
+                    job_title=job.title,
+                    job_requirements=job.requirements or [],
+                    job_location=job.location,
+                    job_vertical=job.vertical.value if job.vertical else None,
+                    candidate_preferences=candidate_preferences,
+                    job_company_stage=job_company_stage,
+                    job_industry=job_industry,
+                )
+
+                # Check for existing match
+                existing_match = db.query(Match).filter(
+                    Match.candidate_id == profile.candidate_id,
+                    Match.job_id == job.id
+                ).first()
+
+                if existing_match:
+                    # Update existing match
+                    existing_match.score = profile.best_score or profile.interview_score or 5.0
+                    existing_match.interview_score = match_result.interview_score
+                    existing_match.skills_match_score = match_result.skills_match_score
+                    existing_match.experience_match_score = match_result.experience_match_score
+                    existing_match.location_match = match_result.location_match
+                    existing_match.overall_match_score = match_result.boosted_match_score
+                    existing_match.factors = json.dumps(match_result.factors, ensure_ascii=False)
+                    existing_match.ai_reasoning = match_result.ai_reasoning
+                    existing_match.vertical_profile_id = profile.id
+                    matches_updated += 1
+                else:
+                    new_match = Match(
+                        id=generate_cuid("m"),
+                        candidate_id=profile.candidate_id,
+                        job_id=job.id,
+                        vertical_profile_id=profile.id,
+                        score=profile.best_score or profile.interview_score or 5.0,
+                        interview_score=match_result.interview_score,
+                        skills_match_score=match_result.skills_match_score,
+                        experience_match_score=match_result.experience_match_score,
+                        location_match=match_result.location_match,
+                        overall_match_score=match_result.boosted_match_score,
+                        factors=json.dumps(match_result.factors, ensure_ascii=False),
+                        ai_reasoning=match_result.ai_reasoning,
+                    )
+                    db.add(new_match)
+                    matches_created += 1
+
+            except Exception as e:
+                logger.error(f"Batch match error for job {job.id}, profile {profile.id}: {e}")
+                errors += 1
+
+        # Commit per-job to avoid huge transactions
+        db.commit()
+
+    logger.info(
+        f"Batch matching complete: {jobs_processed} jobs, {profiles_checked} profiles checked, "
+        f"{matches_created} created, {matches_updated} updated, {errors} errors"
+    )
+
+    return BatchMatchResult(
+        jobs_processed=jobs_processed,
+        profiles_checked=profiles_checked,
+        matches_created=matches_created,
+        matches_updated=matches_updated,
+        errors=errors,
+    )
 
 
 # ============= Profile Score Admin Endpoints =============

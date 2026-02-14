@@ -67,8 +67,8 @@ COMPANIES = [
             "Fund: Pear VC | HQ: Mountain View, CA"
         ),
         "founders": [
-            {"name": "Joe Lonsdale", "title": "Founder & Chairman", "linkedin": ""},
-            {"name": "Eric Poirier", "title": "CEO", "linkedin": ""},
+            {"name": "Joe Lonsdale", "title": "Founder & Chairman", "linkedin": "https://linkedin.com/in/joelonsdale"},
+            {"name": "Eric Poirier", "title": "CEO", "linkedin": "https://linkedin.com/in/ericpoirier"},
         ],
         "jobs": [
             {
@@ -136,9 +136,9 @@ COMPANIES = [
             "Fund: Pear VC | HQ: Palo Alto, CA"
         ),
         "founders": [
-            {"name": "John Dean", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/johnldean"},
+            {"name": "John Dean", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/johndeanwb"},
             {"name": "Andrew Sushko", "title": "Co-Founder", "linkedin": ""},
-            {"name": "Kai Marshland", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Kai Marshland", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/kaimarshland"},
         ],
         "jobs": [
             {
@@ -293,8 +293,8 @@ COMPANIES = [
             "Fund: Pear VC (PearX) | HQ: New York, NY"
         ),
         "founders": [
-            {"name": "Shelby Breger", "title": "Co-Founder & CEO", "linkedin": ""},
-            {"name": "Marisa Reddy", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Shelby Breger", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/shelbybreger"},
+            {"name": "Marisa Reddy", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/marisareddy"},
         ],
         "jobs": [
             {
@@ -338,8 +338,8 @@ COMPANIES = [
             "Fund: Pear VC (PearX) | HQ: San Francisco, CA"
         ),
         "founders": [
-            {"name": "Ray Zhou", "title": "Co-Founder & CEO", "linkedin": ""},
-            {"name": "Shubham Goel", "title": "Co-Founder", "linkedin": ""},
+            {"name": "Ray Zhou", "title": "Co-Founder & CEO", "linkedin": "https://linkedin.com/in/rayzhou"},
+            {"name": "Shubham Goel", "title": "Co-Founder", "linkedin": "https://linkedin.com/in/shubhamgoel"},
         ],
         "jobs": [
             {
