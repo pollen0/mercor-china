@@ -19,12 +19,17 @@ Pathway is an AI-powered career platform for US college students. Students inter
 
 **Approved AI Services:**
 - **Anthropic Claude API** (Primary for all AI tasks)
-  - LLM/Scoring: Claude Sonnet 4.5 (`claude-sonnet-4-5-20251101`)
+  - General tasks: Claude Sonnet 4.5 (`claude-sonnet-4-5-20250929`)
+  - Deep reasoning (scoring/analysis): Claude Opus 4.1 (`claude-opus-4-1-20250805`)
   - Env vars: `ANTHROPIC_API_KEY`
 
 - **DeepSeek API** (Fallback/cost optimization)
   - LLM/Scoring: `deepseek-chat` model
   - Env vars: `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`
+
+- **OpenAI API** (Speech-to-text only — Claude has no native STT)
+  - Whisper for interview transcription
+  - Env vars: `OPENAI_API_KEY`
 
 ### 2. Design System (HEYTEA-Inspired)
 
@@ -39,6 +44,7 @@ Pathway is an AI-powered career platform for US college students. Students inter
 | Primary buttons | `bg-stone-900 text-white` | `bg-indigo-*`, `bg-blue-*` |
 | Font weight | `font-medium`, `font-semibold` max | `font-bold` |
 | Dropdowns | Custom styled components | Native `<select>` elements |
+| Text | `text-stone-900` | `text-black` |
 
 **Rule**: No more than 2 colors per component. Keep it minimal.
 
@@ -49,9 +55,12 @@ Pathway is an AI-powered career platform for US college students. Students inter
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui |
 | Backend | FastAPI, SQLAlchemy, PostgreSQL (Neon) |
 | Storage | Cloudflare R2 (S3-compatible) |
-| AI | Claude Sonnet 4.5 (primary), DeepSeek (fallback) |
-| Auth | GitHub OAuth, Email/Password, JWT (7-day expiry) |
+| AI | Claude Sonnet 4.5 (general), Claude Opus 4.1 (scoring), DeepSeek (fallback), OpenAI Whisper (STT) |
+| Auth | GitHub OAuth, Email/Password, JWT (1h access + 30-day refresh) |
 | Email | Resend |
+| Caching | Redis (optional) |
+| Testing | pytest (backend), Jest (frontend unit), Playwright (E2E) |
+| CI/CD | GitHub Actions |
 
 ### 4. Target Verticals
 
@@ -141,53 +150,70 @@ pathway/
 ├── TODO.md                        # Product backlog
 ├── GTM_STRATEGY.md                # Go-to-market approach (invite-only beta)
 ├── MATCHING_LOGIC.md              # Preference boost algorithm docs
-├── docs/                          # Additional research docs
+├── .env.example                   # Environment variable template
+├── docker-compose.yml             # PostgreSQL 15 for local dev
+├── .github/workflows/ci.yml      # CI pipeline (pytest, Jest, Playwright)
+├── .husky/pre-commit              # Pre-commit hook (runs frontend lint)
+├── docs/                          # Market research docs
 │
 ├── apps/
 │   ├── api/                       # FastAPI Backend
 │   │   ├── app/
-│   │   │   ├── main.py            # App entry point, router registration
-│   │   │   ├── config.py          # Settings (env vars)
+│   │   │   ├── main.py            # App entry point, router registration, auto-seeding
+│   │   │   ├── config.py          # Settings (env vars, model configs)
 │   │   │   ├── database.py        # SQLAlchemy engine, session
-│   │   │   ├── models/            # 25 SQLAlchemy ORM models
-│   │   │   ├── routers/           # 18 API endpoint modules
-│   │   │   ├── services/          # 30 business logic services
-│   │   │   ├── schemas/           # 14 Pydantic validation modules
-│   │   │   └── utils/             # 7 helper modules
+│   │   │   ├── models/            # 24 SQLAlchemy ORM models
+│   │   │   ├── routers/           # 17 API endpoint modules
+│   │   │   ├── services/          # 28 business logic services
+│   │   │   ├── schemas/           # 13 Pydantic validation modules
+│   │   │   ├── utils/             # 7 helper modules
+│   │   │   ├── middleware/        # 1 middleware (security headers)
+│   │   │   └── data/              # 9 seed data files (universities, courses, clubs)
 │   │   ├── migrations/versions/   # 39 Alembic migrations
-│   │   └── scripts/               # 15 seed scripts (VC job boards)
+│   │   ├── scripts/               # 31 seed/utility scripts
+│   │   └── tests/                 # 17 test files (pytest)
 │   │
 │   └── web/                       # Next.js Frontend
 │       ├── app/
 │       │   ├── page.tsx            # Landing page
-│       │   ├── (candidate)/        # Student pages (dashboard, interview, settings)
-│       │   ├── (employer)/         # Employer pages (dashboard, talent pool, jobs)
+│       │   ├── (candidate)/        # Student pages (dashboard, interview, settings, resume)
+│       │   ├── (employer)/         # Employer pages (dashboard, talent pool, jobs, team, admin)
 │       │   ├── (auth)/             # Auth pages (forgot/reset password)
 │       │   ├── auth/               # OAuth callbacks (GitHub, Google)
+│       │   ├── api/                # Next.js API routes (4 route handlers)
 │       │   ├── schedule/[slug]/    # Public self-scheduling
-│       │   └── talent/[id]/        # Public candidate profiles
-│       ├── components/             # 52 React components
+│       │   ├── talent/[id]/        # Public candidate profiles
+│       │   └── verify-email/       # Email verification
+│       ├── components/             # 49 React components
 │       │   ├── ui/                 # shadcn base components (10)
-│       │   ├── dashboard/          # Candidate dashboard components (11)
-│       │   ├── employer/           # Employer-specific components (6)
-│       │   ├── interview/          # Interview flow components (10)
-│       │   ├── scheduling/         # Scheduling components (5)
-│       │   ├── calendar/           # Calendar components (3)
-│       │   ├── layout/             # Layout components (4)
+│       │   ├── dashboard/          # Candidate dashboard components (12)
+│       │   ├── employer/           # Employer-specific components (5)
+│       │   ├── interview/          # Interview flow components (9)
+│       │   ├── scheduling/         # Scheduling components (4)
+│       │   ├── calendar/           # Calendar components (2)
+│       │   ├── layout/             # Layout components (3 + container)
 │       │   └── verification/       # Verification banners (2)
 │       ├── lib/
-│       │   ├── api.ts              # Typed API client (~4700 lines)
+│       │   ├── api.ts              # Typed API client (~4800 lines)
 │       │   ├── auth.ts             # JWT token management
 │       │   ├── utils.ts            # General utilities
-│       │   └── sanitize.ts         # XSS prevention
+│       │   ├── sanitize.ts         # XSS prevention
+│       │   ├── prisma.ts           # Prisma client
+│       │   ├── hooks/              # Custom React hooks
+│       │   └── validations/        # Form validation schemas
+│       ├── __tests__/              # 7 Jest unit tests
+│       ├── e2e/                    # 5 Playwright E2E tests
+│       ├── scripts/                # 3 scraping utilities
 │       └── DESIGN_PRINCIPLES.md    # UI/UX guidelines
 │
-└── .claude/CLAUDE.md              # Quick reference (loaded into system prompt)
+└── packages/
+    └── shared/                    # @pathway/shared TypeScript package
+        └── src/index.ts           # Shared types/utilities
 ```
 
 ---
 
-## Backend: Models (25 files)
+## Backend: Models (24 files)
 
 `apps/api/app/models/`
 
@@ -196,11 +222,11 @@ pathway/
 | `candidate.py` | Candidate, CandidateVerticalProfile | Student profiles, education, GitHub, vertical profiles |
 | `employer.py` | Employer, Job, Organization, OrganizationMember, Match | Companies, jobs, orgs, team structure, matching |
 | `interview.py` | InterviewSession, InterviewResponse | Interview sessions, Q&A, video responses |
-| `activity.py` | Activity, Award | Student activities, clubs, awards |
+| `activity.py` | Activity, Award, Club | Student activities, clubs, awards |
 | `availability.py` | Availability | Interviewer time slot availability |
 | `candidate_note.py` | CandidateNote | Private employer notes on candidates |
 | `coding_challenge.py` | CodingChallenge | Coding challenge data and submissions |
-| `course.py` | Course | Course database (UC Berkeley catalog) |
+| `course.py` | Course, University | Course database, university catalog |
 | `github_analysis.py` | GitHubAnalysis | Latest GitHub code quality scores |
 | `github_analysis_history.py` | GitHubAnalysisHistory | Timestamped GitHub score snapshots (growth) |
 | `major.py` | Major | University major/degree options |
@@ -220,7 +246,7 @@ pathway/
 
 ---
 
-## Backend: Routers (18 files)
+## Backend: Routers (17 files)
 
 `apps/api/app/routers/`
 
@@ -233,26 +259,26 @@ pathway/
 | `organizations.py` | CRUD | Organization management, settings |
 | `team_members.py` | CRUD | Team member management with roles |
 | `scheduling_links.py` | CRUD | Self-service scheduling link management |
-| `calendar.py` | POST/GET | Google Calendar OAuth, scheduling |
-| `employer_calendar.py` | POST/GET/PATCH | Employer-specific calendar operations |
+| `calendar.py` | POST/GET | Google Calendar OAuth, scheduling (candidates) |
+| `employer_calendar.py` | POST/GET/PATCH | Google Calendar OAuth, scheduling (employers) |
 | `activities.py` | POST/GET | Student activities, clubs, awards |
 | `courses.py` | GET | Course database lookup |
 | `questions.py` | GET/POST | Question bank, progressive question generation |
 | `referrals.py` | POST/GET | Referral code generation, stats, tracking |
-| `public.py` | GET | Public profiles, shareable links, talent pages |
+| `public.py` | GET | Public profiles, shareable links, talent pages, stats |
 | `vibe_code.py` | POST/GET | Vibe code challenge submission and scoring |
 | `health.py` | GET | Health check endpoint |
-| `admin.py` | Multiple | Admin utilities, batch operations |
+| `admin.py` | Multiple | Admin utilities, batch operations, employer detail |
 
 ---
 
-## Backend: Services (30 files)
+## Backend: Services (28 files)
 
 `apps/api/app/services/`
 
 | File | Purpose |
 |------|---------|
-| `scoring.py` | AI interview scoring (5 dimensions, Claude Sonnet 4.5) |
+| `scoring.py` | AI interview scoring (5 dimensions, Claude) |
 | `progressive_questions.py` | AI question generation based on interview history |
 | `matching.py` | Candidate-job matching with preference boost (+30 max) |
 | `github.py` | GitHub API integration layer |
@@ -268,7 +294,7 @@ pathway/
 | `resume_scoring.py` | Resume parsing, skill extraction, quality scoring |
 | `transcript.py` | Transcript upload and GPA/major extraction |
 | `transcript_verification.py` | Official transcript validation |
-| `transcription.py` | Audio-to-text transcription (interview videos) |
+| `transcription.py` | Audio-to-text transcription (OpenAI Whisper) |
 | `candidate_scoring.py` | Candidate profile overall scoring |
 | `profile_scoring.py` | Profile completeness and strength scoring |
 | `cohort.py` | Cohort analysis (percentile ranking, comparative stats) |
@@ -283,7 +309,7 @@ pathway/
 
 ---
 
-## Backend: Schemas (14 files)
+## Backend: Schemas (13 files)
 
 `apps/api/app/schemas/`
 
@@ -305,7 +331,7 @@ pathway/
 
 ---
 
-## Backend: Utilities (7 files)
+## Backend: Utilities (7 files) & Middleware (1 file)
 
 `apps/api/app/utils/`
 
@@ -316,12 +342,38 @@ pathway/
 | `csrf.py` | CSRF state validation for OAuth |
 | `date_parser.py` | Parse semester strings ("Fall 2022") to dates |
 | `file_validation.py` | Resume/document file type validation |
-| `rate_limit.py` | API rate limiting middleware |
+| `rate_limit.py` | API rate limiting middleware (slowapi) |
 | `sanitize.py` | XSS prevention, HTML sanitization |
+
+`apps/api/app/middleware/`
+
+| File | Purpose |
+|------|---------|
+| `security.py` | Security headers middleware (HSTS in production) |
 
 ---
 
-## Seed Scripts System
+## Backend: Auto-Seed Data (9 files)
+
+`apps/api/app/data/`
+
+On startup, `main.py` auto-seeds universities, courses, and clubs if tables are empty.
+
+| File | Purpose |
+|------|---------|
+| `seed_courses.py` | Base university and course catalog |
+| `seed_courses_extended.py` | Extended course data (batch 2) |
+| `seed_courses_extended2.py` | Extended course data (batch 3) |
+| `seed_courses_extended3.py` | Extended course data (batch 4) |
+| `seed_clubs.py` | Base student clubs |
+| `seed_clubs_extended.py` | Extended clubs (batch 2) |
+| `seed_clubs_extended2.py` | Extended clubs (batch 3) |
+| `seed_clubs_extended3.py` | Extended clubs (batch 4) |
+| `seed_majors.py` | University majors catalog |
+
+---
+
+## Seed Scripts System (31 files)
 
 `apps/api/scripts/`
 
@@ -333,6 +385,7 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `seed_yc_jobs.py` | Y Combinator | Done |
 | `seed_yc_batch2.py` | Y Combinator (Batch 2) | Done |
 | `seed_a16z_jobs.py` | Andreessen Horowitz | Done |
+| `seed_a16z_batch2_jobs.py` | Andreessen Horowitz (Batch 2) | Done |
 | `seed_sequoia_jobs.py` | Sequoia Capital | Done |
 | `seed_lightspeed_jobs.py` | Lightspeed Venture Partners | Done |
 | `seed_khosla_jobs.py` | Khosla Ventures | Done |
@@ -343,11 +396,22 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `seed_legend_jobs.py` | Legend Venture Capital | Done |
 | `seed_tigerglobal_jobs.py` | Tiger Global Management | Done |
 | `seed_tcv_jobs.py` | Technology Crossover Ventures | Done |
+| `seed_kpcb_jobs.py` | Kleiner Perkins | Done |
+| `seed_kp_techstars_jobs.py` | Kleiner Perkins + Techstars | Done |
+| `seed_firstround_jobs.py` | First Round Capital | Done |
+| `seed_techstars_jobs.py` | Techstars | Done |
+| `seed_500global_jobs.py` | 500 Global | Done |
+| `seed_floodgate_jobs.py` | Floodgate | Done |
+| `seed_pearvc_jobs.py` | Pear VC | Done |
+| `seed_contrary_jobs.py` | Contrary | Done |
+| `seed_hustlefund_jobs.py` | Hustle Fund | Done |
+| `seed_precursor_jobs.py` | Precursor Ventures | Done |
+| `seed_2048ventures_jobs.py` | 2048 Ventures | Done |
+| `seed_gcffindex_jobs.py` | GCF Fund Index | Done |
+| `seed_topstartups_jobs.py` | Top Startups (aggregator) | Done |
+| `seed_from_json.py` | Generic JSON-based seeder | Utility |
 | `seed_coding_challenges.py` | Coding challenges (standalone) | Done |
-
-**DB Totals**: ~134 employers, ~180 jobs across all VC firms.
-
-**Guide**: `scripts/SEED_JOBS_GUIDE.md` — instructions for creating new seed scripts.
+| `backfill_linkedin.py` | Backfill LinkedIn URLs for employers | Utility |
 
 **Running**: `cd apps/api && python -m scripts.seed_[SCRIPT_ID]_jobs`
 
@@ -355,7 +419,7 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 
 ---
 
-## Frontend: Key Pages
+## Frontend: Key Pages (37 page.tsx files)
 
 ### Student Pages
 | URL | File | Purpose |
@@ -364,7 +428,10 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `/candidate/login` | `(candidate)/candidate/login/page.tsx` | Student login |
 | `/candidate/dashboard` | `(candidate)/candidate/dashboard/page.tsx` | Main student dashboard |
 | `/candidate/settings` | `(candidate)/candidate/settings/page.tsx` | Profile settings |
+| `/candidate/resume` | `(candidate)/candidate/resume/page.tsx` | Resume management |
 | `/interview/select` | `(candidate)/interview/select/page.tsx` | Vertical selection |
+| `/interview/start` | `(candidate)/interview/start/page.tsx` | Interview start |
+| `/interview/[id]` | `(candidate)/interview/[sessionId]/page.tsx` | Interview session |
 | `/interview/[id]/room` | `(candidate)/interview/[sessionId]/room/page.tsx` | Video interview room |
 | `/interview/[id]/complete` | `(candidate)/interview/[sessionId]/complete/page.tsx` | Interview results |
 | `/practice` | `(candidate)/practice/page.tsx` | Practice mode |
@@ -372,15 +439,23 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 ### Employer Pages
 | URL | File | Purpose |
 |-----|------|---------|
-| `/employer/login` | `employer/login/page.tsx` | Employer login/register |
-| `/dashboard` | `(employer)/dashboard/page.tsx` | Employer dashboard |
+| `/employer/login` | `(employer)/employer/login/page.tsx` | Employer login/register |
+| `/employer` | `(employer)/employer/page.tsx` | Employer landing |
+| `/employer/dashboard` | `(employer)/employer/dashboard/page.tsx` | Employer dashboard |
+| `/employer/dashboard/interviews/[id]` | `(employer)/employer/dashboard/interviews/[id]/page.tsx` | Interview detail |
+| `/employer/dashboard/scheduled-interviews` | `(employer)/employer/dashboard/scheduled-interviews/page.tsx` | Scheduled interviews |
+| `/employer/dashboard/scheduling-links` | `(employer)/employer/dashboard/scheduling-links/page.tsx` | Scheduling links |
+| `/employer/dashboard/team` | `(employer)/employer/dashboard/team/page.tsx` | Team management |
+| `/employer/dashboard/team/[id]/availability` | `(employer)/employer/dashboard/team/[id]/availability/page.tsx` | Team member availability |
+| `/dashboard` | `(employer)/dashboard/page.tsx` | Legacy employer dashboard |
 | `/dashboard/jobs` | `(employer)/dashboard/jobs/page.tsx` | Job postings |
 | `/dashboard/talent-pool` | `(employer)/dashboard/talent-pool/page.tsx` | Browse candidates |
 | `/dashboard/talent-pool/[id]` | `(employer)/dashboard/talent-pool/[profileId]/page.tsx` | Candidate detail + growth timeline |
 | `/dashboard/interviews` | `(employer)/dashboard/interviews/page.tsx` | All interviews |
+| `/dashboard/interviews/[id]` | `(employer)/dashboard/interviews/[id]/page.tsx` | Interview detail (legacy) |
 | `/dashboard/settings` | `(employer)/dashboard/settings/page.tsx` | Organization settings |
-| `/dashboard/scheduling-links` | `(employer)/dashboard/scheduling-links/page.tsx` | Scheduling link management |
 | `/admin` | `(employer)/admin/page.tsx` | Admin panel |
+| `/admin/companies/[id]` | `(employer)/admin/companies/[employerId]/page.tsx` | Admin employer detail |
 
 ### Public Pages
 | URL | File | Purpose |
@@ -389,6 +464,7 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `/talent/[id]` | `talent/[candidateId]/page.tsx` | Public candidate profile |
 | `/schedule/[slug]` | `schedule/[slug]/page.tsx` | Self-service scheduling |
 | `/privacy` | `privacy/page.tsx` | Privacy policy |
+| `/verify-email` | `verify-email/page.tsx` | Email verification |
 
 ### Auth Pages
 | URL | File | Purpose |
@@ -396,18 +472,29 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `/forgot-password` | `(auth)/forgot-password/page.tsx` | Password reset request |
 | `/reset-password` | `(auth)/reset-password/page.tsx` | Password reset form |
 | `/auth/github/callback` | `auth/github/callback/page.tsx` | GitHub OAuth callback |
-| `/auth/google/callback` | `auth/google/callback/page.tsx` | Google OAuth callback |
+| `/auth/google/callback` | `auth/google/callback/page.tsx` | Google OAuth callback (candidates) |
+| `/employer-auth/google/callback` | `(employer)/employer-auth/google/callback/page.tsx` | Google OAuth callback (employers) |
+
+### Next.js API Routes
+| Route | Purpose |
+|-------|---------|
+| `api/candidates/lookup/route.ts` | Candidate lookup |
+| `api/candidates/register/route.ts` | Registration proxy |
+| `api/interviews/start/route.ts` | Interview start proxy |
+| `api/jobs/route.ts` | Jobs listing |
 
 ---
 
-## Frontend: Components (52 files)
+## Frontend: Components (49 files)
 
-### Dashboard Components (`components/dashboard/`)
+### Dashboard Components (`components/dashboard/`) — 12 files
 | Component | Purpose |
 |-----------|---------|
 | `candidate-card.tsx` | Candidate summary card |
 | `github-analysis.tsx` | GitHub code quality visualization |
 | `match-score-card.tsx` | Match score display |
+| `matching-readiness-alert.tsx` | Alert when matching prerequisites incomplete |
+| `opportunities-tab.tsx` | Job opportunities tab on candidate dashboard |
 | `score-card.tsx` | Interview score breakdown |
 | `video-player.tsx` | Interview video playback |
 | `transcript-viewer.tsx` | Document viewer |
@@ -415,7 +502,7 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `bulk-action-toolbar.tsx` | Bulk actions for candidates |
 | `contact-candidate-modal.tsx` | Contact/message modal |
 
-### Employer Components (`components/employer/`)
+### Employer Components (`components/employer/`) — 5 files
 | Component | Purpose |
 |-----------|---------|
 | `growth-timeline.tsx` | Growth trajectory visualization (recruiter-only) |
@@ -424,7 +511,7 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `schedule-interview-modal.tsx` | Interview scheduling modal |
 | `employer-calendar-settings.tsx` | Calendar settings for team |
 
-### Interview Components (`components/interview/`)
+### Interview Components (`components/interview/`) — 9 files
 | Component | Purpose |
 |-----------|---------|
 | `video-recorder.tsx` | Video recording capture |
@@ -437,7 +524,7 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `followup-modal.tsx` | Follow-up question prompts |
 | `practice-feedback-card.tsx` | Practice mode feedback |
 
-### Scheduling Components (`components/scheduling/`)
+### Scheduling Components (`components/scheduling/`) — 4 files
 | Component | Purpose |
 |-----------|---------|
 | `availability-grid.tsx` | Weekly time slot selector |
@@ -445,8 +532,49 @@ Database seeding scripts that populate intern job listings from VC portfolio com
 | `conflict-alert.tsx` | Scheduling conflict warning |
 | `interviewer-select.tsx` | Select interviewer dropdown |
 
-### UI Components (`components/ui/`) — shadcn/ui
+### Calendar Components (`components/calendar/`) — 2 files
+| Component | Purpose |
+|-----------|---------|
+| `calendar-settings.tsx` | Calendar configuration |
+| `schedule-meeting.tsx` | Meeting scheduling |
+
+### Layout Components (`components/layout/`) — 3 files
+| Component | Purpose |
+|-----------|---------|
+| `container.tsx` | Page container |
+| `footer.tsx` | Site footer |
+| `navbar.tsx` | Navigation bar |
+
+### Verification Components (`components/verification/`) — 2 files
+| Component | Purpose |
+|-----------|---------|
+| `email-verification-banner.tsx` | Email verification prompt |
+| `employer-verification-banner.tsx` | Employer verification prompt |
+
+### Root Components — 2 files
+| Component | Purpose |
+|-----------|---------|
+| `error-boundary.tsx` | React error boundary |
+| `loading.tsx` | Loading spinner |
+
+### UI Components (`components/ui/`) — 10 files (shadcn/ui)
 `badge.tsx`, `button.tsx`, `card.tsx`, `custom-select.tsx`, `dialog.tsx`, `document-preview.tsx`, `input.tsx`, `label.tsx`, `textarea.tsx`, `upload-progress.tsx`
+
+---
+
+## Frontend: Lib (7 files)
+
+`apps/web/lib/`
+
+| File | Purpose |
+|------|---------|
+| `api.ts` | Typed API client (~4800 lines) |
+| `auth.ts` | JWT token management |
+| `utils.ts` | General utilities |
+| `sanitize.ts` | XSS prevention |
+| `prisma.ts` | Prisma client instance |
+| `hooks/use-candidate-data.ts` | Custom hook for candidate data fetching |
+| `validations/candidate.ts` | Candidate form validation schemas |
 
 ---
 
@@ -490,6 +618,11 @@ PATCH /api/employers/talent-pool/{id}/status           # Update status
 GET  /api/employers/talent-pool/{id}/growth-timeline   # Growth timeline
 ```
 
+### Public
+```
+GET  /api/public/stats                   # Platform statistics (landing page)
+```
+
 ### Referrals
 ```
 GET  /api/referrals/me/code              # Get/generate referral code
@@ -521,18 +654,20 @@ POST /api/schedule/{slug}/book           # Public: Book slot
 - History tracking: each analysis creates a snapshot for growth tracking
 - Fernet-encrypted token storage
 
+### Opportunities / Matching
+- Candidates see matched job opportunities on their dashboard
+- Eligibility requires: resume uploaded, transcript uploaded, GitHub connected
+- Base score (0-100) from interview + skills + experience + GitHub
+- Preference boost: +10 company stage, +10 location, +10 industry (max +30)
+- Score capped at 100
+- See `MATCHING_LOGIC.md` for full algorithm
+
 ### Growth Tracking System (Recruiter-Only)
 Tracks all key datapoints with timestamps to show student growth over time:
 - **ResumeVersion**: Versioned resume uploads with skill deltas
 - **GitHubAnalysisHistory**: Timestamped GitHub score snapshots
 - **ProfileChangeLog**: Audit trail for GPA, major, education changes
 - **Growth Timeline UI**: Progressive disclosure component at `/employer/dashboard/talent-pool/[id]`
-
-### Matching & Preference Boost
-- Base score (0-100) from interview + skills + experience + GitHub
-- Preference boost: +10 company stage, +10 location, +10 industry (max +30)
-- Score capped at 100
-- See `MATCHING_LOGIC.md` for full algorithm
 
 ### Referral System
 - Each candidate gets a unique referral code
@@ -542,15 +677,87 @@ Tracks all key datapoints with timestamps to show student growth over time:
 
 ---
 
+## Testing
+
+### Backend Tests (17 files)
+
+`apps/api/tests/`
+
+| File | Coverage |
+|------|----------|
+| `conftest.py` | Test fixtures, DB setup |
+| `test_auth.py` | Login, registration, JWT |
+| `test_bulk_actions.py` | Bulk candidate operations |
+| `test_cache.py` | Redis caching |
+| `test_candidates.py` | Candidate CRUD |
+| `test_employers.py` | Employer operations |
+| `test_followups.py` | Follow-up questions |
+| `test_github.py` | GitHub integration |
+| `test_health.py` | Health check |
+| `test_interviews.py` | Interview flow |
+| `test_invites.py` | Team invitations |
+| `test_matching.py` | Matching algorithm |
+| `test_onboarding.py` | Onboarding flow |
+| `test_practice.py` | Practice interviews |
+| `test_questions.py` | Question generation |
+| `test_scoring.py` | AI scoring |
+| `test_talent_pool.py` | Talent pool browsing |
+
+### Frontend Unit Tests (7 files)
+
+`apps/web/__tests__/`
+
+| File | Coverage |
+|------|----------|
+| `components/dashboard.test.tsx` | Dashboard rendering |
+| `components/error-boundary.test.tsx` | Error handling |
+| `components/footer.test.tsx` | Footer component |
+| `components/interview.test.tsx` | Interview flow |
+| `components/loading.test.tsx` | Loading states |
+| `components/navbar.test.tsx` | Navigation |
+| `lib/api.test.ts` | API client |
+
+### E2E Tests (5 files)
+
+`apps/web/e2e/`
+
+| File | Coverage |
+|------|----------|
+| `accessibility.spec.ts` | a11y checks |
+| `employer-auth.spec.ts` | Employer auth flow |
+| `employer-dashboard.spec.ts` | Employer dashboard |
+| `home.spec.ts` | Landing page |
+| `interview-flow.spec.ts` | Full interview flow |
+
+### CI Pipeline
+
+`.github/workflows/ci.yml` — Runs on push/PR to `main` and `us-college-pivot`:
+
+1. **Backend Tests** — Python 3.11, pytest with coverage, PostgreSQL 15
+2. **Frontend Lint & Type Check** — Node.js 20, TypeScript, ESLint
+3. **Frontend Tests** — Jest with coverage
+4. **E2E Tests** — Playwright (chromium), depends on backend + frontend tests
+
+---
+
 ## Environment Variables
 
 ```env
 # Database
 DATABASE_URL=postgresql://user:pass@host:5432/pathway
+POSTGRES_USER=pathway
+POSTGRES_PASSWORD=pathway_password
+POSTGRES_DB=pathway_db
 
 # Security
 API_SECRET_KEY=your-secret-key
 JWT_SECRET=your-jwt-secret
+JWT_ALGORITHM=HS256                          # Default: HS256
+
+# Frontend
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_URL=http://localhost:3000
 
 # Anthropic (Primary AI)
 ANTHROPIC_API_KEY=sk-ant-...
@@ -559,6 +766,12 @@ ANTHROPIC_API_KEY=sk-ant-...
 DEEPSEEK_API_KEY=sk-...
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 
+# OpenAI (Whisper STT only)
+OPENAI_API_KEY=sk-...
+
+# Admin
+ADMIN_PASSWORD=your-admin-password
+
 # GitHub OAuth
 GITHUB_CLIENT_ID=Iv1.xxxx
 GITHUB_CLIENT_SECRET=xxxx
@@ -566,6 +779,8 @@ GITHUB_CLIENT_SECRET=xxxx
 # Google Calendar OAuth
 GOOGLE_CLIENT_ID=xxxx
 GOOGLE_CLIENT_SECRET=xxxx
+GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
+GOOGLE_EMPLOYER_REDIRECT_URI=http://localhost:3000/employer-auth/google/callback
 
 # Cloudflare R2 (Storage)
 R2_ACCOUNT_ID=xxxx
@@ -576,6 +791,13 @@ R2_BUCKET_NAME=pathway-videos
 # Email (Resend)
 RESEND_API_KEY=re_xxxx
 EMAIL_FROM=Pathway <noreply@pathway.careers>
+
+# Redis (optional)
+REDIS_URL=redis://localhost:6379/0
+CACHE_TTL_SECONDS=300
+
+# Encryption (for GitHub tokens)
+ENCRYPTION_KEY=your-fernet-key
 
 # URLs
 FRONTEND_URL=http://localhost:3000
@@ -589,20 +811,23 @@ CORS_ORIGINS=http://localhost:3000
 ### Running Locally
 
 ```bash
+# Database (Docker)
+docker-compose up -d
+
 # Backend
-cd pathway/apps/api
+cd apps/api
 source venv/bin/activate
 uvicorn app.main:app --reload --port 8000
 
 # Frontend
-cd pathway/apps/web
+cd apps/web
 npm run dev  # Port 3000
 ```
 
 ### Database Migrations
 
 ```bash
-cd pathway/apps/api
+cd apps/api
 alembic upgrade head          # Apply migrations
 alembic revision -m "message" # Create new migration
 ```
@@ -610,7 +835,7 @@ alembic revision -m "message" # Create new migration
 ### Running Seed Scripts
 
 ```bash
-cd pathway/apps/api
+cd apps/api
 source venv/bin/activate
 python -m scripts.seed_[SCRIPT_ID]_jobs
 ```
@@ -637,12 +862,21 @@ python -m scripts.seed_[SCRIPT_ID]_jobs
 cd apps/api
 python -m pytest
 
+# Frontend unit tests
+cd apps/web
+npm test
+
 # Frontend type check
 cd apps/web
 npm run type-check
 
 # Lint
+cd apps/web
 npm run lint
+
+# E2E tests
+cd apps/web
+npx playwright test
 ```
 
 ---
@@ -676,7 +910,7 @@ The original China market version is preserved in `zhimian-china-backup` branch.
 - Progressive AI question generation
 - Transcript analysis & verification
 - Profile sharing preferences
-- Google Calendar integration + Google Meet
+- Google Calendar integration + Google Meet (candidates + employers)
 - Candidate status management (New/Contacted/In Review/Shortlisted/Rejected/Hired)
 - GitHub analysis display (visual scores)
 - Private candidate notes for employers
@@ -698,8 +932,17 @@ The original China market version is preserved in `zhimian-china-backup` branch.
 - Weekly digest emails
 - Profile view notification emails
 - Public candidate profiles with shareable tokens
-- Admin panel with batch operations
-- VC portfolio job seeding (14 VC firms, 134+ companies, 180+ jobs)
+- Admin panel with batch operations + employer detail view
+- Opportunities tab on candidate dashboard (requires resume + transcript + GitHub)
+- Public stats endpoint for landing page
+- Email verification flow
+- Security headers middleware (HSTS in production)
+- Auto-seeding of universities, courses, and clubs on startup
+- VC portfolio job seeding (25+ VC firms, 31 scripts)
+- LinkedIn URL backfill for employers
+- Frontend scraping utilities for job boards (Getro, Consider, NEA)
+- CI/CD pipeline (GitHub Actions: pytest, Jest, Playwright)
+- Pre-commit hook (frontend lint via Husky)
 
 ---
 
@@ -707,12 +950,13 @@ The original China market version is preserved in `zhimian-china-backup` branch.
 
 | Item | Priority |
 |------|----------|
-| `apps/web/lib/api.ts` (~4700 lines) should be split into modules | Medium |
+| `apps/web/lib/api.ts` (~4800 lines) should be split into modules | Medium |
 | Apply grade inflation adjustment in transcript scoring | Low |
 | Add CSRF state validation in GitHub OAuth callback | Medium |
 | Add GitHub API rate limiting | Medium |
 | Migrate existing plaintext GitHub tokens to encrypted | High |
 | Add error notifications for failed background tasks | Low |
+| `docker-compose.yml` still uses legacy `zhipin` naming | Low |
 
 Recommended split for `api.ts`:
 - `lib/api/types.ts` — All interfaces
@@ -726,4 +970,4 @@ Recommended split for `api.ts`:
 
 ---
 
-*Last updated: 2026-02-13*
+*Last updated: 2026-02-16*
